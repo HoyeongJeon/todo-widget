@@ -27,9 +27,9 @@
 - 커밋 메시지: conventional commits(`feat:`, `test:`, `chore:` 등). AI 공동 작성자 줄(`Co-Authored-By`)을 넣지 않는다.
 
 **스펙을 구체화한 결정** (스펙에 없던 빈칸을 채운 것)
-- 제목의 줄바꿈과 연속 공백은 공백 하나로 합친다. 여러 줄을 붙여 넣어도 한 줄 제목이 된다.
-- 이름 바꾸기 중에 다른 곳을 클릭하면 Enter와 똑같이 저장한다.
-- 추가 입력칸을 닫아도 입력하던 글자는 남아 있다. 다시 열면 이어서 쓸 수 있다.
+- 제목 안의 줄바꿈·탭·연속 공백은 공백 하나로 합친다(이름 바꾸기에 여러 줄을 붙여 넣는 경우 등).
+- 목록 기호는 줄 맨 앞의 `-`, `•` 한 글자만 뗀다(뒤 공백 유무와 무관).
+- 한 줄짜리 텍스트라도 끝에 줄바꿈이 붙어 있으면(줄 전체를 복사한 경우) 붙여 넣는 즉시 추가한다.
 - `done`인데 `completedAt`이 없는 항목은 파일 손상으로 보지 않는다. 끝낸 것 목록의 맨 아래에 둔다.
 - `tasks.json`이 있지만 읽을 수 없는 경우(다른 프로그램이 잠금 등)에는 안내 창을 띄우고 종료한다. 빈 목록으로 시작하면 다음 저장 때 원본을 덮어쓰기 때문이다.
 
@@ -37,7 +37,7 @@
 
 1. **한글 입력 중 Enter** — 한글을 조합하는 중에 Enter를 눌러도 마지막 글자가 빠지거나 중복되지 않고 추가·이름 바꾸기가 된다. → Task 9의 IME 처리 코드와 PM 확인 항목.
 2. **`tasks.json`을 읽을 수 없음** — 파일이 잠겨 있으면 앱이 빈 목록으로 덮어쓰지 않고 안내 후 종료한다. → Task 4 `Load_throws_when_the_file_is_locked`, Task 10 안내 창.
-3. **여러 줄 붙여넣기** — 여러 줄 텍스트를 붙여 넣어도 한 줄 제목으로 저장된다. → Task 3 `Add_collapses_line_breaks_and_repeated_spaces`.
+3. **여러 줄 붙여넣기** — 메모장·메신저의 목록(`\r\n` 줄바꿈, 빈 줄, `-`/`•` 기호 섞임)을 붙여 넣으면 줄마다 하나씩, 붙여 넣은 순서대로 추가된다. → Task 3 `AddLines_*` 테스트, Task 6 `Adding_several_lines_saves_once_and_raises_changed_once`, Task 9 붙여넣기 처리.
 4. **같은 초에 여러 개 추가** — 빠르게 연달아 추가해도 추가한 순서대로 보인다. → Task 3 `InStatus_keeps_insertion_order_for_items_created_in_the_same_second`.
 5. **창 위치가 비정상 값** — 창 좌표가 `NaN`이거나 모니터가 바뀌어도 위젯이 화면 안에 뜬다. → Task 5 `Save_writes_non_finite_positions_as_null`, Task 7 배치 테스트.
 
@@ -404,7 +404,7 @@ git commit -m "feat: add Korea Standard Time clock and storage time format"
 - Produces:
   - `public enum TodoStatus { Todo, Doing, Done }`
   - `public sealed class TodoItem` — 생성자 `TodoItem(string id, string title, TodoStatus status, DateTime createdAt, DateTime? completedAt)`; 속성 `string Id`, `string Title`, `TodoStatus Status`, `DateTime CreatedAt`, `DateTime? CompletedAt` (모두 public get, Title/Status/CompletedAt은 internal set)
-  - `public sealed class TodoList` — 생성자 `TodoList(IClock clock, IEnumerable<TodoItem>? items = null)`; `IReadOnlyList<TodoItem> Items`; `int RemainingCount`; `TodoItem? Add(string title)`; `bool Cycle(string id)`; `bool SetStatus(string id, TodoStatus status)`; `bool Rename(string id, string title)`; `bool Delete(string id)`; `IReadOnlyList<TodoItem> InStatus(TodoStatus status)`. 모든 변경 메서드는 실제로 바뀌었거나 대상을 찾았으면 true, 대상이 없거나 입력이 무효면 false.
+  - `public sealed class TodoList` — 생성자 `TodoList(IClock clock, IEnumerable<TodoItem>? items = null)`; `IReadOnlyList<TodoItem> Items`; `int RemainingCount`; `TodoItem? Add(string title)`; `IReadOnlyList<TodoItem> AddLines(string text)` (줄마다 하나씩 추가, 추가된 것만 순서대로 반환); `bool Cycle(string id)`; `bool SetStatus(string id, TodoStatus status)`; `bool Rename(string id, string title)`; `bool Delete(string id)`; `IReadOnlyList<TodoItem> InStatus(TodoStatus status)`. 모든 변경 메서드는 실제로 바뀌었거나 대상을 찾았으면 true, 대상이 없거나 입력이 무효면 false.
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
@@ -472,6 +472,54 @@ public class TodoListTests
         var list = new TodoList(_clock);
 
         Assert.Null(list.Add(title));
+        Assert.Empty(list.Items);
+    }
+
+    [Fact]
+    public void AddLines_adds_one_item_per_line_in_order()
+    {
+        var list = new TodoList(_clock);
+
+        var added = list.AddLines("은행 방문\r\n택배 반품 접수\n메일 답장");
+
+        Assert.Equal(new[] { "은행 방문", "택배 반품 접수", "메일 답장" }, added.Select(i => i.Title));
+        Assert.Equal(added, list.InStatus(TodoStatus.Todo));
+    }
+
+    [Fact]
+    public void AddLines_skips_blank_lines()
+    {
+        var list = new TodoList(_clock);
+
+        var added = list.AddLines("\r\n은행 방문\r\n\r\n   \r\n메일 답장\r\n");
+
+        Assert.Equal(new[] { "은행 방문", "메일 답장" }, added.Select(i => i.Title));
+    }
+
+    [Fact]
+    public void AddLines_strips_dash_and_bullet_but_keeps_numbers()
+    {
+        var list = new TodoList(_clock);
+
+        var added = list.AddLines("- 은행 방문\n  • 택배 반품 접수\n-메일 답장\n1. 분기 보고서");
+
+        Assert.Equal(new[] { "은행 방문", "택배 반품 접수", "메일 답장", "1. 분기 보고서" }, added.Select(i => i.Title));
+    }
+
+    [Fact]
+    public void AddLines_with_a_single_line_adds_one_item()
+    {
+        var list = new TodoList(_clock);
+
+        Assert.Equal("회의하기", Assert.Single(list.AddLines("회의하기")).Title);
+    }
+
+    [Fact]
+    public void AddLines_with_only_blank_or_bullet_lines_adds_nothing()
+    {
+        var list = new TodoList(_clock);
+
+        Assert.Empty(list.AddLines("\r\n - \n•\n"));
         Assert.Empty(list.Items);
     }
 
@@ -726,6 +774,18 @@ public sealed class TodoList
         return item;
     }
 
+    /// <summary>붙여 넣은 여러 줄을 줄마다 할 일 하나로 추가한다. 빈 줄은 건너뛰고 줄 앞의 "-", "•"는 뗀다.</summary>
+    public IReadOnlyList<TodoItem> AddLines(string text)
+    {
+        var added = new List<TodoItem>();
+        foreach (var line in text.Split('\r', '\n'))
+        {
+            if (Add(StripBullet(line)) is { } item)
+                added.Add(item);
+        }
+        return added;
+    }
+
     public bool Cycle(string id)
     {
         if (Find(id) is not { } item)
@@ -785,6 +845,13 @@ public sealed class TodoList
     // 줄바꿈·탭·연속 공백을 공백 하나로 합치고 앞뒤 공백을 없앤다.
     private static string Clean(string title) =>
         string.Join(' ', title.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    // 목록 기호 "-", "•"만 뗀다. "1."처럼 숫자는 제목의 일부일 수 있어 남긴다.
+    private static string StripBullet(string line)
+    {
+        var trimmed = line.TrimStart();
+        return trimmed.StartsWith('-') || trimmed.StartsWith('•') ? trimmed[1..] : trimmed;
+    }
 }
 ```
 
@@ -1374,7 +1441,7 @@ git commit -m "feat: add settings store with safe defaults"
     - `public const string SaveFailedNotice = "저장하지 못했어요. 다음 변경 때 다시 시도해요";`
     - `static TodoSession Open(TaskStore store, IClock clock)` (`Load`의 `IOException`은 그대로 전달)
     - `TodoList List`, `string? Notice`, `event EventHandler? Changed`
-    - `bool Add(string title)`, `bool Cycle(string id)`, `bool SetStatus(string id, TodoStatus status)`, `bool Rename(string id, string title)`, `bool Delete(string id)` — 목록이 바뀌었으면 저장하고 `Changed`를 발생시킨 뒤 true
+    - `bool Add(string text)` (한 줄이든 여러 줄이든 `TodoList.AddLines`로 추가하고 저장은 한 번), `bool Cycle(string id)`, `bool SetStatus(string id, TodoStatus status)`, `bool Rename(string id, string title)`, `bool Delete(string id)` — 목록이 바뀌었으면 저장하고 `Changed`를 발생시킨 뒤 true
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
@@ -1439,6 +1506,20 @@ public sealed class TodoSessionTests : IDisposable
 
         Assert.True(session.Add("메일 답장"));
         Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public void Adding_several_lines_saves_once_and_raises_changed_once()
+    {
+        var session = Open();
+        var raised = 0;
+        session.Changed += (_, _) => raised++;
+
+        Assert.True(session.Add("- 은행 방문\r\n- 택배 반품 접수\r\n\r\n- 메일 답장"));
+
+        Assert.Equal(1, raised);
+        var reloaded = new TaskStore(TasksPath, _clock).Load().Items;
+        Assert.Equal(new[] { "은행 방문", "택배 반품 접수", "메일 답장" }, reloaded.Select(i => i.Title));
     }
 
     [Fact]
@@ -1540,7 +1621,8 @@ public sealed class TodoSession
         return new TodoSession(new TodoList(clock, result.Items), store, result.BackupPath is not null);
     }
 
-    public bool Add(string title) => Commit(List.Add(title) is not null);
+    /// <summary>입력칸의 한 줄이든 붙여 넣은 여러 줄이든 줄마다 추가하고, 저장은 한 번만 한다.</summary>
+    public bool Add(string text) => Commit(List.AddLines(text).Count > 0);
 
     public bool Cycle(string id) => Commit(List.Cycle(id));
 
@@ -2073,7 +2155,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool Add(string title) => _session.Add(title);
+    public bool Add(string text) => _session.Add(text);
 
     public bool Cycle(string id) => _session.Cycle(id);
 
@@ -2342,18 +2424,22 @@ public partial class App : Application
                 </Button>
             </Grid>
 
-            <!-- 하단: 안내 문구 + 할 일 추가 -->
+            <!-- 하단: 안내 문구 + 늘 떠 있는 추가 입력칸 -->
             <StackPanel DockPanel.Dock="Bottom">
                 <TextBlock Text="{Binding Notice}" Foreground="{StaticResource DoingBrush}" FontSize="12.5"
                            TextWrapping="Wrap" Margin="0,8,0,0"
                            Visibility="{Binding HasNotice, Converter={StaticResource BoolToVis}}" />
                 <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,12,0,0" Padding="0,10,0,0">
-                    <Grid>
-                        <TextBlock x:Name="AddHint" Text="+ 할 일 추가" FontSize="14" Foreground="{StaticResource HintBrush}"
-                                   Background="Transparent" Cursor="Hand" MouseLeftButtonDown="AddHint_MouseLeftButtonDown" />
-                        <TextBox x:Name="AddBox" Style="{StaticResource PlainTextBox}" Visibility="Collapsed"
-                                 PreviewKeyDown="AddBox_PreviewKeyDown" LostKeyboardFocus="AddBox_LostKeyboardFocus" />
-                    </Grid>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="+" FontSize="16" Foreground="{StaticResource HintBrush}"
+                                   VerticalAlignment="Center" Margin="2,0,10,0" />
+                        <Grid>
+                            <TextBlock x:Name="AddPlaceholder" Text="할 일 추가" FontSize="14.5" Foreground="{StaticResource HintBrush}"
+                                       VerticalAlignment="Center" IsHitTestVisible="False" />
+                            <TextBox x:Name="AddBox" Style="{StaticResource PlainTextBox}" VerticalAlignment="Center"
+                                     PreviewKeyDown="AddBox_PreviewKeyDown" TextChanged="AddBox_TextChanged" />
+                        </Grid>
+                    </DockPanel>
                 </Border>
             </StackPanel>
 
@@ -2439,6 +2525,7 @@ public partial class MainWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height * 0.7;
         (Left, Top) = WindowPlacement.Resolve(settings.Left, settings.Top, Width, VirtualScreen(), WorkArea());
         ApplyPinned();
+        DataObject.AddPastingHandler(AddBox, AddBox_Pasting);
         Closing += (_, _) => SaveSettings();
     }
 
@@ -2555,7 +2642,7 @@ public partial class MainWindow : Window
     private void EditBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if (e.NewValue is true && sender is TextBox box)
-            FocusLater(box, selectAll: true);
+            FocusAndSelectAllLater(box);
     }
 
     private void EditBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -2593,21 +2680,14 @@ public partial class MainWindow : Window
             box.Text = item.Title;
     }
 
-    // ── 할 일 추가 ────────────────────────────────────
-
-    private void AddHint_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        AddHint.Visibility = Visibility.Collapsed;
-        AddBox.Visibility = Visibility.Visible;
-        FocusLater(AddBox, selectAll: false);
-    }
+    // ── 할 일 추가 (늘 떠 있는 입력칸) ─────────────────
 
     private void AddBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         switch (RealKey(e))
         {
             case Key.Enter:
-                // 한글 조합 중인 마지막 글자가 Text에 들어간 뒤에 추가한다. 입력칸은 열어 두어 연달아 입력할 수 있다.
+                // 한글 조합 중인 마지막 글자가 Text에 들어간 뒤에 추가한다. 입력칸은 비우고 포커스를 유지해 연달아 입력할 수 있다.
                 Dispatcher.InvokeAsync(() =>
                 {
                     if (_vm.Add(AddBox.Text))
@@ -2615,18 +2695,22 @@ public partial class MainWindow : Window
                 }, DispatcherPriority.Input);
                 break;
             case Key.Escape:
-                CloseAddBox();
+                AddBox.Clear();
                 break;
         }
     }
 
-    private void AddBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => CloseAddBox();
+    private void AddBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        AddPlaceholder.Visibility = AddBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    private void CloseAddBox()
+    private void AddBox_Pasting(object sender, DataObjectPastingEventArgs e)
     {
-        // 입력하던 글자는 남겨 두어 다시 열면 이어서 쓸 수 있다.
-        AddBox.Visibility = Visibility.Collapsed;
-        AddHint.Visibility = Visibility.Visible;
+        if (e.SourceDataObject.GetData(DataFormats.UnicodeText) is not string text || !text.Contains('\n'))
+            return;
+
+        // 여러 줄은 한 줄 입력칸에 넣지 않고 줄마다 바로 추가한다.
+        e.CancelCommand();
+        _vm.Add(text);
     }
 
     // ── 공통 ──────────────────────────────────────────
@@ -2646,14 +2730,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void FocusLater(TextBox box, bool selectAll) =>
+    // 막 보이기 시작한 입력칸은 레이아웃이 끝난 뒤에야 포커스를 받을 수 있다.
+    private void FocusAndSelectAllLater(TextBox box) =>
         Dispatcher.InvokeAsync(() =>
         {
             box.Focus();
-            if (selectAll)
-                box.SelectAll();
-            else
-                box.CaretIndex = box.Text.Length;
+            box.SelectAll();
         }, DispatcherPriority.Input);
 
     private static TodoItemView? ItemOf(object sender) => (sender as FrameworkElement)?.DataContext as TodoItemView;
@@ -2709,8 +2791,9 @@ Start-Process "src\TodoWidget.App\bin\Debug\net10.0-windows\TodoWidget.exe"
 
 PM 확인 항목:
 - 시안 A처럼 보인다: 둥근 카드, 헤더("할 일", "N개 남음"), 섹션 순서 하는 중 → 시작 전 → 끝낸 것.
-- "+ 할 일 추가" → 한글로 입력하고 Enter → 마지막 글자까지 정확히 추가된다. 입력칸이 열린 채라 연달아 추가된다. Esc를 누르면 닫힌다.
-- 여러 줄 텍스트를 붙여 넣으면 한 줄 제목이 된다.
+- 맨 아래 "+ 할 일 추가" 입력칸이 늘 보인다. 클릭하고 "회의하기" Enter → "보고서 쓰기" Enter → 둘 다 바로 추가되고, 입력칸은 비워진 채 계속 입력할 수 있다. 한글 마지막 글자가 빠지거나 두 번 들어가지 않는다.
+- 입력 중 Esc → 입력하던 글자가 지워진다.
+- 메모장에서 `- 은행 방문` / (빈 줄) / `• 메일 답장` / `1. 분기 보고서` 네 줄을 복사해 붙여 넣으면 "은행 방문", "메일 답장", "1. 분기 보고서" 세 개가 바로 추가된다.
 - 동그라미 클릭 → 시작 전 → 하는 중(주황 배경) → 끝낸 것(초록, 가운데 줄) → 시작 전.
 - 우클릭 메뉴: 현재 상태에 체크가 있고, 상태 이동·이름 바꾸기·삭제가 된다.
 - 제목 더블클릭 → 한글로 고치고 Enter → 저장된다. Esc → 취소된다. 다 지우고 Enter → 원래 제목이 유지된다.
