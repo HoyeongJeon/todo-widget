@@ -80,6 +80,8 @@ public sealed class TaskStoreTests : IDisposable
     [InlineData("{not json")]
     [InlineData("")]
     [InlineData("null")]
+    [InlineData("[null]")]
+    [InlineData("[{\"id\":\"a\",\"title\":\"x\",\"status\":\"todo\",\"createdAt\":\"2026-09-30 09:00:00\",\"completedAt\":null}, null]")]
     [InlineData("{\"id\":\"a\"}")]
     [InlineData("[{\"id\":\"a\",\"title\":\"x\",\"status\":\"later\",\"createdAt\":\"2026-09-30 09:00:00\",\"completedAt\":null}]")]
     [InlineData("[{\"id\":\"a\",\"title\":\"x\",\"status\":\"todo\",\"createdAt\":\"2026-09-30T09:00:00\",\"completedAt\":null}]")]

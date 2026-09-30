@@ -36,7 +36,7 @@ public sealed class TaskStore
         var json = File.ReadAllText(FilePath);
         try
         {
-            var dtos = JsonSerializer.Deserialize<List<TodoItemDto>>(json, Options)
+            var dtos = JsonSerializer.Deserialize<List<TodoItemDto?>>(json, Options)
                 ?? throw new FormatException("tasks.json의 최상위 값이 비어 있습니다.");
             return new TaskLoadResult(dtos.Select(ToItem).ToList(), null);
         }
@@ -64,8 +64,10 @@ public sealed class TaskStore
         return backup;
     }
 
-    private static TodoItem ToItem(TodoItemDto dto)
+    private static TodoItem ToItem(TodoItemDto? dto)
     {
+        if (dto is null)
+            throw new FormatException("비어 있는 항목이 있습니다.");
         if (string.IsNullOrWhiteSpace(dto.Id) || string.IsNullOrWhiteSpace(dto.Title))
             throw new FormatException("id 또는 title이 없습니다.");
 
