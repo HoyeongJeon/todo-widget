@@ -1,6 +1,8 @@
 using System.IO;
 using System.Security;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using TodoWidget.Core;
 
 namespace TodoWidget.App;
@@ -12,6 +14,9 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 작은 위젯이라 GPU가 필요 없다. 소프트웨어 렌더링이 메모리를 절반 이하로 줄이고 투명 창도 더 빨리 그린다.
+        RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
 
         _instance = new SingleInstance();
         if (!_instance.IsFirst)
