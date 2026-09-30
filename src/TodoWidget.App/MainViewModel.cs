@@ -68,6 +68,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool Delete(string id) => _session.Delete(id);
 
+    /// <summary>지금 화면에 그려진 항목. 목록이 새로 그려지면 이전 항목 객체는 화면에서 떨어져 나간다.</summary>
+    public TodoItemView? ViewOf(string id) =>
+        Doing.Concat(Todo).Concat(Done).FirstOrDefault(v => v.Id == id);
+
     private void Refresh()
     {
         Doing = Views(TodoStatus.Doing);

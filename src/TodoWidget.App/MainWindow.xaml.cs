@@ -32,7 +32,8 @@ public partial class MainWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height * 0.7;
         (Left, Top) = WindowPlacement.Resolve(settings.Left, settings.Top, Width, VirtualScreen(), WorkArea());
         ApplyPinned();
-        DataObject.AddPastingHandler(AddBox, AddBox_Pasting);
+        // 창에 걸어 두면 추가 칸과 목록 안의 이름 바꾸기 칸 모두의 붙여넣기를 받는다.
+        DataObject.AddPastingHandler(this, TextBox_Pasting);
         Closing += (_, _) => SaveSettings();
     }
 
@@ -107,6 +108,10 @@ public partial class MainWindow : Window
 
     private void StatusMark_Click(object sender, RoutedEventArgs e)
     {
+        // 동그라미는 포커스를 가져가지 않으므로, 이름을 바꾸던 중이면 목록이 다시 그려지기 전에 먼저 저장한다.
+        if (Keyboard.FocusedElement is TextBox editing && editing != AddBox)
+            CommitRename(editing);
+
         if (ItemOf(sender) is { } item)
             _vm.Cycle(item.Id);
     }
@@ -133,7 +138,8 @@ public partial class MainWindow : Window
 
     private void MenuRename_Click(object sender, RoutedEventArgs e)
     {
-        if (ItemOf(sender) is { } item)
+        // 메뉴가 열린 사이 다른 편집이 저장되어 목록이 새로 그려졌을 수 있으니, 지금 화면의 항목을 다시 찾는다.
+        if (ItemOf(sender) is { } clicked && _vm.ViewOf(clicked.Id) is { } item)
             item.IsEditing = true;
     }
 
@@ -210,14 +216,23 @@ public partial class MainWindow : Window
     private void AddBox_TextChanged(object sender, TextChangedEventArgs e) =>
         AddPlaceholder.Visibility = AddBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    private void AddBox_Pasting(object sender, DataObjectPastingEventArgs e)
+    // 한 줄 입력칸은 여러 줄을 붙여 넣으면 첫 줄만 남기므로 직접 처리한다.
+    private void TextBox_Pasting(object sender, DataObjectPastingEventArgs e)
     {
-        if (e.SourceDataObject.GetData(DataFormats.UnicodeText) is not string text || !text.Contains('\n'))
+        if (e.SourceDataObject.GetData(DataFormats.UnicodeText) is not string text || text.IndexOfAny(['\r', '\n']) < 0)
             return;
 
-        // 여러 줄은 한 줄 입력칸에 넣지 않고 줄마다 바로 추가한다.
-        e.CancelCommand();
-        _vm.Add(text);
+        if (e.Source == AddBox)
+        {
+            // 추가 칸: 입력칸에 넣지 않고 줄마다 바로 추가한다.
+            e.CancelCommand();
+            _vm.Add(text);
+        }
+        else
+        {
+            // 이름 바꾸기 칸: 줄바꿈을 공백으로 바꿔 한 줄로 합친다.
+            e.DataObject = new DataObject(DataFormats.UnicodeText, text.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' '));
+        }
     }
 
     // ── 공통 ──────────────────────────────────────────
