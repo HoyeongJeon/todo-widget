@@ -11,7 +11,13 @@ internal static class AtomicFile
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
 
         var temp = fullPath + ".tmp";
-        File.WriteAllText(temp, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(content);
+            stream.Write(bytes);
+            // 내용이 디스크에 실제로 기록된 뒤에 교체해야 정전 후에도 빈 파일이 남지 않는다.
+            stream.Flush(flushToDisk: true);
+        }
         File.Move(temp, fullPath, overwrite: true);
     }
 }
