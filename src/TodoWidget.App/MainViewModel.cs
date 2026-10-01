@@ -8,11 +8,15 @@ namespace TodoWidget.App;
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly TodoSession _session;
+    private bool _doingExpanded;
+    private bool _todoExpanded;
     private bool _doneExpanded;
 
-    public MainViewModel(TodoSession session, bool doneExpanded)
+    public MainViewModel(TodoSession session, bool doingExpanded, bool todoExpanded, bool doneExpanded)
     {
         _session = session;
+        _doingExpanded = doingExpanded;
+        _todoExpanded = todoExpanded;
         _doneExpanded = doneExpanded;
         _session.Changed += (_, _) => Refresh();
         Refresh();
@@ -41,21 +45,31 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public string DoneToggleText => DoneExpanded ? "접기" : "펼치기";
 
+    // Segoe MDL2 아이콘: 펼침 ChevronDown, 접힘 ChevronRight
+    public string DoingChevron => DoingExpanded ? "" : "";
+
+    public string TodoChevron => TodoExpanded ? "" : "";
+
     public string? Notice => _session.Notice;
 
     public bool HasNotice => Notice is not null;
 
+    public bool DoingExpanded
+    {
+        get => _doingExpanded;
+        set => SetExpanded(ref _doingExpanded, value, nameof(DoingChevron));
+    }
+
+    public bool TodoExpanded
+    {
+        get => _todoExpanded;
+        set => SetExpanded(ref _todoExpanded, value, nameof(TodoChevron));
+    }
+
     public bool DoneExpanded
     {
         get => _doneExpanded;
-        set
-        {
-            if (_doneExpanded == value)
-                return;
-            _doneExpanded = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(DoneToggleText));
-        }
+        set => SetExpanded(ref _doneExpanded, value, nameof(DoneToggleText));
     }
 
     public bool Add(string text) => _session.Add(text);
@@ -82,6 +96,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private List<TodoItemView> Views(TodoStatus status) =>
         _session.List.InStatus(status).Select(i => new TodoItemView(i)).ToList();
+
+    private void SetExpanded(ref bool field, bool value, string toggleName, [CallerMemberName] string? name = null)
+    {
+        if (field == value)
+            return;
+        field = value;
+        OnPropertyChanged(name);
+        OnPropertyChanged(toggleName);
+    }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

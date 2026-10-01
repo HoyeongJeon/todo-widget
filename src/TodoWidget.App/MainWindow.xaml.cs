@@ -27,7 +27,7 @@ public partial class MainWindow : Window
         _settingsStore = settingsStore;
         _settings = settings;
         _autoStart = autoStart;
-        _vm = new MainViewModel(session, settings.DoneExpanded);
+        _vm = new MainViewModel(session, settings.DoingExpanded, settings.TodoExpanded, settings.DoneExpanded);
         DataContext = _vm;
 
         MinWidth = WindowSize.MinWidth;
@@ -171,6 +171,18 @@ public partial class MainWindow : Window
     }
 
     // ── 목록 ──────────────────────────────────────────
+
+    private void DoingFold_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _vm.DoingExpanded = !_vm.DoingExpanded;
+        SaveSettings();
+    }
+
+    private void TodoFold_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _vm.TodoExpanded = !_vm.TodoExpanded;
+        SaveSettings();
+    }
 
     private void DoneFold_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -323,6 +335,8 @@ public partial class MainWindow : Window
     {
         _settings.Left = Left;
         _settings.Top = Top;
+        _settings.DoingExpanded = _vm.DoingExpanded;
+        _settings.TodoExpanded = _vm.TodoExpanded;
         _settings.DoneExpanded = _vm.DoneExpanded;
         try
         {

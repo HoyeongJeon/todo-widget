@@ -23,6 +23,8 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Null(settings.Top);
         Assert.True(settings.Pinned);
         Assert.False(settings.DoneExpanded);
+        Assert.True(settings.DoingExpanded);
+        Assert.True(settings.TodoExpanded);
     }
 
     [Fact]
@@ -82,6 +84,28 @@ public sealed class SettingsStoreTests : IDisposable
         Store().Save(new WidgetSettings { Opacity = 0.7 });
 
         Assert.Equal(0.7, Store().Load().Opacity);
+    }
+
+    [Fact]
+    public void Section_folds_are_saved_and_loaded()
+    {
+        Store().Save(new WidgetSettings { DoingExpanded = false, TodoExpanded = false });
+
+        var loaded = Store().Load();
+
+        Assert.False(loaded.DoingExpanded);
+        Assert.False(loaded.TodoExpanded);
+    }
+
+    [Fact]
+    public void Settings_from_before_section_folds_keep_both_sections_open()
+    {
+        File.WriteAllText(_dir.PathOf("settings.json"), "{\"pinned\": true, \"doneExpanded\": true}");
+
+        var settings = Store().Load();
+
+        Assert.True(settings.DoingExpanded);
+        Assert.True(settings.TodoExpanded);
     }
 
     [Fact]
