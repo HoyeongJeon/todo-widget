@@ -23,7 +23,6 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Null(settings.Top);
         Assert.True(settings.Pinned);
         Assert.False(settings.DoneExpanded);
-        Assert.True(settings.DoingExpanded);
         Assert.True(settings.TodoExpanded);
     }
 
@@ -89,23 +88,28 @@ public sealed class SettingsStoreTests : IDisposable
     [Fact]
     public void Section_folds_are_saved_and_loaded()
     {
-        Store().Save(new WidgetSettings { DoingExpanded = false, TodoExpanded = false });
+        Store().Save(new WidgetSettings { TodoExpanded = false });
 
-        var loaded = Store().Load();
-
-        Assert.False(loaded.DoingExpanded);
-        Assert.False(loaded.TodoExpanded);
+        Assert.False(Store().Load().TodoExpanded);
     }
 
     [Fact]
-    public void Settings_from_before_section_folds_keep_both_sections_open()
+    public void Settings_from_before_section_folds_keep_the_todo_section_open()
     {
         File.WriteAllText(_dir.PathOf("settings.json"), "{\"pinned\": true, \"doneExpanded\": true}");
 
+        Assert.True(Store().Load().TodoExpanded);
+    }
+
+    [Fact]
+    public void Settings_from_the_three_state_version_still_load()
+    {
+        File.WriteAllText(_dir.PathOf("settings.json"), "{\"left\": 10, \"doingExpanded\": false, \"todoExpanded\": false}");
+
         var settings = Store().Load();
 
-        Assert.True(settings.DoingExpanded);
-        Assert.True(settings.TodoExpanded);
+        Assert.Equal(10, settings.Left);
+        Assert.False(settings.TodoExpanded);
     }
 
     [Fact]

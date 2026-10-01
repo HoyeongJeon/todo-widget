@@ -111,16 +111,14 @@ public class TodoListTests
     }
 
     [Fact]
-    public void Cycle_goes_todo_doing_done_and_back_to_todo()
+    public void Toggle_finishes_a_todo_and_reopens_a_done_item()
     {
         var list = new TodoList(_clock);
         var item = list.Add("택배 반품 접수")!;
 
-        Assert.True(list.Cycle(item.Id));
-        Assert.Equal(TodoStatus.Doing, item.Status);
-        Assert.True(list.Cycle(item.Id));
+        Assert.True(list.Toggle(item.Id));
         Assert.Equal(TodoStatus.Done, item.Status);
-        Assert.True(list.Cycle(item.Id));
+        Assert.True(list.Toggle(item.Id));
         Assert.Equal(TodoStatus.Todo, item.Status);
     }
 
@@ -143,7 +141,7 @@ public class TodoListTests
         var item = list.Add("은행 방문")!;
         list.SetStatus(item.Id, TodoStatus.Done);
 
-        list.SetStatus(item.Id, TodoStatus.Doing);
+        list.SetStatus(item.Id, TodoStatus.Todo);
 
         Assert.Null(item.CompletedAt);
     }
@@ -154,7 +152,7 @@ public class TodoListTests
         var list = new TodoList(_clock);
         var item = list.Add("은행 방문")!;
         list.SetStatus(item.Id, TodoStatus.Done);
-        list.Cycle(item.Id);
+        list.Toggle(item.Id);
         _clock.Advance(TimeSpan.FromHours(1));
 
         list.SetStatus(item.Id, TodoStatus.Done);
@@ -213,19 +211,19 @@ public class TodoListTests
     {
         var list = new TodoList(_clock);
 
-        Assert.False(list.Cycle("nope"));
+        Assert.False(list.Toggle("nope"));
         Assert.False(list.SetStatus("nope", TodoStatus.Done));
         Assert.False(list.Rename("nope", "새 이름"));
         Assert.False(list.Delete("nope"));
     }
 
     [Fact]
-    public void RemainingCount_counts_todo_and_doing()
+    public void RemainingCount_counts_items_not_done()
     {
         var list = new TodoList(_clock);
-        list.Add("시작 전");
-        list.Cycle(list.Add("하는 중")!.Id);
-        list.SetStatus(list.Add("끝낸 것")!.Id, TodoStatus.Done);
+        list.Add("할 일 하나");
+        list.Add("할 일 둘");
+        list.SetStatus(list.Add("끝낸 일")!.Id, TodoStatus.Done);
 
         Assert.Equal(2, list.RemainingCount);
     }

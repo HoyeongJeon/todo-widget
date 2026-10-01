@@ -6,14 +6,14 @@ The UI is in Korean.
 
 ## Features
 
-- **Three states.** Each task is *시작 전* (not started), *하는 중* (in progress), or *끝낸 것* (done). Click the circle next to a task to cycle through them.
+- **Two states.** A task is either *할 일* (to do) or *끝낸 일* (done). Click the circle next to a task to finish it, and click again to bring it back.
 - **Always-visible input.** Type a task at the bottom and press Enter. The box stays open, so you can add several in a row.
 - **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and leading `-` / `•` bullets are removed.
-- **Right-click menu.** Jump straight to any state, rename, or delete. You can also double-click a title to rename it.
-- **Done items fold away.** Finished tasks collapse into a "끝낸 것 N" row. The newest finished task is listed first.
-- **Fold any section.** Click the *하는 중* or *시작 전* title to fold it down to one line. The count stays visible, and the other sections take the freed space.
+- **Right-click menu.** Set the state, rename, or delete. You can also double-click a title to rename it.
+- **Done on top, folded.** Finished tasks sit at the top in a "끝낸 일 N" row that stays folded until you open it. The newest finished task is listed first.
+- **Fold the list.** Click the *할 일* title to fold it down to one line. The count stays visible.
 - **Resizable.** Drag any edge or corner. The height you drag to becomes a limit: with few tasks the widget stays small, and with many it stops there and scrolls.
-- **Separate scrolling.** *하는 중* and *시작 전* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
+- **Separate scrolling.** With the done list open, *끝낸 일* and *할 일* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
 - **Background opacity.** Pick 100–60% from the ⋯ menu. Only the card background fades, so text stays crisp.
 - **Pin on top.** Toggle always-on-top with the pin button.
 - **Remembers its place.** Position, size, opacity, pin state, and fold state are restored on the next launch.
@@ -68,7 +68,7 @@ Everything is stored as plain JSON in `%APPDATA%\TodoWidget\`:
   {
     "id": "3f2a9c1e-…",
     "title": "보고서 초안 쓰기",
-    "status": "doing",
+    "status": "todo",
     "createdAt": "2026-09-30 09:12:40",
     "completedAt": null
   }

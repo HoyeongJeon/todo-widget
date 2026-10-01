@@ -26,7 +26,7 @@ public sealed class TaskStoreTests : IDisposable
     {
         var items = new[]
         {
-            new TodoItem("a", "보고서 초안 쓰기", TodoStatus.Doing, new DateTime(2026, 9, 30, 9, 12, 40), null),
+            new TodoItem("a", "보고서 초안 쓰기", TodoStatus.Todo, new DateTime(2026, 9, 30, 9, 12, 40), null),
             new TodoItem("b", "은행 방문", TodoStatus.Done, new DateTime(2026, 9, 29, 8, 0, 0), new DateTime(2026, 9, 30, 14, 5, 0)),
         };
 
@@ -36,11 +36,23 @@ public sealed class TaskStoreTests : IDisposable
         Assert.Equal(2, loaded.Count);
         Assert.Equal("a", loaded[0].Id);
         Assert.Equal("보고서 초안 쓰기", loaded[0].Title);
-        Assert.Equal(TodoStatus.Doing, loaded[0].Status);
+        Assert.Equal(TodoStatus.Todo, loaded[0].Status);
         Assert.Equal(new DateTime(2026, 9, 30, 9, 12, 40), loaded[0].CreatedAt);
         Assert.Null(loaded[0].CompletedAt);
         Assert.Equal(TodoStatus.Done, loaded[1].Status);
         Assert.Equal(new DateTime(2026, 9, 30, 14, 5, 0), loaded[1].CompletedAt);
+    }
+
+    [Fact]
+    public void Doing_items_from_older_versions_load_as_todo()
+    {
+        File.WriteAllText(_dir.PathOf("tasks.json"),
+            "[{\"id\":\"a\",\"title\":\"보고서\",\"status\":\"doing\",\"createdAt\":\"2026-09-30 09:00:00\",\"completedAt\":null}]");
+
+        var result = Store().Load();
+
+        Assert.Equal(TodoStatus.Todo, Assert.Single(result.Items).Status);
+        Assert.Null(result.BackupPath);
     }
 
     [Fact]

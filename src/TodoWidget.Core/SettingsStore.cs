@@ -43,7 +43,6 @@ public sealed class SettingsStore
             Opacity = Finite(settings.Opacity),
             Pinned = settings.Pinned,
             DoneExpanded = settings.DoneExpanded,
-            DoingExpanded = settings.DoingExpanded,
             TodoExpanded = settings.TodoExpanded,
         };
         AtomicFile.WriteAllText(_filePath, JsonSerializer.Serialize(copy, Options));

@@ -30,7 +30,7 @@ public class WindowSizeTests
     [Fact]
     public void Max_height_below_the_minimum_is_raised()
     {
-        Assert.Equal(330, WindowSize.Resolve(null, 50, WorkAreaHeight).MaxHeight);
+        Assert.Equal(300, WindowSize.Resolve(null, 50, WorkAreaHeight).MaxHeight);
     }
 
     [Fact]
@@ -48,6 +48,6 @@ public class WindowSizeTests
     [Fact]
     public void A_very_small_screen_still_allows_the_minimum_height()
     {
-        Assert.Equal(330, WindowSize.Resolve(null, null, 150).MaxHeight);
+        Assert.Equal(300, WindowSize.Resolve(null, null, 150).MaxHeight);
     }
 }

@@ -8,14 +8,12 @@ namespace TodoWidget.App;
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly TodoSession _session;
-    private bool _doingExpanded;
     private bool _todoExpanded;
     private bool _doneExpanded;
 
-    public MainViewModel(TodoSession session, bool doingExpanded, bool todoExpanded, bool doneExpanded)
+    public MainViewModel(TodoSession session, bool todoExpanded, bool doneExpanded)
     {
         _session = session;
-        _doingExpanded = doingExpanded;
         _todoExpanded = todoExpanded;
         _doneExpanded = doneExpanded;
         _session.Changed += (_, _) => Refresh();
@@ -24,13 +22,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public IReadOnlyList<TodoItemView> Doing { get; private set; } = [];
-
     public IReadOnlyList<TodoItemView> Todo { get; private set; } = [];
 
     public IReadOnlyList<TodoItemView> Done { get; private set; } = [];
-
-    public bool HasDoing => Doing.Count > 0;
 
     public bool HasTodo => Todo.Count > 0;
 
@@ -41,24 +35,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string RemainingText =>
         _session.List.RemainingCount == 0 ? "모두 끝냈어요" : $"{_session.List.RemainingCount}개 남음";
 
-    public string DoneHeader => $"끝낸 것 {Done.Count}";
+    public string DoneHeader => $"끝낸 일 {Done.Count}";
 
     public string DoneToggleText => DoneExpanded ? "접기" : "펼치기";
 
     // Segoe MDL2 아이콘: 펼침 ChevronDown, 접힘 ChevronRight
-    public string DoingChevron => DoingExpanded ? "" : "";
-
     public string TodoChevron => TodoExpanded ? "" : "";
 
     public string? Notice => _session.Notice;
 
     public bool HasNotice => Notice is not null;
-
-    public bool DoingExpanded
-    {
-        get => _doingExpanded;
-        set => SetExpanded(ref _doingExpanded, value, nameof(DoingChevron));
-    }
 
     public bool TodoExpanded
     {
@@ -74,7 +60,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool Add(string text) => _session.Add(text);
 
-    public bool Cycle(string id) => _session.Cycle(id);
+    public bool Toggle(string id) => _session.Toggle(id);
 
     public bool SetStatus(string id, TodoStatus status) => _session.SetStatus(id, status);
 
@@ -84,11 +70,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     /// <summary>지금 화면에 그려진 항목. 목록이 새로 그려지면 이전 항목 객체는 화면에서 떨어져 나간다.</summary>
     public TodoItemView? ViewOf(string id) =>
-        Doing.Concat(Todo).Concat(Done).FirstOrDefault(v => v.Id == id);
+        Todo.Concat(Done).FirstOrDefault(v => v.Id == id);
 
     private void Refresh()
     {
-        Doing = Views(TodoStatus.Doing);
         Todo = Views(TodoStatus.Todo);
         Done = Views(TodoStatus.Done);
         OnPropertyChanged(string.Empty);

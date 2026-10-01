@@ -25,9 +25,8 @@
             <Border x:Name="Row" CornerRadius="10" Padding="10,8" Margin="0,1" Background="Transparent">
                 <Border.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="시작 전" IsChecked="{Binding IsTodo, Mode=OneWay}" Click="MenuTodo_Click" />
-                        <MenuItem Header="하는 중" IsChecked="{Binding IsDoing, Mode=OneWay}" Click="MenuDoing_Click" />
-                        <MenuItem Header="끝낸 것" IsChecked="{Binding IsDone, Mode=OneWay}" Click="MenuDone_Click" />
+                        <MenuItem Header="할 일" IsChecked="{Binding IsTodo, Mode=OneWay}" Click="MenuTodo_Click" />
+                        <MenuItem Header="끝낸 일" IsChecked="{Binding IsDone, Mode=OneWay}" Click="MenuDone_Click" />
                         <Separator />
                         <MenuItem Header="이름 바꾸기" Click="MenuRename_Click" />
                         <MenuItem Header="삭제" Click="MenuDelete_Click" />
@@ -53,9 +52,6 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Status}" Value="Doing">
-                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource DoingBgBrush}" />
-                </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Done">
                     <Setter TargetName="TitleText" Property="Foreground" Value="{StaticResource MutedBrush}" />
                     <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough" />
@@ -101,7 +97,7 @@
 
             <!-- 하단: 안내 문구 + 늘 떠 있는 추가 입력칸 -->
             <StackPanel DockPanel.Dock="Bottom">
-                <TextBlock Text="{Binding Notice}" Foreground="{StaticResource DoingBrush}" FontSize="12.5"
+                <TextBlock Text="{Binding Notice}" Foreground="{StaticResource NoticeBrush}" FontSize="12.5"
                            TextWrapping="Wrap" Margin="0,8,0,0"
                            Visibility="{Binding HasNotice, Converter={StaticResource BoolToVis}}" />
                 <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,12,0,0" Padding="0,10,0,0">
@@ -125,48 +121,8 @@
                            HorizontalAlignment="Center" Margin="0,14,0,6"
                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
 
-                <!-- 최소 높이 = 위 여백 8 + 제목 24 + 항목 하나 38 -->
-                <DockPanel Margin="0,8,0,0" local:SectionPanel.Minimum="70"
-                           Visibility="{Binding HasDoing, Converter={StaticResource BoolToVis}}">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource SectionHeader}"
-                            MouseLeftButtonDown="DoingFold_MouseLeftButtonDown">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding DoingChevron}" Style="{StaticResource SectionChevron}" />
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="{StaticResource DoingBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="하는 중" Style="{StaticResource SectionLabel}" />
-                                <TextBlock Text="{Binding Doing.Count}" Style="{StaticResource SectionLabel}" FontWeight="Normal" Margin="5,0,0,0" />
-                            </StackPanel>
-                        </DockPanel>
-                    </Border>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Visibility="{Binding DoingExpanded, Converter={StaticResource BoolToVis}}">
-                        <ItemsControl ItemsSource="{Binding Doing}" ItemTemplate="{StaticResource ItemTemplate}" />
-                    </ScrollViewer>
-                </DockPanel>
-
-                <!-- 최소 높이 = 위 여백 12 + 제목 24 + 항목 하나 38 -->
-                <DockPanel Margin="0,12,0,0" local:SectionPanel.Minimum="74"
-                           Visibility="{Binding HasTodo, Converter={StaticResource BoolToVis}}">
-                    <Border DockPanel.Dock="Top" Style="{StaticResource SectionHeader}"
-                            MouseLeftButtonDown="TodoFold_MouseLeftButtonDown">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding TodoChevron}" Style="{StaticResource SectionChevron}" />
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="{StaticResource TodoBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="시작 전" Style="{StaticResource SectionLabel}" />
-                                <TextBlock Text="{Binding Todo.Count}" Style="{StaticResource SectionLabel}" FontWeight="Normal" Margin="5,0,0,0" />
-                            </StackPanel>
-                        </DockPanel>
-                    </Border>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Visibility="{Binding TodoExpanded, Converter={StaticResource BoolToVis}}">
-                        <ItemsControl ItemsSource="{Binding Todo}" ItemTemplate="{StaticResource ItemTemplate}" />
-                    </ScrollViewer>
-                </DockPanel>
-
-                <!-- 최소 높이 = 위 여백 12 + 접힘 줄 34 + 여백 4 + 항목 하나 38. 접혀 있으면 접힘 줄 높이만 쓴다. -->
-                <DockPanel Margin="0,12,0,0" local:SectionPanel.Minimum="88"
+                <!-- 끝낸 일: 맨 위. 최소 높이 = 위 여백 8 + 접힘 줄 34 + 여백 4 + 항목 하나 38. 접혀 있으면 접힘 줄 높이만 쓴다. -->
+                <DockPanel Margin="0,8,0,0" local:SectionPanel.Minimum="84"
                            Visibility="{Binding HasDone, Converter={StaticResource BoolToVis}}">
                     <Border DockPanel.Dock="Top" Background="{DynamicResource FoldBgBrush}" CornerRadius="10" Padding="10,8" Cursor="Hand"
                             MouseLeftButtonDown="DoneFold_MouseLeftButtonDown">
@@ -178,6 +134,26 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,4,0,0"
                                   Visibility="{Binding DoneExpanded, Converter={StaticResource BoolToVis}}">
                         <ItemsControl ItemsSource="{Binding Done}" ItemTemplate="{StaticResource ItemTemplate}" />
+                    </ScrollViewer>
+                </DockPanel>
+
+                <!-- 할 일. 최소 높이 = 위 여백 12 + 제목 24 + 항목 하나 38 -->
+                <DockPanel Margin="0,12,0,0" local:SectionPanel.Minimum="74"
+                           Visibility="{Binding HasTodo, Converter={StaticResource BoolToVis}}">
+                    <Border DockPanel.Dock="Top" Style="{StaticResource SectionHeader}"
+                            MouseLeftButtonDown="TodoFold_MouseLeftButtonDown">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding TodoChevron}" Style="{StaticResource SectionChevron}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource TodoBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="할 일" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding Todo.Count}" Style="{StaticResource SectionLabel}" FontWeight="Normal" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding TodoExpanded, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl ItemsSource="{Binding Todo}" ItemTemplate="{StaticResource ItemTemplate}" />
                     </ScrollViewer>
                 </DockPanel>
             </local:SectionPanel>

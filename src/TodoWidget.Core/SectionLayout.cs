@@ -1,7 +1,7 @@
 namespace TodoWidget.Core;
 
 /// <summary>
-/// 하는 중·시작 전·끝낸 것 섹션에 높이를 나눈다. 다 들어가면 각자 필요한 만큼,
+/// 끝낸 일·할 일 섹션에 높이를 나눈다. 다 들어가면 각자 필요한 만큼,
 /// 넘치면 짧은 섹션은 다 보여 주고 남은 높이를 긴 섹션들이 똑같이 나눈다(각자 스크롤).
 /// </summary>
 public static class SectionLayout

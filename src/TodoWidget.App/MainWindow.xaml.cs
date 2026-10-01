@@ -27,7 +27,7 @@ public partial class MainWindow : Window
         _settingsStore = settingsStore;
         _settings = settings;
         _autoStart = autoStart;
-        _vm = new MainViewModel(session, settings.DoingExpanded, settings.TodoExpanded, settings.DoneExpanded);
+        _vm = new MainViewModel(session, settings.TodoExpanded, settings.DoneExpanded);
         DataContext = _vm;
 
         MinWidth = WindowSize.MinWidth;
@@ -158,7 +158,7 @@ public partial class MainWindow : Window
     private void ApplyOpacity()
     {
         var opacity = CardOpacity.Resolve(_settings.Opacity);
-        foreach (var key in new[] { "CardBrush", "FoldBgBrush", "DoingBgBrush" })
+        foreach (var key in new[] { "CardBrush", "FoldBgBrush" })
         {
             var brush = ((SolidColorBrush)Application.Current.FindResource(key)).Clone();
             brush.Opacity = opacity;
@@ -171,12 +171,6 @@ public partial class MainWindow : Window
     }
 
     // ── 목록 ──────────────────────────────────────────
-
-    private void DoingFold_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        _vm.DoingExpanded = !_vm.DoingExpanded;
-        SaveSettings();
-    }
 
     private void TodoFold_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -200,12 +194,10 @@ public partial class MainWindow : Window
         if (Keyboard.FocusedElement is TextBox editing && editing != AddBox)
             CommitRename(editing);
 
-        _vm.Cycle(item.Id);
+        _vm.Toggle(item.Id);
     }
 
     private void MenuTodo_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Todo);
-
-    private void MenuDoing_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Doing);
 
     private void MenuDone_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Done);
 
@@ -335,7 +327,6 @@ public partial class MainWindow : Window
     {
         _settings.Left = Left;
         _settings.Top = Top;
-        _settings.DoingExpanded = _vm.DoingExpanded;
         _settings.TodoExpanded = _vm.TodoExpanded;
         _settings.DoneExpanded = _vm.DoneExpanded;
         try

@@ -19,7 +19,5 @@ public sealed class WidgetSettings
 
     public bool DoneExpanded { get; set; }
 
-    public bool DoingExpanded { get; set; } = true;
-
     public bool TodoExpanded { get; set; } = true;
 }
