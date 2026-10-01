@@ -1,4 +1,4 @@
-# window-todo-widget
+# windows-todo-widget
 
 A small, always-on desktop to-do widget for Windows. It sits on your desktop and shows at a glance how much is left to do.
 
@@ -18,7 +18,7 @@ The UI is in Korean.
 
 ## Download
 
-1. Download `TodoWidget-win-x64.zip` from the [latest release](https://github.com/hoyeongjeon/window-todo-widget/releases/latest).
+1. Download `TodoWidget-win-x64.zip` from the [latest release](https://github.com/HoyeongJeon/windows-todo-widget/releases/latest).
 2. Unzip it anywhere you like, for example `C:\Tools\TodoWidget\`.
 3. Run `TodoWidget.exe`.
 
