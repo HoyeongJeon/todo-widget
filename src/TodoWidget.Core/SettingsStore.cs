@@ -38,6 +38,8 @@ public sealed class SettingsStore
         {
             Left = Finite(settings.Left),
             Top = Finite(settings.Top),
+            Width = Finite(settings.Width),
+            MaxHeight = Finite(settings.MaxHeight),
             Pinned = settings.Pinned,
             DoneExpanded = settings.DoneExpanded,
         };
