@@ -11,6 +11,7 @@ The UI is in Korean.
 - **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and leading `-` / `•` bullets are removed.
 - **Right-click menu.** Jump straight to any state, rename, or delete. You can also double-click a title to rename it.
 - **Done items fold away.** Finished tasks collapse into a "끝낸 것 N" row. The newest finished task is listed first.
+- **Fold any section.** Click the *하는 중* or *시작 전* title to fold it down to one line. The count stays visible, and the other sections take the freed space.
 - **Resizable.** Drag any edge or corner. The height you drag to becomes a limit: with few tasks the widget stays small, and with many it stops there and scrolls.
 - **Separate scrolling.** *하는 중* and *시작 전* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
 - **Background opacity.** Pick 100–60% from the ⋯ menu. Only the card background fades, so text stays crisp.
@@ -60,7 +61,7 @@ Everything is stored as plain JSON in `%APPDATA%\TodoWidget\`:
 | File | Contents |
 |---|---|
 | `tasks.json` | Your tasks |
-| `settings.json` | Window position and size, background opacity, pin state, and whether done items are expanded |
+| `settings.json` | Window position and size, background opacity, pin state, and which sections are folded |
 
 ```json
 [
