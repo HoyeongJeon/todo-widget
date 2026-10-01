@@ -1,6 +1,8 @@
 .superpowers/
+.devdata/
 bin/
 obj/
 dist/
+TestResults/
 .vs/
 *.user
