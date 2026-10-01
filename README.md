@@ -1,0 +1,86 @@
+# window-todo-widget
+
+A small, always-on desktop to-do widget for Windows. It sits on your desktop and shows at a glance how much is left to do.
+
+The UI is in Korean.
+
+## Features
+
+- **Three states.** Each task is *시작 전* (not started), *하는 중* (in progress), or *끝낸 것* (done). Click the circle next to a task to cycle through them.
+- **Always-visible input.** Type a task at the bottom and press Enter. The box stays open, so you can add several in a row.
+- **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and leading `-` / `•` bullets are removed.
+- **Right-click menu.** Jump straight to any state, rename, or delete. You can also double-click a title to rename it.
+- **Done items fold away.** Finished tasks collapse into a "끝낸 것 N" row. The newest finished task is listed first.
+- **Pin on top.** Toggle always-on-top with the pin button.
+- **Remembers its place.** Position, pin state, and fold state are restored on the next launch.
+- **Starts with Windows.** Auto start is enabled on the first run and can be turned off from the ⋯ menu.
+- **Single instance.** Launching it again brings the existing widget to the front.
+
+## Requirements
+
+- Windows 10 or 11
+- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) to run it, or the .NET 10 SDK to build it
+
+## Build and run
+
+```powershell
+dotnet publish src/TodoWidget.App/TodoWidget.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o dist
+.\dist\TodoWidget.exe
+```
+
+The result is a single `TodoWidget.exe` of about 300 KB that uses the installed .NET runtime.
+
+## Data
+
+Everything is stored as plain JSON in `%APPDATA%\TodoWidget\`:
+
+| File | Contents |
+|---|---|
+| `tasks.json` | Your tasks |
+| `settings.json` | Window position, pin state, and whether done items are expanded |
+
+```json
+[
+  {
+    "id": "3f2a9c1e-…",
+    "title": "보고서 초안 쓰기",
+    "status": "doing",
+    "createdAt": "2026-09-30 09:12:40",
+    "completedAt": null
+  }
+]
+```
+
+- **Time format.** Times are always Korea Standard Time in `yyyy-MM-dd HH:mm:ss`, regardless of the PC's time zone setting.
+- **Safe saves.** Each change is written to a temp file, flushed to disk, and then swapped in, so a power cut cannot leave a half-written file.
+- **Broken files.** If `tasks.json` cannot be parsed, it is renamed to `tasks.broken-<timestamp>.json` and the widget starts empty with a notice.
+- **Unreadable files.** If the file is locked by another program, the widget shows a message and exits rather than overwriting it.
+
+Auto start is registered under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` as `TodoWidget`.
+
+## Development
+
+```powershell
+dotnet build
+dotnet test
+```
+
+Set `TODOWIDGET_DATA_DIR` to keep test data away from your real tasks while developing:
+
+```powershell
+$env:TODOWIDGET_DATA_DIR = "C:\dev\todo\.devdata"
+dotnet run --project src/TodoWidget.App
+```
+
+Debug builds never touch the auto-start registry entry on launch.
+
+### Project layout
+
+```
+src/TodoWidget.Core/         UI-free logic: task rules, KST clock, JSON stores, window placement, auto start
+src/TodoWidget.App/          WPF widget (builds TodoWidget.exe)
+tests/TodoWidget.Core.Tests/ xUnit tests for Core
+docs/superpowers/            Design spec and implementation plan (Korean)
+```
+
+The widget renders in software mode on purpose. It needs no GPU features, and this roughly halves its memory use.
