@@ -36,6 +36,13 @@ public partial class MainWindow : Window
         ApplySize(WindowSize.Resolve(settings.Width, settings.MaxHeight, SystemParameters.WorkArea.Height));
         (Left, Top) = WindowPlacement.Resolve(settings.Left, settings.Top, Width, VirtualScreen(), WorkArea());
         ApplyPinned();
+        foreach (var value in CardOpacity.Choices)
+        {
+            var item = new MenuItem { Header = $"{value * 100:0}%", Tag = value };
+            item.Click += OpacityChoice_Click;
+            OpacityMenuItem.Items.Add(item);
+        }
+        ApplyOpacity();
         SourceInitialized += (_, _) => HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(WndProc);
         // 창에 걸어 두면 추가 칸과 목록 안의 이름 바꾸기 칸 모두의 붙여넣기를 받는다.
         DataObject.AddPastingHandler(this, TextBox_Pasting);
@@ -57,6 +64,7 @@ public partial class MainWindow : Window
     private const int WmExitSizeMove = 0x0232;
     private const double ShadowMargin = 10;
     private bool _resizing;
+
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
@@ -138,6 +146,29 @@ public partial class MainWindow : Window
     }
 
     private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void OpacityChoice_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.Opacity = (double)((MenuItem)sender).Tag;
+        ApplyOpacity();
+        SaveSettings();
+    }
+
+    // 배경만 비치게 한다. 글자·동그라미는 그대로 선명하다.
+    private void ApplyOpacity()
+    {
+        var opacity = CardOpacity.Resolve(_settings.Opacity);
+        foreach (var key in new[] { "CardBrush", "FoldBgBrush", "DoingBgBrush" })
+        {
+            var brush = ((SolidColorBrush)Application.Current.FindResource(key)).Clone();
+            brush.Opacity = opacity;
+            brush.Freeze();
+            Resources[key] = brush;
+        }
+        CardShadow.Opacity = 0.12 * opacity;
+        foreach (MenuItem item in OpacityMenuItem.Items)
+            item.IsChecked = (double)item.Tag == opacity;
+    }
 
     // ── 목록 ──────────────────────────────────────────
 
