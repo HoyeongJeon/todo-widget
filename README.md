@@ -16,10 +16,22 @@ The UI is in Korean.
 - **Starts with Windows.** Auto start is enabled on the first run and can be turned off from the ⋯ menu.
 - **Single instance.** Launching it again brings the existing widget to the front.
 
+## Download
+
+1. Download `TodoWidget-win-x64.zip` from the [latest release](https://github.com/hoyeongjeon/window-todo-widget/releases/latest).
+2. Unzip it anywhere you like, for example `C:\Tools\TodoWidget\`.
+3. Run `TodoWidget.exe`.
+
+There is nothing to install, and the .NET runtime is bundled. On the first run, the widget registers itself to start with Windows. Move the exe to its final folder before you run it.
+
+> **Windows protected your PC?** The exe is not code-signed, so SmartScreen may warn you the first time. Click **More info → Run anyway**.
+
+To uninstall, turn off auto start from the ⋯ menu, quit the widget, and delete the exe and `%APPDATA%\TodoWidget\`.
+
 ## Requirements
 
-- Windows 10 or 11
-- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) to run it, or the .NET 10 SDK to build it
+- Windows 10 or 11 (x64)
+- To build: the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ## Build and run
 
@@ -28,7 +40,15 @@ dotnet publish src/TodoWidget.App/TodoWidget.App.csproj -c Release -r win-x64 --
 .\dist\TodoWidget.exe
 ```
 
-The result is a single `TodoWidget.exe` of about 300 KB that uses the installed .NET runtime.
+The result is a single `TodoWidget.exe` of about 300 KB. It needs the .NET 10 Desktop Runtime to be installed.
+
+To build the self-contained release (runtime bundled, about 130 MB):
+
+```powershell
+dotnet publish src/TodoWidget.App/TodoWidget.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o release
+```
+
+Single-file compression is left off on purpose. The release is zipped for download instead, because a compressed exe decompresses into memory and roughly doubles its RAM use.
 
 ## Data
 

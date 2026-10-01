@@ -6,3 +6,4 @@ dist/
 TestResults/
 .vs/
 *.user
+release/
