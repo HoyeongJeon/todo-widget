@@ -66,6 +66,48 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Size_is_saved_and_loaded()
+    {
+        Store().Save(new WidgetSettings { Width = 450, MaxHeight = 700 });
+
+        var loaded = Store().Load();
+
+        Assert.Equal(450, loaded.Width);
+        Assert.Equal(700, loaded.MaxHeight);
+    }
+
+    [Fact]
+    public void Opacity_is_saved_and_loaded()
+    {
+        Store().Save(new WidgetSettings { Opacity = 0.7 });
+
+        Assert.Equal(0.7, Store().Load().Opacity);
+    }
+
+    [Fact]
+    public void Settings_from_before_resizing_have_no_size()
+    {
+        File.WriteAllText(_dir.PathOf("settings.json"), "{\"left\": 10, \"top\": 20, \"pinned\": true, \"doneExpanded\": false}");
+
+        var settings = Store().Load();
+
+        Assert.Null(settings.Width);
+        Assert.Null(settings.MaxHeight);
+        Assert.Equal(10, settings.Left);
+    }
+
+    [Fact]
+    public void Save_writes_non_finite_sizes_as_null()
+    {
+        Store().Save(new WidgetSettings { Width = double.NaN, MaxHeight = double.NegativeInfinity });
+
+        var loaded = Store().Load();
+
+        Assert.Null(loaded.Width);
+        Assert.Null(loaded.MaxHeight);
+    }
+
+    [Fact]
     public void Save_writes_non_finite_positions_as_null()
     {
         Store().Save(new WidgetSettings { Left = double.NaN, Top = double.PositiveInfinity });
