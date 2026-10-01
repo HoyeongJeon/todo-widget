@@ -9,7 +9,7 @@ public static class WindowSize
     public const double MinWidth = 280;      // 카드 260
     public const double MaxWidth = 620;      // 카드 600
     public const double DefaultWidth = 320;  // 카드 300
-    public const double MinMaxHeight = 180;  // 헤더와 입력칸이 보이는 높이
+    public const double MinMaxHeight = 330;  // 하는 중·시작 전 1개씩, 끝낸 것 줄, 입력칸이 보이는 높이
     public const double DefaultMaxHeightRatio = 0.5;
 
     public static WidgetSize Resolve(double? savedWidth, double? savedMaxHeight, double workAreaHeight)

@@ -77,6 +77,14 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Opacity_is_saved_and_loaded()
+    {
+        Store().Save(new WidgetSettings { Opacity = 0.7 });
+
+        Assert.Equal(0.7, Store().Load().Opacity);
+    }
+
+    [Fact]
     public void Settings_from_before_resizing_have_no_size()
     {
         File.WriteAllText(_dir.PathOf("settings.json"), "{\"left\": 10, \"top\": 20, \"pinned\": true, \"doneExpanded\": false}");

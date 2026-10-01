@@ -40,6 +40,7 @@ public sealed class SettingsStore
             Top = Finite(settings.Top),
             Width = Finite(settings.Width),
             MaxHeight = Finite(settings.MaxHeight),
+            Opacity = Finite(settings.Opacity),
             Pinned = settings.Pinned,
             DoneExpanded = settings.DoneExpanded,
         };

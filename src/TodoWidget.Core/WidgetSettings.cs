@@ -12,6 +12,9 @@ public sealed class WidgetSettings
     /// <summary>사용자가 끌어서 정한 최대 높이. 할 일이 적으면 창은 이보다 작다.</summary>
     public double? MaxHeight { get; set; }
 
+    /// <summary>카드 배경 불투명도(0.6~1.0). 없으면 1.0.</summary>
+    public double? Opacity { get; set; }
+
     public bool Pinned { get; set; } = true;
 
     public bool DoneExpanded { get; set; }
