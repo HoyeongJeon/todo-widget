@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using TodoWidget.Core;
@@ -29,9 +30,13 @@ public partial class MainWindow : Window
         _vm = new MainViewModel(session, settings.DoneExpanded);
         DataContext = _vm;
 
-        MaxHeight = SystemParameters.WorkArea.Height * 0.7;
+        MinWidth = WindowSize.MinWidth;
+        MaxWidth = WindowSize.MaxWidth;
+        MaxHeight = SystemParameters.WorkArea.Height;
+        ApplySize(WindowSize.Resolve(settings.Width, settings.MaxHeight, SystemParameters.WorkArea.Height));
         (Left, Top) = WindowPlacement.Resolve(settings.Left, settings.Top, Width, VirtualScreen(), WorkArea());
         ApplyPinned();
+        SourceInitialized += (_, _) => HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(WndProc);
         // 창에 걸어 두면 추가 칸과 목록 안의 이름 바꾸기 칸 모두의 붙여넣기를 받는다.
         DataObject.AddPastingHandler(this, TextBox_Pasting);
         Closing += (_, _) => SaveSettings();
@@ -44,6 +49,42 @@ public partial class MainWindow : Window
         Topmost = true;
         Topmost = _settings.Pinned;
         Activate();
+    }
+
+    // ── 크기 조절 ─────────────────────────────────────
+
+    private const int WmSizing = 0x0214;
+    private const int WmExitSizeMove = 0x0232;
+    private const double ShadowMargin = 10;
+    private bool _resizing;
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WmSizing && !_resizing)
+        {
+            // 끄는 동안에는 상한을 풀어 카드가 마우스를 그대로 따라오게 한다.
+            _resizing = true;
+            SizeToContent = SizeToContent.Manual;
+            Card.MaxHeight = double.PositiveInfinity;
+        }
+        else if (msg == WmExitSizeMove && _resizing)
+        {
+            // 손을 뗀 높이를 최대 높이로 저장하고, 내용이 더 짧으면 내용만큼 줄인다.
+            _resizing = false;
+            var size = WindowSize.Resolve(Width, ActualHeight, SystemParameters.WorkArea.Height);
+            _settings.Width = size.Width;
+            _settings.MaxHeight = size.MaxHeight;
+            ApplySize(size);
+            SaveSettings();
+        }
+        return IntPtr.Zero;
+    }
+
+    private void ApplySize(WidgetSize size)
+    {
+        Width = size.Width;
+        Card.MaxHeight = size.MaxHeight - 2 * ShadowMargin;
+        SizeToContent = SizeToContent.Height;
     }
 
     // ── 헤더 ──────────────────────────────────────────

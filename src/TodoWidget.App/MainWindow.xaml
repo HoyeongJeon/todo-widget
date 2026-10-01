@@ -7,12 +7,18 @@
         SizeToContent="Height"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent"
+        Background="#01FFFFFF"
         ShowInTaskbar="False"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         FontFamily="{StaticResource UiFont}"
         Foreground="{StaticResource InkBrush}"
         UseLayoutRounding="True">
+
+    <!-- 테두리 없는 창에 가장자리 끌기를 붙인다. 잡는 영역은 카드 바깥의 그림자 여백(10px) 안이다. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="8" GlassFrameThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <DataTemplate x:Key="ItemTemplate" DataType="{x:Type local:TodoItemView}">
@@ -58,7 +64,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Border Margin="10" Background="{StaticResource CardBrush}" CornerRadius="18" Padding="18,16,18,12">
+    <Border x:Name="Card" Margin="10" Background="{StaticResource CardBrush}" CornerRadius="18" Padding="18,16,18,12">
         <Border.Effect>
             <DropShadowEffect BlurRadius="20" ShadowDepth="3" Direction="270" Opacity="0.12" Color="#3C3228" />
         </Border.Effect>
