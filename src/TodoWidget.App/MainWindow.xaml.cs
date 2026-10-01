@@ -108,12 +108,15 @@ public partial class MainWindow : Window
 
     private void StatusMark_Click(object sender, RoutedEventArgs e)
     {
-        // 동그라미는 포커스를 가져가지 않으므로, 이름을 바꾸던 중이면 목록이 다시 그려지기 전에 먼저 저장한다.
+        // 저장으로 목록이 다시 그려지면 이 버튼은 화면에서 떨어져 나가므로, 누른 항목을 먼저 잡아 둔다.
+        if (ItemOf(sender) is not { } item)
+            return;
+
+        // 동그라미는 포커스를 가져가지 않으므로, 이름을 바꾸던 중이면 먼저 저장한다.
         if (Keyboard.FocusedElement is TextBox editing && editing != AddBox)
             CommitRename(editing);
 
-        if (ItemOf(sender) is { } item)
-            _vm.Cycle(item.Id);
+        _vm.Cycle(item.Id);
     }
 
     private void MenuTodo_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Todo);
@@ -219,10 +222,13 @@ public partial class MainWindow : Window
     // 한 줄 입력칸은 여러 줄을 붙여 넣으면 첫 줄만 남기므로 직접 처리한다.
     private void TextBox_Pasting(object sender, DataObjectPastingEventArgs e)
     {
-        if (e.SourceDataObject.GetData(DataFormats.UnicodeText) is not string text || text.IndexOfAny(['\r', '\n']) < 0)
+        // 목록 템플릿 안의 입력칸은 창에서 볼 때 Source가 목록으로 바뀌므로 OriginalSource로 찾는다.
+        if (e.OriginalSource is not TextBox box
+            || e.SourceDataObject.GetData(DataFormats.UnicodeText) is not string text
+            || text.IndexOfAny(['\r', '\n']) < 0)
             return;
 
-        if (e.Source == AddBox)
+        if (box == AddBox)
         {
             // 추가 칸: 입력칸에 넣지 않고 줄마다 바로 추가한다.
             e.CancelCommand();
@@ -230,8 +236,12 @@ public partial class MainWindow : Window
         }
         else
         {
-            // 이름 바꾸기 칸: 줄바꿈을 공백으로 바꿔 한 줄로 합친다.
-            e.DataObject = new DataObject(DataFormats.UnicodeText, text.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' '));
+            // 이름 바꾸기 칸: 줄바꿈을 공백으로 바꿔 한 줄로 합친 뒤 직접 넣는다.
+            e.CancelCommand();
+            var joined = text.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+            var start = box.SelectionStart;
+            box.SelectedText = joined;
+            box.Select(start + joined.Length, 0);
         }
     }
 
