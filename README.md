@@ -14,7 +14,8 @@ The UI is in Korean.
 - **Fold the list.** Click the *할 일* title to fold it down to one line. The count stays visible.
 - **Resizable.** Drag any edge or corner. The height you drag to becomes a limit: with few tasks the widget stays small, and with many it stops there and scrolls.
 - **Separate scrolling.** With the done list open, *끝낸 일* and *할 일* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
-- **Background opacity.** Pick 100–60% from the ⋯ menu. Only the card background fades, so text stays crisp.
+- **Background transparency.** Drag the slider in the ⋯ menu (or scroll over it) to make the card 0–40% see-through. The change shows as you drag. Only the card background fades, so text stays crisp.
+- **Clear all.** ⋯ → 초기화 deletes every task after you confirm in the widget. Your settings stay as they are.
 - **Pin on top.** Toggle always-on-top with the pin button.
 - **Remembers its place.** Position, size, opacity, pin state, and fold state are restored on the next launch.
 - **Starts with Windows.** Auto start is enabled on the first run and can be turned off from the ⋯ menu.
