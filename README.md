@@ -4,6 +4,10 @@ A small, always-on desktop to-do widget for Windows. It sits on your desktop and
 
 The UI is in Korean.
 
+<p align="center">
+  <img src="docs/images/widget.png" width="320" alt="The widget with one in-progress task highlighted in orange, three tasks to do, and two finished tasks in the open 끝낸 일 section">
+</p>
+
 ## Features
 
 - **Three states, two sections.** Click the circle to move a task from *할 일* (to do) to *하는 중* (in progress) to *끝낸 일* (done). In-progress tasks stay in the to-do list, highlighted in orange at the top.
@@ -20,6 +24,10 @@ The UI is in Korean.
 - **Remembers its place.** Position, size, opacity, pin state, and fold state are restored on the next launch.
 - **Starts with Windows.** Auto start is enabled on the first run and can be turned off from the ⋯ menu.
 - **Single instance.** Launching it again brings the existing widget to the front.
+
+| Right-click a task | ⋯ menu | Clear all |
+|:---:|:---:|:---:|
+| <img src="docs/images/right-click-menu.png" width="250" alt="Right-click menu on a task with 할 일, 하는 중, 끝낸 일, 이름 바꾸기, and 삭제"> | <img src="docs/images/more-menu.png" width="250" alt="The ⋯ menu with auto start, the transparency slider at 15%, 초기화, and 종료"> | <img src="docs/images/clear-all.png" width="250" alt="Confirmation panel asking whether to delete all 6 tasks, with 취소 and 모두 지우기 buttons"> |
 
 ## Download
 
