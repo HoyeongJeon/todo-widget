@@ -32,7 +32,7 @@ public sealed class TodoSession
     /// <summary>입력칸의 한 줄이든 붙여 넣은 여러 줄이든 줄마다 추가하고, 저장은 한 번만 한다.</summary>
     public bool Add(string text) => Commit(List.AddLines(text).Count > 0);
 
-    public bool Toggle(string id) => Commit(List.Toggle(id));
+    public bool Cycle(string id) => Commit(List.Cycle(id));
 
     public bool SetStatus(string id, TodoStatus status) => Commit(List.SetStatus(id, status));
 

@@ -26,6 +26,7 @@
                 <Border.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="할 일" IsChecked="{Binding IsTodo, Mode=OneWay}" Click="MenuTodo_Click" />
+                        <MenuItem Header="하는 중" IsChecked="{Binding IsDoing, Mode=OneWay}" Click="MenuDoing_Click" />
                         <MenuItem Header="끝낸 일" IsChecked="{Binding IsDone, Mode=OneWay}" Click="MenuDone_Click" />
                         <Separator />
                         <MenuItem Header="이름 바꾸기" Click="MenuRename_Click" />
@@ -52,6 +53,9 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="Doing">
+                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource DoingBgBrush}" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Done">
                     <Setter TargetName="TitleText" Property="Foreground" Value="{StaticResource MutedBrush}" />
                     <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough" />
@@ -97,7 +101,7 @@
 
             <!-- 하단: 안내 문구 + 늘 떠 있는 추가 입력칸 -->
             <StackPanel DockPanel.Dock="Bottom">
-                <TextBlock Text="{Binding Notice}" Foreground="{StaticResource NoticeBrush}" FontSize="12.5"
+                <TextBlock Text="{Binding Notice}" Foreground="{StaticResource AccentBrush}" FontSize="12.5"
                            TextWrapping="Wrap" Margin="0,8,0,0"
                            Visibility="{Binding HasNotice, Converter={StaticResource BoolToVis}}" />
                 <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,12,0,0" Padding="0,10,0,0">

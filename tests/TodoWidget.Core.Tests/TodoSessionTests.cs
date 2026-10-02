@@ -21,10 +21,10 @@ public sealed class TodoSessionTests : IDisposable
 
         session.Add("보고서 초안 쓰기");
         var id = session.List.Items[0].Id;
-        session.Toggle(id);
+        session.Cycle(id);
 
         var reloaded = new TaskStore(TasksPath, _clock).Load().Items;
-        Assert.Equal(TodoStatus.Done, Assert.Single(reloaded).Status);
+        Assert.Equal(TodoStatus.Doing, Assert.Single(reloaded).Status);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class TodoSessionTests : IDisposable
         session.Changed += (_, _) => raised++;
 
         Assert.False(session.Add("   "));
-        Assert.False(session.Toggle("nope"));
+        Assert.False(session.Cycle("nope"));
         Assert.Equal(0, raised);
         Assert.False(File.Exists(TasksPath));
 

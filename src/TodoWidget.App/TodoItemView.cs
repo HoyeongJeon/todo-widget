@@ -26,6 +26,8 @@ public sealed class TodoItemView : INotifyPropertyChanged
 
     public bool IsTodo => Status == TodoStatus.Todo;
 
+    public bool IsDoing => Status == TodoStatus.Doing;
+
     public bool IsDone => Status == TodoStatus.Done;
 
     public bool IsEditing

@@ -111,14 +111,16 @@ public class TodoListTests
     }
 
     [Fact]
-    public void Toggle_finishes_a_todo_and_reopens_a_done_item()
+    public void Cycle_goes_todo_doing_done_and_back_to_todo()
     {
         var list = new TodoList(_clock);
         var item = list.Add("택배 반품 접수")!;
 
-        Assert.True(list.Toggle(item.Id));
+        Assert.True(list.Cycle(item.Id));
+        Assert.Equal(TodoStatus.Doing, item.Status);
+        Assert.True(list.Cycle(item.Id));
         Assert.Equal(TodoStatus.Done, item.Status);
-        Assert.True(list.Toggle(item.Id));
+        Assert.True(list.Cycle(item.Id));
         Assert.Equal(TodoStatus.Todo, item.Status);
     }
 
@@ -141,7 +143,7 @@ public class TodoListTests
         var item = list.Add("은행 방문")!;
         list.SetStatus(item.Id, TodoStatus.Done);
 
-        list.SetStatus(item.Id, TodoStatus.Todo);
+        list.SetStatus(item.Id, TodoStatus.Doing);
 
         Assert.Null(item.CompletedAt);
     }
@@ -152,7 +154,7 @@ public class TodoListTests
         var list = new TodoList(_clock);
         var item = list.Add("은행 방문")!;
         list.SetStatus(item.Id, TodoStatus.Done);
-        list.Toggle(item.Id);
+        list.Cycle(item.Id);
         _clock.Advance(TimeSpan.FromHours(1));
 
         list.SetStatus(item.Id, TodoStatus.Done);
@@ -211,19 +213,19 @@ public class TodoListTests
     {
         var list = new TodoList(_clock);
 
-        Assert.False(list.Toggle("nope"));
+        Assert.False(list.Cycle("nope"));
         Assert.False(list.SetStatus("nope", TodoStatus.Done));
         Assert.False(list.Rename("nope", "새 이름"));
         Assert.False(list.Delete("nope"));
     }
 
     [Fact]
-    public void RemainingCount_counts_items_not_done()
+    public void RemainingCount_counts_todo_and_doing()
     {
         var list = new TodoList(_clock);
-        list.Add("할 일 하나");
-        list.Add("할 일 둘");
-        list.SetStatus(list.Add("끝낸 일")!.Id, TodoStatus.Done);
+        list.Add("시작 전");
+        list.Cycle(list.Add("하는 중")!.Id);
+        list.SetStatus(list.Add("끝낸 것")!.Id, TodoStatus.Done);
 
         Assert.Equal(2, list.RemainingCount);
     }
@@ -237,6 +239,24 @@ public class TodoListTests
         var second = list.Add("둘째")!;
 
         Assert.Equal(new[] { first, second }, list.InStatus(TodoStatus.Todo));
+    }
+
+    [Fact]
+    public void Remaining_lists_doing_items_first_then_todo_each_oldest_first()
+    {
+        var list = new TodoList(_clock);
+        var todo1 = list.Add("할 일 1")!;
+        _clock.Advance(TimeSpan.FromMinutes(1));
+        var doing1 = list.Add("하는 중 1")!;
+        _clock.Advance(TimeSpan.FromMinutes(1));
+        var todo2 = list.Add("할 일 2")!;
+        _clock.Advance(TimeSpan.FromMinutes(1));
+        var doing2 = list.Add("하는 중 2")!;
+        list.SetStatus(list.Add("끝낸 일")!.Id, TodoStatus.Done);
+        list.SetStatus(doing2.Id, TodoStatus.Doing);
+        list.SetStatus(doing1.Id, TodoStatus.Doing);
+
+        Assert.Equal(new[] { doing1, doing2, todo1, todo2 }, list.Remaining());
     }
 
     [Fact]

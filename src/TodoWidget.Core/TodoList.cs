@@ -1,6 +1,6 @@
 namespace TodoWidget.Core;
 
-/// <summary>할 일 목록의 규칙: 추가, 끝냄 토글, 상태 지정, 이름 바꾸기, 삭제, 정렬.</summary>
+/// <summary>할 일 목록의 규칙: 추가, 상태 순환, 상태 지정, 이름 바꾸기, 삭제, 정렬.</summary>
 public sealed class TodoList
 {
     private readonly IClock _clock;
@@ -14,7 +14,7 @@ public sealed class TodoList
 
     public IReadOnlyList<TodoItem> Items => _items;
 
-    /// <summary>남은 일 = 아직 끝내지 않은 할 일.</summary>
+    /// <summary>남은 일 = 할 일 + 하는 중.</summary>
     public int RemainingCount => _items.Count(i => i.Status != TodoStatus.Done);
 
     public TodoItem? Add(string title)
@@ -40,12 +40,18 @@ public sealed class TodoList
         return added;
     }
 
-    public bool Toggle(string id)
+    public bool Cycle(string id)
     {
         if (Find(id) is not { } item)
             return false;
 
-        Apply(item, item.Status == TodoStatus.Done ? TodoStatus.Todo : TodoStatus.Done);
+        var next = item.Status switch
+        {
+            TodoStatus.Todo => TodoStatus.Doing,
+            TodoStatus.Doing => TodoStatus.Done,
+            _ => TodoStatus.Todo,
+        };
+        Apply(item, next);
         return true;
     }
 
@@ -70,7 +76,10 @@ public sealed class TodoList
 
     public bool Delete(string id) => _items.RemoveAll(i => i.Id == id) > 0;
 
-    /// <summary>할 일은 만든 순서(오래된 것 위), 끝낸 일은 끝낸 시각 역순.</summary>
+    /// <summary>할 일 섹션에 보일 순서: 하는 중이 위, 그 아래 할 일.</summary>
+    public IReadOnlyList<TodoItem> Remaining() => [.. InStatus(TodoStatus.Doing), .. InStatus(TodoStatus.Todo)];
+
+    /// <summary>할 일·하는 중은 만든 순서(오래된 것 위), 끝낸 일은 끝낸 시각 역순.</summary>
     public IReadOnlyList<TodoItem> InStatus(TodoStatus status)
     {
         var matching = _items.Where(i => i.Status == status);

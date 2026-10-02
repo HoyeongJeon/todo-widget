@@ -73,8 +73,8 @@ public sealed class TaskStore
 
         var status = dto.Status switch
         {
-            // v1.2까지 있던 "하는 중"은 할 일로 합친다.
-            "todo" or "doing" => TodoStatus.Todo,
+            "todo" => TodoStatus.Todo,
+            "doing" => TodoStatus.Doing,
             "done" => TodoStatus.Done,
             _ => throw new FormatException($"알 수 없는 상태값: {dto.Status}"),
         };
@@ -97,7 +97,12 @@ public sealed class TaskStore
     {
         Id = item.Id,
         Title = item.Title,
-        Status = item.Status == TodoStatus.Done ? "done" : "todo",
+        Status = item.Status switch
+        {
+            TodoStatus.Todo => "todo",
+            TodoStatus.Doing => "doing",
+            _ => "done",
+        },
         CreatedAt = KstFormat.Format(item.CreatedAt),
         CompletedAt = item.CompletedAt is { } done ? KstFormat.Format(done) : null,
     };

@@ -158,7 +158,7 @@ public partial class MainWindow : Window
     private void ApplyOpacity()
     {
         var opacity = CardOpacity.Resolve(_settings.Opacity);
-        foreach (var key in new[] { "CardBrush", "FoldBgBrush" })
+        foreach (var key in new[] { "CardBrush", "FoldBgBrush", "DoingBgBrush" })
         {
             var brush = ((SolidColorBrush)Application.Current.FindResource(key)).Clone();
             brush.Opacity = opacity;
@@ -194,10 +194,12 @@ public partial class MainWindow : Window
         if (Keyboard.FocusedElement is TextBox editing && editing != AddBox)
             CommitRename(editing);
 
-        _vm.Toggle(item.Id);
+        _vm.Cycle(item.Id);
     }
 
     private void MenuTodo_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Todo);
+
+    private void MenuDoing_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Doing);
 
     private void MenuDone_Click(object sender, RoutedEventArgs e) => SetStatus(sender, TodoStatus.Done);
 

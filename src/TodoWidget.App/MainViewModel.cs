@@ -22,6 +22,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>할 일 섹션: 하는 중이 위, 그 아래 할 일.</summary>
     public IReadOnlyList<TodoItemView> Todo { get; private set; } = [];
 
     public IReadOnlyList<TodoItemView> Done { get; private set; } = [];
@@ -58,7 +59,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool Add(string text) => _session.Add(text);
 
-    public bool Toggle(string id) => _session.Toggle(id);
+    public bool Cycle(string id) => _session.Cycle(id);
 
     public bool SetStatus(string id, TodoStatus status) => _session.SetStatus(id, status);
 
@@ -72,13 +73,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void Refresh()
     {
-        Todo = Views(TodoStatus.Todo);
-        Done = Views(TodoStatus.Done);
+        Todo = Views(_session.List.Remaining());
+        Done = Views(_session.List.InStatus(TodoStatus.Done));
         OnPropertyChanged(string.Empty);
     }
 
-    private List<TodoItemView> Views(TodoStatus status) =>
-        _session.List.InStatus(status).Select(i => new TodoItemView(i)).ToList();
+    private static List<TodoItemView> Views(IEnumerable<TodoItem> items) =>
+        items.Select(i => new TodoItemView(i)).ToList();
 
     private void SetExpanded(ref bool field, bool value, string toggleName, [CallerMemberName] string? name = null)
     {

@@ -6,10 +6,10 @@ The UI is in Korean.
 
 ## Features
 
-- **Two states.** A task is either *할 일* (to do) or *끝낸 일* (done). Click the circle next to a task to finish it, and click again to bring it back.
+- **Three states, two sections.** Click the circle to move a task from *할 일* (to do) to *하는 중* (in progress) to *끝낸 일* (done). In-progress tasks stay in the to-do list, highlighted in orange at the top.
 - **Always-visible input.** Type a task at the bottom and press Enter. The box stays open, so you can add several in a row.
 - **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and leading `-` / `•` bullets are removed.
-- **Right-click menu.** Set the state, rename, or delete. You can also double-click a title to rename it.
+- **Right-click menu.** Jump straight to any state (for example, finish a task in one step), rename, or delete. You can also double-click a title to rename it.
 - **Done on top, folded.** Finished tasks sit at the top in a "끝낸 일 N" row that stays folded until you open it. The newest finished task is listed first.
 - **Fold the list.** Click the *할 일* title to fold it down to one line. The count stays visible.
 - **Resizable.** Drag any edge or corner. The height you drag to becomes a limit: with few tasks the widget stays small, and with many it stops there and scrolls.

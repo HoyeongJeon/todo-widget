@@ -7,8 +7,9 @@
     <SolidColorBrush x:Key="MutedBrush" Color="#8C8983" />
     <SolidColorBrush x:Key="LineBrush" Color="#EBE8E3" />
     <SolidColorBrush x:Key="TodoBrush" Color="#A29D95" />
+    <!-- 주황: 할 일 섹션 점, 하는 중 동그라미, 안내 문구 -->
     <SolidColorBrush x:Key="AccentBrush" Color="#E8935A" />
-    <SolidColorBrush x:Key="NoticeBrush" Color="#E8935A" />
+    <SolidColorBrush x:Key="DoingBgBrush" Color="#FDF1E8" />
     <SolidColorBrush x:Key="DoneBrush" Color="#7FAE8A" />
     <SolidColorBrush x:Key="FoldBgBrush" Color="#F6F5F2" />
     <SolidColorBrush x:Key="HintBrush" Color="#B3AFA8" />
@@ -46,7 +47,7 @@
         </Setter>
     </Style>
 
-    <!-- 할 일 앞 동그라미: 할 일 빈 원, 끝낸 일 초록 원 -->
+    <!-- 할 일 앞 동그라미: 할 일 빈 원, 하는 중 주황 점, 끝낸 일 초록 원 -->
     <Style x:Key="StatusMark" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Focusable" Value="False" />
@@ -55,8 +56,13 @@
                 <ControlTemplate TargetType="Button">
                     <Grid Width="18" Height="18" Background="Transparent">
                         <Ellipse x:Name="Ring" Width="16" Height="16" Stroke="{StaticResource TodoBrush}" StrokeThickness="2" />
+                        <Ellipse x:Name="Dot" Width="7" Height="7" Fill="{StaticResource AccentBrush}" Visibility="Collapsed" />
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Status}" Value="Doing">
+                            <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource AccentBrush}" />
+                            <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
                         <DataTrigger Binding="{Binding Status}" Value="Done">
                             <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource DoneBrush}" />
                             <Setter TargetName="Ring" Property="Fill" Value="{StaticResource DoneBrush}" />
