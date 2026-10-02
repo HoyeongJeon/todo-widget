@@ -30,6 +30,8 @@ There is nothing to install, and the .NET runtime is bundled. On the first run, 
 
 > **Windows protected your PC?** The exe is not code-signed, so SmartScreen may warn you the first time. Click **More info → Run anyway**.
 
+To update, quit the widget (⋯ → 종료), replace `TodoWidget.exe` with the one from the newest release, and run it. There is no auto update. Your tasks and settings live in `%APPDATA%\TodoWidget\`, so they are kept.
+
 To uninstall, turn off auto start from the ⋯ menu, quit the widget, and delete the exe and `%APPDATA%\TodoWidget\`.
 
 ## Requirements
