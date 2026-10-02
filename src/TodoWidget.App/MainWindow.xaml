@@ -128,7 +128,11 @@
                             MouseLeftButtonDown="DoneFold_MouseLeftButtonDown">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding DoneToggleText}" FontSize="13" Foreground="{StaticResource MutedBrush}" />
-                            <TextBlock Text="{Binding DoneHeader}" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource DoneBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="끝낸 일" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Text="{Binding Done.Count}" Style="{StaticResource SectionLabel}" FontWeight="Normal" Margin="5,0,0,0" />
+                            </StackPanel>
                         </DockPanel>
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,4,0,0"
@@ -145,7 +149,7 @@
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding TodoChevron}" Style="{StaticResource SectionChevron}" />
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="8" Height="8" Fill="{StaticResource TodoBrush}" VerticalAlignment="Center" />
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="할 일" Style="{StaticResource SectionLabel}" />
                                 <TextBlock Text="{Binding Todo.Count}" Style="{StaticResource SectionLabel}" FontWeight="Normal" Margin="5,0,0,0" />
                             </StackPanel>

@@ -35,12 +35,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string RemainingText =>
         _session.List.RemainingCount == 0 ? "모두 끝냈어요" : $"{_session.List.RemainingCount}개 남음";
 
-    public string DoneHeader => $"끝낸 일 {Done.Count}";
-
     public string DoneToggleText => DoneExpanded ? "접기" : "펼치기";
 
     // Segoe MDL2 아이콘: 펼침 ChevronDown, 접힘 ChevronRight
-    public string TodoChevron => TodoExpanded ? "" : "";
+    public string TodoChevron => ((char)(TodoExpanded ? 0xE70D : 0xE76C)).ToString();
 
     public string? Notice => _session.Notice;
 

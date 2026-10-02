@@ -34,8 +34,13 @@ public sealed class SectionPanel : Panel
         }
 
         _heights = SectionLayout.Allocate(availableSize.Height, desired, children.Select(GetMinimum).ToList());
+        // 줄어든 섹션만 받은 높이로 다시 잰다. 다 들어가는 섹션까지 다시 재면 마지막 측정 높이가 고정돼서,
+        // 나중에 항목이 생겨도 크기 변화가 이 패널까지 올라오지 않는다(펼친 섹션이 제목 줄만 남는 문제).
         for (var i = 0; i < children.Count; i++)
-            children[i].Measure(new Size(availableSize.Width, _heights[i]));
+        {
+            if (_heights[i] < desired[i])
+                children[i].Measure(new Size(availableSize.Width, _heights[i]));
+        }
 
         return new Size(double.IsPositiveInfinity(availableSize.Width) ? width : availableSize.Width, _heights.Sum());
     }
