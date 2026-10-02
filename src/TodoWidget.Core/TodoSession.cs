@@ -40,6 +40,8 @@ public sealed class TodoSession
 
     public bool Delete(string id) => Commit(List.Delete(id));
 
+    public bool Clear() => Commit(List.Clear());
+
     private bool Commit(bool changed)
     {
         if (!changed)

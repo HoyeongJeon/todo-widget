@@ -76,6 +76,15 @@ public sealed class TodoList
 
     public bool Delete(string id) => _items.RemoveAll(i => i.Id == id) > 0;
 
+    /// <summary>⋯ 메뉴의 초기화: 상태와 상관없이 모두 지운다.</summary>
+    public bool Clear()
+    {
+        if (_items.Count == 0)
+            return false;
+        _items.Clear();
+        return true;
+    }
+
     /// <summary>할 일 섹션에 보일 순서: 하는 중이 위, 그 아래 할 일.</summary>
     public IReadOnlyList<TodoItem> Remaining() => [.. InStatus(TodoStatus.Doing), .. InStatus(TodoStatus.Todo)];
 

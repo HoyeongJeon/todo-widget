@@ -22,9 +22,25 @@ public class CardOpacityTests
         Assert.Equal(expected, CardOpacity.Resolve(saved));
     }
 
-    [Fact]
-    public void The_menu_offers_100_to_60_percent_in_10_percent_steps()
+    [Theory]
+    [InlineData(1.0, 0)]
+    [InlineData(0.85, 15)]
+    [InlineData(0.6, 40)]
+    [InlineData(0.1, 40)]
+    public void Opacity_shows_as_transparency_percent(double opacity, int expected)
     {
-        Assert.Equal(new[] { 1.0, 0.9, 0.8, 0.7, 0.6 }, CardOpacity.Choices);
+        Assert.Equal(expected, CardOpacity.ToTransparencyPercent(opacity));
+    }
+
+    [Theory]
+    [InlineData(0, 1.0)]
+    [InlineData(15, 0.85)]
+    [InlineData(14.6, 0.85)]
+    [InlineData(40, 0.6)]
+    [InlineData(70, 0.6)]
+    [InlineData(-5, 1.0)]
+    public void Transparency_percent_becomes_opacity_in_whole_percent_steps(double percent, double expected)
+    {
+        Assert.Equal(expected, CardOpacity.FromTransparencyPercent(percent), precision: 10);
     }
 }

@@ -36,12 +36,7 @@ public partial class MainWindow : Window
         ApplySize(WindowSize.Resolve(settings.Width, settings.MaxHeight, SystemParameters.WorkArea.Height));
         (Left, Top) = WindowPlacement.Resolve(settings.Left, settings.Top, Width, VirtualScreen(), WorkArea());
         ApplyPinned();
-        foreach (var value in CardOpacity.Choices)
-        {
-            var item = new MenuItem { Header = $"{value * 100:0}%", Tag = value };
-            item.Click += OpacityChoice_Click;
-            OpacityMenuItem.Items.Add(item);
-        }
+        OpacitySlider.Maximum = CardOpacity.MaxTransparencyPercent;
         ApplyOpacity();
         SourceInitialized += (_, _) => HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(WndProc);
         // 창에 걸어 두면 추가 칸과 목록 안의 이름 바꾸기 칸 모두의 붙여넣기를 받는다.
@@ -125,8 +120,26 @@ public partial class MainWindow : Window
         AutoStartMenuItem.IsChecked = _autoStart.IsEnabled;
         var menu = MoreButton.ContextMenu!;
         menu.PlacementTarget = MoreButton;
-        menu.Placement = PlacementMode.Bottom;
+        menu.Placement = PlacementMode.Custom;
+        menu.CustomPopupPlacementCallback = PlaceUnderMoreButton;
+        menu.HorizontalOffset = 0;
+        menu.VerticalOffset = 0;
         menu.IsOpen = true;
+    }
+
+    // 메뉴 판의 오른쪽 끝을 ⋯ 버튼 오른쪽 끝에 맞춰 버튼 바로 아래에 띄운다. 아래가 모자라면 위로 띄운다.
+    // 받는 크기는 화면 픽셀이라 그림자 여백(DIP)에 배율을 곱한다.
+    private CustomPopupPlacement[] PlaceUnderMoreButton(Size popupSize, Size targetSize, Point offset)
+    {
+        var dpi = VisualTreeHelper.GetDpi(MoreButton);
+        var shadow = (Thickness)FindResource("MenuShadowMargin");
+        var x = targetSize.Width - popupSize.Width + shadow.Right * dpi.DpiScaleX;
+        var gap = 4 * dpi.DpiScaleY;
+        return
+        [
+            new(new Point(x, targetSize.Height + gap - shadow.Top * dpi.DpiScaleY), PopupPrimaryAxis.Horizontal),
+            new(new Point(x, -popupSize.Height - gap + shadow.Bottom * dpi.DpiScaleY), PopupPrimaryAxis.Horizontal),
+        ];
     }
 
     private void AutoStartMenuItem_Click(object sender, RoutedEventArgs e)
@@ -147,10 +160,30 @@ public partial class MainWindow : Window
 
     private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => Close();
 
-    private void OpacityChoice_Click(object sender, RoutedEventArgs e)
+    private bool _opacityChanged;
+
+    // 끄는 동안 바로바로 비쳐 보이게 하고, 저장은 메뉴를 닫을 때 한 번만 한다.
+    private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        _settings.Opacity = (double)((MenuItem)sender).Tag;
+        var opacity = CardOpacity.FromTransparencyPercent(e.NewValue);
+        if (opacity == CardOpacity.Resolve(_settings.Opacity))
+            return;
+        _settings.Opacity = opacity;
+        _opacityChanged = true;
         ApplyOpacity();
+    }
+
+    private void OpacitySlider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        OpacitySlider.Value += e.Delta > 0 ? 2 : -2;
+        e.Handled = true;
+    }
+
+    private void MoreMenu_Closed(object sender, RoutedEventArgs e)
+    {
+        if (!_opacityChanged)
+            return;
+        _opacityChanged = false;
         SaveSettings();
     }
 
@@ -166,8 +199,29 @@ public partial class MainWindow : Window
             Resources[key] = brush;
         }
         CardShadow.Opacity = 0.12 * opacity;
-        foreach (MenuItem item in OpacityMenuItem.Items)
-            item.IsChecked = (double)item.Tag == opacity;
+        var percent = CardOpacity.ToTransparencyPercent(opacity);
+        OpacitySlider.Value = percent;
+        OpacityValueText.Text = $"{percent}%";
+    }
+
+    // ── 초기화 ────────────────────────────────────────
+
+    private void ResetMenuItem_Click(object sender, RoutedEventArgs e) => ResetConfirm.Visibility = Visibility.Visible;
+
+    private void ResetConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        ResetConfirm.Visibility = Visibility.Collapsed;
+        _vm.Clear();
+    }
+
+    private void ResetCancel_Click(object sender, RoutedEventArgs e) => ResetConfirm.Visibility = Visibility.Collapsed;
+
+    // 판 바깥의 옅은 부분을 누르면 취소한다. 판 안을 누른 건 무시한다.
+    private void ResetConfirm_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource == ResetConfirm)
+            ResetConfirm.Visibility = Visibility.Collapsed;
+        e.Handled = true;
     }
 
     // ── 목록 ──────────────────────────────────────────

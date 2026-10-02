@@ -28,6 +28,17 @@ public sealed class TodoSessionTests : IDisposable
     }
 
     [Fact]
+    public void Clear_is_saved_immediately()
+    {
+        var session = Open();
+        session.Add("하나\n둘");
+
+        Assert.True(session.Clear());
+
+        Assert.Empty(new TaskStore(TasksPath, _clock).Load().Items);
+    }
+
+    [Fact]
     public void Rename_set_status_and_delete_are_saved()
     {
         var session = Open();

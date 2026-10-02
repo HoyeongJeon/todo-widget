@@ -209,6 +209,25 @@ public class TodoListTests
     }
 
     [Fact]
+    public void Clear_removes_every_item_in_every_state()
+    {
+        var list = new TodoList(_clock);
+        list.Add("시작 전");
+        list.Cycle(list.Add("하는 중")!.Id);
+        list.SetStatus(list.Add("끝낸 것")!.Id, TodoStatus.Done);
+
+        Assert.True(list.Clear());
+
+        Assert.Empty(list.Items);
+    }
+
+    [Fact]
+    public void Clear_on_an_empty_list_returns_false()
+    {
+        Assert.False(new TodoList(_clock).Clear());
+    }
+
+    [Fact]
     public void Operations_on_an_unknown_id_return_false()
     {
         var list = new TodoList(_clock);

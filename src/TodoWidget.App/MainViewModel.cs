@@ -33,6 +33,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool IsEmpty => _session.List.Items.Count == 0;
 
+    public bool HasItems => !IsEmpty;
+
+    public string ClearQuestion => $"할 일 {_session.List.Items.Count}개를 모두 지울까요?";
+
     public string RemainingText =>
         _session.List.RemainingCount == 0 ? "모두 끝냈어요" : $"{_session.List.RemainingCount}개 남음";
 
@@ -66,6 +70,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool Rename(string id, string title) => _session.Rename(id, title);
 
     public bool Delete(string id) => _session.Delete(id);
+
+    public bool Clear() => _session.Clear();
 
     /// <summary>지금 화면에 그려진 항목. 목록이 새로 그려지면 이전 항목 객체는 화면에서 떨어져 나간다.</summary>
     public TodoItemView? ViewOf(string id) =>
