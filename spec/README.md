@@ -2,6 +2,7 @@
 
 **변경 이력**
 - 2026-10-03: 처음 작성 (v2.0 기준)
+- 2026-10-03: 파일 목록에서 가벼움 기준에 prefix(PERF)를 함께 적었다
 
 ## 이 폴더가 기준이다
 
@@ -13,7 +14,7 @@
 
 | 파일 | 다루는 것 | prefix |
 |---|---|---|
-| `spec/00-principles.md` | 제품 원칙, 개발 원칙, 가벼움 기준, 범위 밖 목록, 다음 버전 후보 | `PRIV`, `PERF` |
+| `spec/00-principles.md` | 제품 원칙, 개발 원칙, 가벼움 기준(PERF), 범위 밖 목록, 다음 버전 후보 | `PRIV`, `PERF` |
 | `spec/behavior/tasks.md` | 할 일, 상태 3가지와 규칙, 남은 개수 | `TASK` |
 | `spec/behavior/list.md` | 섹션, 정렬, 접기, 빈 화면 | `LIST` |
 | `spec/behavior/input.md` | 추가, 여러 줄 붙여넣기, 이름 바꾸기, 삭제, 초기화 | `INPUT` |

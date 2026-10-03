@@ -2,6 +2,7 @@
 
 **변경 이력**
 - 2026-10-03: 처음 작성 (v2.0 기준)
+- 2026-10-03: START-09에 `notice.newerFile` 옆의 업데이트를 누른 뒤(설치 중, 실패) 안내 줄이 어떻게 보이는지 적었다
 
 ## 용어
 
@@ -58,5 +59,5 @@
 
 ### START-09 안내 줄은 한 번에 하나만 보여 준다
 - 조건: 알릴 일이 여러 개 겹친다
-- 결과: 안내 줄에는 우선순위가 가장 높은 것 하나만 보인다. 우선순위는 할 일 저장 실패(`notice.saveFailed`, "저장하지 못했어요. 다음 변경 때 다시 시도해요". `tasks.json`을 쓰지 못한 경우이고(변환용 백업 실패 포함), `settings.json` 저장 실패는 알리지 않는다) > 파일 문제(`notice.newerFile`, "새 버전에서 만든 파일이에요. 업데이트해 주세요" / `notice.backup`, "저장 파일에 문제가 있어 백업해 두었어요" 순) > 자동 실행 실패(`notice.autoStartFailed`) > 새 버전 안내(업데이트, UPD) 순이다. 위 안내가 사라지면 그다음 우선순위의 안내가 보인다. 예외로, `notice.newerFile`이 보이는 동안 새 버전이 있으면 그 안내 옆에 `update.action`("업데이트") 버튼도 함께 보인다(UPD-03). 업데이트하라고 알리면서 누를 것이 없으면 안 되기 때문이다
+- 결과: 안내 줄에는 우선순위가 가장 높은 것 하나만 보인다. 우선순위는 할 일 저장 실패(`notice.saveFailed`, "저장하지 못했어요. 다음 변경 때 다시 시도해요". `tasks.json`을 쓰지 못한 경우이고(변환용 백업 실패 포함), `settings.json` 저장 실패는 알리지 않는다) > 파일 문제(`notice.newerFile`, "새 버전에서 만든 파일이에요. 업데이트해 주세요" / `notice.backup`, "저장 파일에 문제가 있어 백업해 두었어요" 순) > 자동 실행 실패(`notice.autoStartFailed`) > 새 버전 안내(업데이트, UPD) 순이다. 위 안내가 사라지면 그다음 우선순위의 안내가 보인다. 예외로, `notice.newerFile`이 보이는 동안 새 버전이 있으면 그 안내 옆에 `update.action`("업데이트") 버튼도 함께 보인다(UPD-03). 업데이트하라고 알리면서 누를 것이 없으면 안 되기 때문이다. 그 버튼을 누르면 설치하는 동안은 `notice.newerFile` 대신 `update.installing`을 보여 준다(UPD-04). 받기나 설치에 실패하면 `notice.newerFile` 옆에 `update.action` 대신 `update.failed`를 보여 준다(UPD-07). 파일은 여전히 새 버전에서 만든 것이므로 `notice.newerFile`은 사라지지 않는다. `update.failed`는 다음에 확인에 성공할 때까지 남고, 그때 새 버전이 여전히 있으면 다시 `update.action`이 보인다
 - 확인: 자동 테스트

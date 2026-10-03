@@ -23,7 +23,8 @@
 | 알고 싶은 것 | 읽을 문서 |
 |---|---|
 | v2.0에서 무엇을 왜 하는지, 확정된 결정 전체 | `docs/superpowers/specs/2026-10-03-cross-platform-design.md` |
-| 지금 동작의 기준 (요구사항 ID, 확인 방법) | `spec/` (아래 "spec 상태" 참고) |
+| 지금 동작의 기준 (요구사항 ID, 확인 방법) | `spec/README.md`에서 시작 |
+| 구현 계획과 로드맵 | `docs/superpowers/plans/2026-10-03-v2-spec-baseline.md` (전체 로드맵 포함) |
 | v1.4 설계와 당시 결정 | `docs/superpowers/specs/2026-09-30-todo-widget-design.md` (v1.3 기준. v1.4의 투명도 슬라이더와 초기화는 빠져 있다) |
 | v1.4 구현 계획 | `docs/superpowers/plans/2026-09-30-todo-widget.md` |
 | v1.4가 실제로 하는 일 | `src/TodoWidget.Core/`, `tests/TodoWidget.Core.Tests/` (v1.4를 역으로 spec화할 때의 근거) |
@@ -48,7 +49,7 @@
 
 ### spec 상태
 
-`spec/` 폴더는 아직 없다. 구현 계획의 첫 작업에서 v1.4를 역으로 spec화해 만든다(설계 문서 4.3). 그 전까지는 설계 문서가 기준이다. `spec/`이 생기면 `spec/`이 기준이 되고, 설계 문서는 설계 시점의 기록으로 남는다.
+`spec/`이 동작의 기준이다(시작점: `spec/README.md`). 설계 문서는 설계 시점의 기록이다. 형식과 연결은 `pnpm spec:check`로, 출시 전에는 `pnpm spec:check:strict`로 검사한다.
 
 ## 작업 규칙
 
