@@ -38,6 +38,7 @@
 - 할 일 하나의 필드와 상태값(`todo`, `doing`, `done`)은 v1.4와 같다. 시각 형식만 바뀌었다(STORE-05).
 - 파일 전체를 `version`이 있는 객체로 감싼다. 나중에 형식이 또 바뀌어도 어느 버전 파일인지 알고 변환할 수 있게 하기 위해서다.
 - `completedAt`은 끝낸 일에만 있고, 나머지는 `null`이다.
+- 최상위 객체나 할 일 항목에 모르는 필드가 있으면 읽을 때 무시하고, 저장할 때는 쓰지 않는다.
 
 ## `settings.json` 항목
 
@@ -49,7 +50,7 @@
 | `pinned` | 불리언 | true |
 | `doneExpanded` | 불리언 | false |
 | `todoExpanded` | 불리언 | true |
-| `lastUpdateCheck` | ISO 8601 시각 또는 null | null (UPD-01) |
+| `lastUpdateCheck` | STORE-05 형식의 시각 또는 null | null (UPD-01) |
 
 v1.4의 항목은 이름과 뜻을 그대로 두고, v2.0에서는 `lastUpdateCheck`만 새로 더했다. 설정을 언제 저장하는지는 창(WND)과 시작·종료(START) 문서에 적는다.
 
@@ -89,7 +90,7 @@ v1.4의 항목은 이름과 뜻을 그대로 두고, v2.0에서는 `lastUpdateCh
 - 확인: 자동 테스트
 
 ### STORE-08 깨진 `tasks.json`은 백업하고 빈 목록으로 시작한다
-- 조건: `tasks.json`이 깨졌다. 깨짐은 JSON 문법 오류, 빈 파일, 최상위가 배열(v1.4 형식)도 `version`이 있는 객체도 아님, `version`이 2도 2보다 큰 정수도 아님, `version`이 2인데 `tasks`가 배열이 아님, 비어 있는(`null`) 항목, `id`·`title`이 없거나 빈 문자열·공백뿐, `status`가 `todo`·`doing`·`done`이 아님, `createdAt`이 없거나 시각 형식 오류, `completedAt`이 `null`이 아닌데 시각 형식 오류 중 하나다. 시각 형식은 v2 파일이면 STORE-05 형식, v1.4 파일이면 `yyyy-MM-dd HH:mm:ss`다
+- 조건: `tasks.json`이 깨졌다. 깨짐은 JSON 문법 오류, 빈 파일, 최상위가 배열(v1.4 형식)도 `version`이 있는 객체도 아님, `version`이 2도 2보다 큰 정수도 아님, `version`이 2인데 `tasks`가 배열이 아님, 비어 있는(`null`) 항목, `id`·`title`이 없거나 문자열이 아니거나 빈 문자열·공백뿐, `status`가 `todo`·`doing`·`done`이 아님, `createdAt`이 없거나 시각 형식 오류, `completedAt`이 `null`이 아닌데 시각 형식 오류 중 하나다. 시각 형식은 v2 파일이면 STORE-05 형식, v1.4 파일이면 `yyyy-MM-dd HH:mm:ss`다
 - 결과: 파일 내용은 그대로 두고 이름만 `tasks.broken-yyyyMMdd-HHmmss.json`으로 바꾼다(지금 PC 시각, 예: `tasks.broken-20261003-090000.json`). 같은 이름이 이미 있으면 `-2`, `-3`처럼 번호를 붙여 기존 백업을 덮어쓰지 않는다. 빈 목록으로 시작하고 안내 줄에 `notice.backup`("저장 파일에 문제가 있어 백업해 두었어요")을 보여 준다. 이 안내는 위젯을 다시 켤 때까지 남는다. 첫 변경 때 새 `tasks.json`을 v2 형식으로 만든다
 - 확인: 자동 테스트
 
@@ -170,8 +171,8 @@ v1.4 파일(변환 전 `tasks.json`, 백업 파일도 이 내용이다):
 - 확인: 자동 테스트
 
 ### STORE-15 `settings.json`이 없거나 깨지면 기본값을 쓴다
-- 조건: `settings.json`이 없거나, 읽지 못하거나, JSON 문법 오류·빈 파일·`null`·객체가 아닌 값이거나, 항목 값의 형식이 틀렸다(예: `pinned`에 문자열). 또는 일부 항목만 있거나 모르는 항목이 섞여 있다
-- 결과: 안내 없이 위 표의 기본값으로 시작한다. 깨진 파일은 백업하지 않고 다음 설정 저장 때 덮어쓴다. 일부 항목만 빠져 있으면 빠진 항목만 기본값을 쓴다(예: `todoExpanded`가 없는 예전 파일은 할 일 섹션이 펼쳐진다). 모르는 항목(v1.2의 `doingExpanded` 등)은 무시하고, 다음 설정 저장 때는 표의 항목만 쓴다
+- 조건: `settings.json`이 없거나, 읽지 못하거나, 깨졌거나, 일부 항목이 빠지거나 틀렸거나, 모르는 항목이 섞여 있다
+- 결과: 어느 경우든 안내는 없다. 파일이 없거나, 읽지 못하거나, JSON 문법 오류·빈 파일·`null`·객체가 아닌 값이면 모든 항목을 위 표의 기본값으로 쓴다. 객체로 읽히면 항목마다 따로 판단해서, 빠진 항목과 값이 틀린 항목(JSON 형식이 다름, 불리언 자리에 `null`, STORE-05 형식이 아닌 `lastUpdateCheck` 등)만 기본값을 쓰고 나머지 항목은 그대로 쓴다. 예를 들어 `{"left": 10, "pinned": "yes"}`이면 `left`는 10, `pinned`는 true다. `todoExpanded`가 없는 예전 파일은 할 일 섹션이 펼쳐진다. 모르는 항목(v1.2의 `doingExpanded` 등)은 무시한다. 깨진 파일은 백업하지 않고, 다음 설정 저장 때 표의 항목만 써서 덮어쓴다
 - 확인: 자동 테스트
 
 ### STORE-16 설정의 숫자가 비정상이면 null로 저장한다

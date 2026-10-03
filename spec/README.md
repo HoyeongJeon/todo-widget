@@ -46,7 +46,7 @@
 - TypeScript: 테스트 이름 앞에 ID를 적는다. 예: `it('TASK-09 이미 끝낸 일을 다시 끝낸 일로 지정하면 아무것도 바뀌지 않는다', ...)`.
 - Rust: 테스트 함수 위 주석에 ID를 적는다. 예:
   ```rust
-  /// STORE-03 쓰다가 실패하면 원본 파일이 그대로 남는다
+  /// STORE-02 저장은 원본을 깨뜨리지 않는다
   #[test]
   fn keeps_original_file_on_write_failure() { /* ... */ }
   ```
