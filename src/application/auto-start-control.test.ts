@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeAutoStart } from '../testing/fake-auto-start.ts';
+import { flush } from '../testing/fake-timer.ts';
 import { AutoStartControl } from './auto-start-control.ts';
 
 let autoStart: FakeAutoStart;
@@ -52,7 +53,22 @@ describe('⋯ 메뉴의 자동 실행', () => {
 
     autoStart.failEnable = false;
     await expect(control.toggle()).resolves.toBe(true);
+    expect(control.failed).toBe(false);
     expect(autoStart.enabled).toBe(true);
     expect(changes).toBe(2);
+  });
+
+  it('START-04 빠르게 두 번 누르면 차례로 처리해 켰다가 끈다', async () => {
+    let release = (): void => undefined;
+    autoStart.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const first = control.toggle();
+    const second = control.toggle();
+    await flush();
+    release();
+    expect(await Promise.all([first, second])).toEqual([true, false]);
+    expect(autoStart.calls).toEqual(['enable', 'disable']);
+    expect(autoStart.enabled).toBe(false);
   });
 });

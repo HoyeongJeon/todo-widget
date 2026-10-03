@@ -24,6 +24,13 @@ export class FakeTimer implements Timer {
     };
   }
 
+  /** 잠자기. 시계만 앞으로 가고, 예약된 일은 그동안 멈춰 있던 만큼 늦게 실행된다. */
+  sleep(ms: number): void {
+    this.#clock.setEpochMs(this.#clock.now().toEpochMs() + ms);
+    for (const entry of this.#entries)
+      entry.at += ms;
+  }
+
   async advance(ms: number): Promise<void> {
     const target = this.#clock.now().toEpochMs() + ms;
     for (;;) {

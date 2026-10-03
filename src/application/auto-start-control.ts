@@ -7,6 +7,8 @@ export class AutoStartControl {
   readonly #autoStart: AutoStart;
   readonly #listeners = new Set<Listener>();
   #failed = false;
+  /** 바꾸기 줄의 끝. 빠르게 두 번 눌러도 앞의 바꾸기가 끝난 뒤 상태를 읽는다. */
+  #queue: Promise<unknown> = Promise.resolve();
 
   constructor(autoStart: AutoStart) {
     this.#autoStart = autoStart;
@@ -31,8 +33,14 @@ export class AutoStartControl {
     }
   }
 
-  /** 켜져 있으면 끄고 꺼져 있으면 켠 뒤, 다시 읽은 실제 상태를 돌려준다. */
-  async toggle(): Promise<boolean> {
+  /** 켜져 있으면 끄고 꺼져 있으면 켠 뒤, 다시 읽은 실제 상태를 돌려준다. 겹쳐 누르면 차례로 처리한다. */
+  toggle(): Promise<boolean> {
+    const toggled = this.#queue.then(() => this.#toggleOnce());
+    this.#queue = toggled.catch(() => undefined);
+    return toggled;
+  }
+
+  async #toggleOnce(): Promise<boolean> {
     const wasEnabled = await this.isEnabled();
     try {
       if (wasEnabled)

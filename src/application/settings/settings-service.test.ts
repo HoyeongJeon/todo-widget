@@ -48,18 +48,17 @@ describe('설정 서비스', () => {
 
   it('WND-14 닫을 때 위치와 접힘 상태를 다른 설정과 함께 한 번에 저장한다', async () => {
     const service = await open();
-    service.stage({ opacity: 0.8 });
-    await service.update({ left: 100, top: 200, doneExpanded: true, todoExpanded: true });
+    await service.update({ left: 100, top: 200, doneExpanded: true, todoExpanded: true, opacity: 0.8 });
     expect(saved()).toMatchObject({ left: 100, top: 200, doneExpanded: true, todoExpanded: true, opacity: 0.8 });
     expect(files.writes).toHaveLength(1);
   });
 
-  it('stage는 저장하지 않고, save가 그때의 설정을 저장한다', async () => {
+  it('save는 지금 설정을 다시 저장하고, 성공했는지 돌려준다', async () => {
     const service = await open();
-    service.stage({ opacity: 0.7 });
-    expect(files.writes).toHaveLength(0);
     expect(await service.save()).toBe(true);
-    expect(saved()).toMatchObject({ opacity: 0.7 });
+    expect(saved()).toMatchObject({ pinned: true });
+    files.failWrites = true;
+    expect(await service.save()).toBe(false);
   });
 
   it('STORE-17 설정을 쓰지 못해도 알리지 않고, 바꾼 값은 그대로 적용된 채다', async () => {
@@ -107,11 +106,15 @@ describe('설정 서비스', () => {
     expect(saved()).toMatchObject({ left: 2, pinned: false });
   });
 
-  it('stage는 값이 undefined인 항목을 무시한다', async () => {
+  it('update는 값이 undefined인 항목을 무시한다', async () => {
     const service = await open();
-    service.stage({ pinned: undefined, left: 3 });
+    await service.update({ pinned: undefined, left: 3 });
     expect(service.current).toMatchObject({ pinned: true, left: 3 });
-    await service.save();
     expect(saved()).toMatchObject({ pinned: true, left: 3 });
+  });
+
+  it('저장 없는 미리 보기 변경(stage)은 두지 않는다. 미리 보기는 ViewModel이 들고 있다가 update로 확정한다', async () => {
+    const service = await open();
+    expect('stage' in service).toBe(false);
   });
 });

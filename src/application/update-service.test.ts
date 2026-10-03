@@ -80,6 +80,31 @@ describe('확인 일정', () => {
     await never.onWake();
     expect(updater.fetches).toBe(2);
   });
+
+  it('UPD-01 잠자기 동안 타이머가 멈춰도, 깨어날 때 24시간이 안 지났으면 남은 시간 뒤로 다시 예약한다', async () => {
+    const service = await makeService();
+    await service.start();
+    timer.sleep(10 * HOUR);
+    await service.onWake();
+    expect(updater.fetches).toBe(1);
+    await timer.advance(14 * HOUR - 1000);
+    expect(updater.fetches).toBe(1);
+    await timer.advance(1000);
+    expect(updater.fetches).toBe(2);
+    expect(settings.current.lastUpdateCheck?.format()).toBe('2026-10-04T09:00:00+09:00');
+  });
+
+  it('UPD-06 잠자기에서 깨어나도 실패 뒤 1시간 다시 확인은 늦추지 않는다', async () => {
+    const service = await makeService('2026-10-03T08:00:00+09:00');
+    updater.failFetch = true;
+    await service.start();
+    updater.failFetch = false;
+    timer.sleep(30 * 60 * 1000);
+    await service.onWake();
+    expect(updater.fetches).toBe(1);
+    await timer.advance(30 * 60 * 1000);
+    expect(updater.fetches).toBe(2);
+  });
 });
 
 describe('안내', () => {
@@ -265,6 +290,8 @@ describe('알림과 정리', () => {
     open();
     await checking;
     expect(service.state).toBe('none');
+    expect(settings.current.lastUpdateCheck).toBeNull();
+    expect(files.writeAttempts).toEqual([]);
     await timer.advance(5 * 24 * HOUR);
     expect(updater.fetches).toBe(1);
   });

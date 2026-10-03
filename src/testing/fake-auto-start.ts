@@ -1,8 +1,9 @@
 import type { AutoStart } from '../application/ports/auto-start.ts';
 
-/** 테스트용 자동 실행 등록. */
+/** 테스트용 자동 실행 등록. `gate`를 주면 그 약속이 끝날 때까지 켜기·끄기가 멈춰 있다. */
 export class FakeAutoStart implements AutoStart {
   enabled = false;
+  gate: Promise<void> | null = null;
   failEnable = false;
   failDisable = false;
   failRefresh = false;
@@ -14,6 +15,8 @@ export class FakeAutoStart implements AutoStart {
 
   async enable(): Promise<void> {
     this.calls.push('enable');
+    if (this.gate)
+      await this.gate;
     if (this.failEnable)
       throw new Error('OS가 등록을 거부했어요');
     this.enabled = true;
@@ -21,6 +24,8 @@ export class FakeAutoStart implements AutoStart {
 
   async disable(): Promise<void> {
     this.calls.push('disable');
+    if (this.gate)
+      await this.gate;
     if (this.failDisable)
       throw new Error('OS가 해제를 거부했어요');
     this.enabled = false;
