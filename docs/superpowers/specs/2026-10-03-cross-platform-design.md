@@ -6,6 +6,7 @@
 
 **변경 이력**
 - 2026-10-03: 시각을 한국 표준시 고정 대신 각 PC의 시간대로 기록하도록 바꿨다(9장). 이에 따라 `tasks.json` 형식이 바뀌고, v1.4로 되돌리려면 백업 파일을 써야 한다.
+- 2026-10-03: spec 형식을 '### ID 제목' 제목으로 정하고, prefix를 정리했다(창 WND, Windows WIN, 시작 START 추가).
 
 ## 1. 목적
 
@@ -59,12 +60,14 @@ Windows 전용 위젯(v1.4, C# WPF)을 **Windows와 macOS에서 똑같이 동작
 
 ```
 spec/
+  README.md          spec 폴더 사용법과 전체 안내
   00-principles.md   제품 원칙, 개발 원칙, 가벼움 기준, 범위 밖 목록, 다음 버전 후보
   behavior/          공통 행동 spec. 두 OS가 똑같이 지킨다
     tasks.md         할 일, 상태 3가지와 규칙, 남은 개수
     list.md          섹션, 정렬, 접기, 빈 화면
     input.md         추가, 여러 줄 붙여넣기, 이름 바꾸기, 삭제, 초기화
     window.md        크기 조절, 이동, 맨 위 고정, 투명도, 위치 복원
+    startup.md       시작, 자동 실행, 두 번 실행, 종료
     storage.md       저장 형식, 안전한 저장, 깨진 파일과 저장 실패
     i18n.md          언어 선택 규칙, 문구 목록
     update.md        업데이트 확인, 안내, 적용
@@ -79,17 +82,37 @@ spec/
 
 ### 4.2 요구사항 형식
 
-요구사항마다 ID를 붙이고, 조건·동작·결과·확인 방법을 적는다.
+요구사항마다 ID를 붙이고, 조건·동작·결과·확인 방법을 적는다. `조건`과 `동작`은 필요할 때만 쓰고, `결과`와 `확인`은 반드시 쓴다.
 
-> **TASK-07** 이미 끝낸 일을 다시 "끝낸 일"로 지정하면 아무것도 바뀌지 않는다.
-> - 조건: 상태 `done`, 끝낸 시각 `2026-10-03T09:00:00+09:00`
-> - 동작: 상태를 `done`으로 지정
-> - 결과: 끝낸 시각은 그대로 `2026-10-03T09:00:00+09:00`
-> - 확인: 자동 테스트
+```markdown
+### TASK-09 이미 끝낸 일을 다시 끝낸 일로 지정하면 아무것도 바뀌지 않는다
+- 조건: 상태 `done`, 끝낸 시각 `2026-10-03T09:00:00+09:00`
+- 동작: 상태를 `done`으로 지정한다
+- 결과: 끝낸 시각은 그대로 `2026-10-03T09:00:00+09:00`이고, 저장도 화면 갱신도 일어나지 않는다
+- 확인: 자동 테스트
+```
 
-- ID 앞부분은 문서를 나타낸다. 예: `TASK`, `LIST`, `INPUT`, `WIN`, `STORE`, `I18N`, `UPD`, `MAC`, `WINOS`, `REL`.
-- 확인 방법은 **자동 테스트** 또는 **직접 확인** 중 하나다. 자동 테스트 이름에는 ID가 들어간다(예: `TASK-07 done을 다시 done으로 지정하면 끝낸 시각이 그대로다`). 직접 확인 항목은 `spec/checklists/`에 같은 ID로 올린다.
-- CI가 연결을 검사한다. spec의 모든 ID는 테스트나 체크리스트 중 하나에 연결돼야 하고, 테스트와 체크리스트는 spec에 없는 ID를 가리킬 수 없다.
+- ID 앞부분은 문서를 나타낸다.
+
+| 파일 | prefix |
+|---|---|
+| `spec/00-principles.md` | `PRIV`, `PERF` |
+| `spec/behavior/tasks.md` | `TASK` |
+| `spec/behavior/list.md` | `LIST` |
+| `spec/behavior/input.md` | `INPUT` |
+| `spec/behavior/window.md` | `WND` |
+| `spec/behavior/startup.md` | `START` |
+| `spec/behavior/storage.md` | `STORE` |
+| `spec/behavior/i18n.md` | `I18N` |
+| `spec/behavior/update.md` | `UPD` |
+| `spec/platform/windows.md` | `WIN` |
+| `spec/platform/macos.md` | `MAC` |
+| `spec/release.md` | `REL` |
+
+`WND`는 창, `WIN`은 Windows 플랫폼, `START`는 시작을 가리킨다.
+
+- 확인 방법은 **자동 테스트** 또는 **직접 확인** 중 하나다. 자동 테스트 이름에는 ID가 들어간다(예: `TASK-09 done을 다시 done으로 지정하면 끝낸 시각이 그대로다`). 직접 확인 항목은 `spec/checklists/`에 같은 ID로 올린다.
+- CI가 연결을 검사한다. spec의 모든 ID는 테스트나 체크리스트 중 하나에 연결돼야 하고, 테스트와 체크리스트는 spec에 없는 ID를 가리킬 수 없다. `pnpm spec:check`는 형식, 없는 ID 참조, 체크리스트 누락을 검사하고, `pnpm spec:check:strict`는 테스트 없는 자동 테스트 항목까지 실패로 본다. 출시 전에는 strict가 통과해야 한다.
 
 ### 4.3 운영 규칙
 
