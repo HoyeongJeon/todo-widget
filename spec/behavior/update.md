@@ -3,6 +3,7 @@
 **변경 이력**
 - 2026-10-03: 처음 작성 (v2.0 기준)
 - 2026-10-03: UPD-04·UPD-07에 `notice.newerFile` 옆의 업데이트를 눌렀을 때 안내 줄이 어떻게 보이는지 적었다(START-09)
+- 2026-10-03: UPD-07에서 실패 뒤에도 `update.action`을 남겨 바로 다시 시도할 수 있게 했다
 
 업데이트는 원칙 [PRIV-01](../00-principles.md)을 따른다. 네트워크 통신은 업데이트 확인과 다운로드뿐이고, 요청에 사용자 데이터를 담지 않는다.
 
@@ -51,7 +52,7 @@ v1.4에는 업데이트 기능이 없으므로 v2.0은 직접 설치한다. v2.0
 
 ### UPD-07 받기나 설치에 실패하면 알린다
 - 조건: `update.action`을 누른 뒤 업데이트 파일을 받지 못하거나(인터넷 끊김, 서버 오류) 설치하지 못한다
-- 결과: 안내 줄에 `update.failed`("업데이트하지 못했어요. 나중에 다시 시도해요")를 보여 준다. `notice.newerFile` 옆의 `update.action`을 눌렀던 경우에는 `notice.newerFile`을 다시 보여 주고 그 옆에 `update.failed`를 보여 준다(START-09). 지금 버전이 그대로 동작하고 할 일과 설정도 그대로다. 이 안내는 다음에 확인에 성공할 때(UPD-01)까지 남는다. 그때 새 버전이 여전히 있으면 `update.available`로 바뀌고(`notice.newerFile`이 보이는 중이면 그 옆의 `update.action`으로 바뀌고), 없으면 사라진다
+- 결과: 안내 줄에 `update.failed`("업데이트하지 못했어요. 나중에 다시 시도해요")와 누를 수 있는 `update.action`("업데이트")을 "업데이트하지 못했어요. 나중에 다시 시도해요 · 업데이트"처럼 함께 보여 준다. `update.action`을 다시 누르면 UPD-04대로 바로 다시 받아서 설치한다. `notice.newerFile` 옆의 `update.action`을 눌렀던 경우에는 `notice.newerFile`을 다시 보여 주고 그 옆에 `update.failed`와 `update.action`을 보여 준다(START-09). 문구가 길면 안내 줄은 두 줄로 줄바꿈될 수 있다. 지금 버전이 그대로 동작하고 할 일과 설정도 그대로다. 이 안내는 다시 눌러 성공하거나 다음에 확인에 성공할 때(UPD-01)까지 남는다. 확인에 성공했을 때 새 버전이 여전히 있으면 `update.available`로 바뀌고(`notice.newerFile`이 보이는 중이면 그 옆에 `update.action`만 남고), 없으면 `update.action`과 함께 사라진다
 - 확인: 자동 테스트
 
 ### UPD-08 서명이 맞지 않는 업데이트는 설치하지 않는다
