@@ -11,6 +11,7 @@
 - 2026-10-03: `spec/` 기준선을 v1.4 테스트·화면 동작과 대조해 보완했다(4.3). 이제 동작의 기준은 `spec/`이고, 이 문서는 설계 시점의 기록으로 남는다.
 - 2026-10-03: 최종 리뷰 결정을 반영했다. port에 `Dialog`, `AppInfo`를 더하고(5.2), OS별 Rust 파일에 자동 실행 등록을 넣고(5.4), 최소 macOS 13(2장), 안내 줄 정의(8장), 모니터마다의 화면 밖 판단(9장), 자동 실행 직접 구현과 ad-hoc 서명 위험(12장), 체크리스트 시간(10장)을 맞췄다.
 - 2026-10-03: PM 결정 — 켜는 속도 목표를 0.5초로 당기고, 로그인 직후 2초·다시 부르기 0.1초 기준을 더했다(11장, PERF-01·06·07).
+- 2026-10-03: 의존 방향과 네트워크 제한(PRIV-01)을 lint 규칙 대신 Vitest 구조 테스트로 막기로 했다(5.1).
 
 ## 1. 목적
 
@@ -144,7 +145,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | presentation | 화면 상태(ViewModel)와 그리기(View), 문구 사전 | application, domain |
 | adapters | 파일, 자동 실행, 업데이트, 창 제어, 언어 감지, 시계 | port, Tauri |
 
-- 의존 방향은 lint 규칙으로 막는다. 예를 들어 domain이나 application이 `@tauri-apps/*`나 DOM을 import하면 빌드가 실패한다.
+- 의존 방향과 네트워크 제한(PRIV-01)은 Vitest 구조 테스트(`src/architecture.test.ts`, 규칙은 `tools/architecture/`)로 막는다. 어기면 `pnpm test`와 CI가 실패한다. 별도 ESLint 규칙은 두지 않는다(개발 결정: 도구 하나로 충분하고, 규칙을 테스트로 읽을 수 있다).
 - ViewModel은 Svelte에 의존하지 않는다. View 프레임워크는 바꿀 수 있는 세부 사항이다.
 
 ### 5.2 port
