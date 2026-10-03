@@ -14,6 +14,7 @@ pub(crate) fn bring_to_front(app: &AppHandle) {
 /// 화면이 준비되면 JS가 부른다. 숨긴 창에서는 requestAnimationFrame이 오지 않으므로 mount 직후에 부른다.
 #[tauri::command]
 fn show_main(app: AppHandle, painted_at_ms: f64) {
+    // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
     probe::report_shown(painted_at_ms);
     bring_to_front(&app);
 }
@@ -28,11 +29,16 @@ fn set_pinned(app: AppHandle, pinned: bool) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
     probe::mark_process_start();
 
+    // 계획 2 시험 코드. 계획 4에서 MAC-08 adapter를 만들 때 지운다.
     #[cfg(target_os = "macos")]
-    if let Some(position) = std::env::args().position(|a| a == "--probe-login-item") {
-        let action = std::env::args().nth(position + 1).unwrap_or_else(|| "status".into());
+    if let Some(position) = std::env::args_os().position(|a| a == std::ffi::OsStr::new("--probe-login-item")) {
+        let action = std::env::args_os()
+            .nth(position + 1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "status".into());
         println!("{}", platform::macos::probe_login_item(&action));
         return;
     }

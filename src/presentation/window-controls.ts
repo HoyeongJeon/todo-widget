@@ -1,3 +1,4 @@
+// 계획 2 임시 위치. 계획 4에서 application port(WindowController)로 옮긴다.
 export type ResizeEdge = 'East' | 'South' | 'SouthEast' | 'West' | 'SouthWest';
 
 /**
