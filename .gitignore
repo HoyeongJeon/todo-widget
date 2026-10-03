@@ -7,3 +7,4 @@ TestResults/
 .vs/
 *.user
 release/
+node_modules/
