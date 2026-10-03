@@ -207,8 +207,9 @@ CI의 `windows-probe` job이 만든 NSIS 설치 파일로 확인한다. 확인�
 2. **흰 화면 확인**: 설치 직후 처음 켤 때, 그리고 다시 켤 때 창이 흰색으로 번쩍이지 않는지 본다.
 3. **시작 시간 (PERF-01)**: 앱을 끈 뒤 명령 프롬프트(cmd)에서 아래를 실행한다.
    ```
-   cmd /c "set TODOWIDGET_PROBE=1&& \"%LOCALAPPDATA%\Programs\TodoWidget\todo-widget.exe\" 2> %TEMP%\todowidget-probe.log"
+   set TODOWIDGET_PROBE=1&& "%LOCALAPPDATA%\Programs\TodoWidget\todo-widget.exe" 2> "%TEMP%\todowidget-probe.log"
    ```
+   - 명령 프롬프트는 앱이 끝나기를 기다리지 않고 바로 돌아온다. 정상이다.
    - 경로는 NSIS 사용자별 설치의 기본값이다. 다를 수 있다. 시작 메뉴에서 TodoWidget을 우클릭 → 파일 위치 열기 → 바로가기를 우클릭 → 파일 위치 열기로 실제 경로를 찾는다.
    - 앱을 끈 뒤 `%TEMP%\todowidget-probe.log`를 메모장으로 열어 `probe: shown …ms` 값을 읽는다. 켤 때마다 파일을 새로 쓰므로 한 번 켤 때마다 읽는다. 10번 반복해 중앙값을 적는다.
    - 이 값은 실행 파일 로딩을 빼고 잰다. 그래서 실제보다 조금 짧다.
