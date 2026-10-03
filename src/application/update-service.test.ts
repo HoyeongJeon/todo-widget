@@ -205,13 +205,41 @@ describe('겹침과 오류', () => {
 
   it('확인 뒤 처리에서 예상 못 한 오류가 나도 확인 일정은 이어진다', async () => {
     const service = await makeService();
-    service.onChange(() => {
-      throw new Error('화면 오류');
-    });
+    settings.update = async () => {
+      throw new Error('예상 못 한 오류');
+    };
     await service.start();
     expect(updater.fetches).toBe(1);
     await timer.advance(HOUR);
     expect(updater.fetches).toBe(2);
+  });
+
+  it('안내를 받는 쪽에서 오류가 나도 확인은 성공으로 끝나고 다른 쪽도 알림을 받는다', async () => {
+    const service = await makeService();
+    const states: string[] = [];
+    service.onChange(() => {
+      throw new Error('화면 오류');
+    });
+    service.onChange(() => states.push(service.state));
+    await service.start();
+    expect(states).toEqual(['available']);
+    await timer.advance(HOUR);
+    expect(updater.fetches).toBe(1);
+    await timer.advance(23 * HOUR);
+    expect(updater.fetches).toBe(2);
+  });
+
+  it('UPD-04 안내를 받는 쪽에서 오류가 나도 설치는 이어지고 다른 쪽도 알림을 받는다', async () => {
+    const service = await makeService();
+    await service.start();
+    const states: string[] = [];
+    service.onChange(() => {
+      throw new Error('화면 오류');
+    });
+    service.onChange(() => states.push(service.state));
+    await expect(service.install()).resolves.toBeUndefined();
+    expect(updater.installs).toBe(1);
+    expect(states).toEqual(['installing']);
   });
 });
 

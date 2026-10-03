@@ -38,4 +38,21 @@ describe('⋯ 메뉴의 자동 실행', () => {
     expect(control.failed).toBe(false);
     expect(changes).toBe(2);
   });
+
+  it('START-05 안내를 받는 쪽에서 오류가 나도 바꾸기는 끝나고 다른 쪽도 알림을 받는다', async () => {
+    let changes = 0;
+    control.onChange(() => {
+      throw new Error('화면 오류');
+    });
+    control.onChange(() => changes++);
+    autoStart.failEnable = true;
+    await expect(control.toggle()).resolves.toBe(false);
+    expect(control.failed).toBe(true);
+    expect(changes).toBe(1);
+
+    autoStart.failEnable = false;
+    await expect(control.toggle()).resolves.toBe(true);
+    expect(autoStart.enabled).toBe(true);
+    expect(changes).toBe(2);
+  });
 });

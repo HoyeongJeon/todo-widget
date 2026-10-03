@@ -123,11 +123,17 @@ export class UpdateService {
     this.#cancelScheduled = null;
   }
 
+  /** 화면 쪽 오류가 다른 알림이나 확인·설치 흐름을 막지 않게 한다. */
   #setState(state: UpdateNoticeState): void {
     if (this.#disposed || this.#state === state)
       return;
     this.#state = state;
-    for (const listener of this.#listeners)
-      listener();
+    for (const listener of this.#listeners) {
+      try {
+        listener();
+      } catch {
+        // 화면이 다음 알림 때 다시 그린다. 다른 알림과 확인·설치는 이어진다.
+      }
+    }
   }
 }

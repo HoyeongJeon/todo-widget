@@ -46,11 +46,17 @@ export class AutoStartControl {
     return this.isEnabled();
   }
 
+  /** 화면 쪽 오류가 다른 알림이나 toggle()을 막지 않게 한다. */
   #setFailed(value: boolean): void {
     if (this.#failed === value)
       return;
     this.#failed = value;
-    for (const listener of this.#listeners)
-      listener();
+    for (const listener of this.#listeners) {
+      try {
+        listener();
+      } catch {
+        // 화면이 다음 알림 때 다시 그린다. 다른 알림과 자동 실행 바꾸기는 이어진다.
+      }
+    }
   }
 }
