@@ -56,4 +56,5 @@
 - **TDD.** 테스트 없는 동작 코드는 넣지 않는다. 테스트 이름에 spec ID를 넣는다. 자동으로 확인할 수 없는 동작은 `spec/checklists/`에 같은 ID로 올린다.
 - **구조.** clean architecture(domain / application / presentation / adapters), OOP, constructor 주입, 느슨한 결합을 지킨다. OS에 따라 다른 코드는 설계 문서 5.4에 적힌 위치에만 둔다.
 - **결정이 바뀌면 문서를 고친다.** 설계 문서나 `spec/`에 반영하고 변경 이력을 남긴다. 대화에서만 합의하고 끝내지 않는다.
+- **subagent 모델.** 구현, 수정, 리뷰를 subagent에게 맡길 때는 모두 Opus를 쓴다(PM 지시, 2026-10-03).
 - **PM 확인이 필요한 일.** 저장소 이름 변경, push, 릴리스 공개처럼 밖으로 나가는 작업은 실행 직전에 PM 확인을 받는다.
