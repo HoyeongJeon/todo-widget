@@ -10,22 +10,27 @@ type Listener = () => void;
 
 /**
  * 할 일 목록과 그 저장. 바뀔 때마다 바로 저장하고(STORE-01), 실패하면 다음 변경 때 다시 저장한다(STORE-11).
- * 저장은 하나씩 차례로 하고, 늘 그 순간의 전체 목록을 쓴다.
+ * 바꾸는 method는 메모리의 목록을 바로 바꾸고 바뀌었는지를 곧바로 돌려준다. 저장은 줄에 세워 하나씩 차례로 하고,
+ * 늘 그 순간의 전체 목록을 쓴다. 저장이 끝나기를 기다려야 하는 곳은 `whenSaved()`를 쓴다.
+ * composition root는 끝내기 전(START-08)과 업데이트로 다시 띄우기 전(`prepareRestart`, UPD-04)에 `whenSaved()`를 기다린다.
  */
 export class TodoSession {
   readonly #list: TodoList;
   readonly #repo: TaskRepository;
-  readonly #fileNotice: 'backup' | 'newerFile' | null;
+  readonly #fileProblem: 'backup' | 'newerFile' | null;
   readonly #listeners = new Set<Listener>();
   #mode: TaskLoadMode;
   #saveFailed: boolean;
+  /** 저장 줄의 끝. 실패해도 거부되지 않아 다음 저장을 막지 않는다. */
   #queue: Promise<void> = Promise.resolve();
+  /** 지난 whenSaved() 뒤 처음 난 예상 못 한 저장 오류. */
+  #unexpected: { error: unknown } | null = null;
 
-  private constructor(list: TodoList, repo: TaskRepository, mode: TaskLoadMode, fileNotice: 'backup' | 'newerFile' | null, saveFailed: boolean) {
+  private constructor(list: TodoList, repo: TaskRepository, mode: TaskLoadMode, fileProblem: 'backup' | 'newerFile' | null, saveFailed: boolean) {
     this.#list = list;
     this.#repo = repo;
     this.#mode = mode;
-    this.#fileNotice = fileNotice;
+    this.#fileProblem = fileProblem;
     this.#saveFailed = saveFailed;
   }
 
@@ -56,9 +61,9 @@ export class TodoSession {
     return this.#saveFailed;
   }
 
-  /** 다시 켤 때까지 남는 파일 안내 (STORE-08, STORE-14). */
-  get fileNotice(): 'backup' | 'newerFile' | null {
-    return this.#fileNotice;
+  /** 다시 켤 때까지 남는 파일 안내 (STORE-08, STORE-14). `NoticeState.fileProblem`으로 그대로 간다. */
+  get fileProblem(): 'backup' | 'newerFile' | null {
+    return this.#fileProblem;
   }
 
   onChange(listener: Listener): () => void {
@@ -67,37 +72,47 @@ export class TodoSession {
   }
 
   /** 입력칸의 한 줄이나 붙여 넣은 여러 줄. 여러 개를 추가해도 저장은 한 번이다 (STORE-01). */
-  add(text: string): Promise<boolean> {
+  add(text: string): boolean {
     return this.#commit(this.#list.addLines(text) > 0);
   }
 
-  cycle(id: string): Promise<boolean> {
+  cycle(id: string): boolean {
     return this.#commit(this.#list.cycle(id));
   }
 
-  setStatus(id: string, status: TodoStatus): Promise<boolean> {
+  setStatus(id: string, status: TodoStatus): boolean {
     return this.#commit(this.#list.setStatus(id, status));
   }
 
-  rename(id: string, title: string): Promise<boolean> {
+  rename(id: string, title: string): boolean {
     return this.#commit(this.#list.rename(id, title));
   }
 
-  remove(id: string): Promise<boolean> {
+  remove(id: string): boolean {
     return this.#commit(this.#list.remove(id));
   }
 
-  clear(): Promise<boolean> {
+  clear(): boolean {
     return this.#commit(this.#list.clear());
   }
 
-  async #commit(changed: boolean): Promise<boolean> {
+  /**
+   * 지금까지 줄에 세운 저장이 모두 끝나면 끝난다. 쓰지 못한 것(FileAccessError)은 saveFailed로만 알린다.
+   * 그 밖의 예상 못 한 오류가 있었으면 지난 whenSaved() 뒤 처음 난 오류로 거부한다.
+   */
+  async whenSaved(): Promise<void> {
+    await this.#queue;
+    const unexpected = this.#unexpected;
+    this.#unexpected = null;
+    if (unexpected)
+      throw unexpected.error;
+  }
+
+  #commit(changed: boolean): boolean {
     if (!changed)
       return false;
-    const saved = this.#queue.catch(() => undefined).then(() => this.#persist());
-    this.#queue = saved;
+    this.#queue = this.#queue.then(() => this.#persist());
     this.#notify();
-    await saved;
     return true;
   }
 
@@ -113,9 +128,10 @@ export class TodoSession {
       }
       this.#setSaveFailed(false);
     } catch (error) {
-      if (!(error instanceof FileAccessError))
-        throw error;
-      this.#setSaveFailed(true);
+      if (error instanceof FileAccessError)
+        this.#setSaveFailed(true);
+      else
+        this.#unexpected ??= { error };
     }
   }
 

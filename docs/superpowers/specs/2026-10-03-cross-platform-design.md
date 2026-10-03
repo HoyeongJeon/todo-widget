@@ -176,7 +176,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 
 ### 5.3 OOP와 캡슐화
 
-- `TodoList`는 내부 목록을 그대로 내보내지 않는다. `add`, `addMany`, `cycle`, `setStatus`, `rename`, `remove`, `clear` 같은 method로만 바뀐다.
+- `TodoList`는 내부 목록을 그대로 내보내지 않는다. `add`, `addLines`, `cycle`, `setStatus`, `rename`, `remove`, `clear` 같은 method로만 바뀐다.
 - `Title`은 값 객체다. 앞뒤 공백을 지우고, 빈 제목이면 만들어지지 않는다.
 - 클래스 하나는 책임 하나만 진다. 파일이 길어지면 나눌 때가 된 것이다. v1.4의 `MainWindow.xaml.cs`(420줄)처럼 화면 코드에 동작이 몰리지 않게, 동작은 ViewModel로 내린다.
 

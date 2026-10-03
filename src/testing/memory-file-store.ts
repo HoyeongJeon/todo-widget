@@ -1,10 +1,17 @@
 import { FileAccessError, type FileStore } from '../application/ports/file-store.ts';
 
-/** 테스트용 메모리 데이터 폴더. 실패를 일부러 낼 수 있다. */
+/**
+ * 테스트용 메모리 데이터 폴더. 실패를 일부러 낼 수 있다.
+ * `writeGate`를 주면 그 약속이 끝날 때까지 쓰기가 멈춰 있다(쓰는 내용은 부른 때의 것이다).
+ */
 export class MemoryFileStore implements FileStore {
   readonly files = new Map<string, string>();
   readonly unreadable = new Set<string>();
+  /** 성공한 쓰기. */
   readonly writes: string[] = [];
+  /** 실패한 것까지 모든 쓰기 시도. */
+  readonly writeAttempts: string[] = [];
+  writeGate: Promise<void> | null = null;
   failWrites = false;
   failCopy = false;
   failRename = false;
@@ -16,6 +23,9 @@ export class MemoryFileStore implements FileStore {
   }
 
   async writeAtomic(name: string, text: string): Promise<void> {
+    this.writeAttempts.push(name);
+    if (this.writeGate)
+      await this.writeGate;
     if (this.failWrites)
       throw new FileAccessError(`${name}을 쓰지 못했어요`);
     this.files.set(name, text);
