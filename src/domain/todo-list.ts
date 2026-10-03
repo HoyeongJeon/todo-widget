@@ -83,6 +83,24 @@ export class TodoList {
     return true;
   }
 
+  /** 할 일 섹션: 하는 중이 위, 할 일이 아래. 각각 만든 시각이 오래된 것이 위 (LIST-02, LIST-03). */
+  todoSection(): TodoItem[] {
+    const byCreated = (status: TodoStatus): TodoItem[] =>
+      this.#items.filter((item) => item.status === status).sort((a, b) => a.createdAt.compare(b.createdAt));
+    return [...byCreated('doing'), ...byCreated('todo')];
+  }
+
+  /** 끝낸 일 섹션: 최근에 끝낸 것이 위, 끝낸 시각이 없는 것은 맨 아래 (LIST-04, LIST-05). */
+  doneSection(): TodoItem[] {
+    return this.#items
+      .filter((item) => item.status === 'done')
+      .sort((a, b) => {
+        if (!a.completedAt || !b.completedAt)
+          return (a.completedAt ? 0 : 1) - (b.completedAt ? 0 : 1);
+        return b.completedAt.compare(a.completedAt);
+      });
+  }
+
   /** 같은 상태면 변경 없음. 끝낸 일이 되면 지금 시각을, 벗어나면 끝낸 시각을 지운다 (TASK-06~10). */
   #apply(item: TodoItem, status: TodoStatus): boolean {
     if (item.status === status)
