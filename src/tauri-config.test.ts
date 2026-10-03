@@ -23,10 +23,10 @@ const NETWORK_CRATES = [
 
 const DEPENDENCY_SECTION =
   /^\[\s*(?:target\.(?:'[^']*'|"[^"]*"|[^.\]]+)\.)?dependencies(?:\.(?:"([^"]+)"|([A-Za-z0-9_-]+)))?\s*\]$/;
-const DEPENDENCY_KEY = /^(?:"([^"]+)"|([A-Za-z0-9_-]+))\s*[.=]/;
-const RENAMED_PACKAGE = /\bpackage\s*=\s*"([^"]+)"/;
+const DEPENDENCY_KEY = /^(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*[.=]/;
+const RENAMED_PACKAGE = /\bpackage\s*=\s*(?:"([^"]+)"|'([^']+)')/;
 
-/** [dependencies]와 [target.*.dependencies]에 적힌 crate 이름을 줄 단위로 모은다. package = "..."로 바꾼 이름도 본다. */
+/** [dependencies]와 [target.*.dependencies]에 적힌 crate 이름을 줄 단위로 모은다. package = "..."(또는 '...')로 바꾼 이름도 본다. */
 function dependencyNames(toml: string): string[] {
   const names: string[] = [];
   let inDependencies = false;
@@ -46,10 +46,11 @@ function dependencyNames(toml: string): string[] {
       continue;
     const key = inOneCrateTable ? null : DEPENDENCY_KEY.exec(line);
     if (key)
-      names.push(key[1] ?? key[2] ?? '');
+      names.push(key[1] ?? key[2] ?? key[3] ?? '');
     const renamed = RENAMED_PACKAGE.exec(line);
-    if (renamed?.[1])
-      names.push(renamed[1]);
+    const renamedTo = renamed?.[1] ?? renamed?.[2];
+    if (renamedTo)
+      names.push(renamedTo);
   }
   return names;
 }
@@ -64,7 +65,7 @@ describe('Tauri 설정', () => {
     expect(config.bundle.macOS.signingIdentity).toBe('-');
   });
 
-  it('창은 테두리 없이 숨긴 채 시작하고 작업 표시줄에 나오지 않는다', () => {
+  it('WIN-02 창은 테두리 없이 숨긴 채 시작하고 작업 표시줄에 나오지 않는다', () => {
     expect(mainWindow).toMatchObject({
       decorations: false,
       visible: false,
@@ -96,9 +97,11 @@ describe('Tauri 설정', () => {
       'net = { package = "ureq", version = "2" } # 이름을 바꿔도 찾는다',
       '[target.\'cfg(windows)\'.dependencies]',
       'hyper.version = "1"',
+      '\'isahc\' = "1"',
+      'web = { package = \'surf\' }',
       '[target."cfg(unix)".dependencies.reqwest]',
       'version = "0.12"',
     ].join('\n');
-    expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'reqwest']);
+    expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'isahc', 'web', 'surf', 'reqwest']);
   });
 });
