@@ -94,9 +94,10 @@ export class TodoSession {
   async #commit(changed: boolean): Promise<boolean> {
     if (!changed)
       return false;
+    const saved = this.#queue.catch(() => undefined).then(() => this.#persist());
+    this.#queue = saved;
     this.#notify();
-    this.#queue = this.#queue.catch(() => undefined).then(() => this.#persist());
-    await this.#queue;
+    await saved;
     return true;
   }
 
@@ -125,8 +126,14 @@ export class TodoSession {
     this.#notify();
   }
 
+  /** 화면 쪽 오류가 저장이나 다른 알림을 막지 않게 한다. */
   #notify(): void {
-    for (const listener of this.#listeners)
-      listener();
+    for (const listener of this.#listeners) {
+      try {
+        listener();
+      } catch {
+        // 화면이 다음 알림 때 다시 그린다. 저장 상태에는 영향이 없다.
+      }
+    }
   }
 }

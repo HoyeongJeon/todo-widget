@@ -13,6 +13,19 @@ async function open(): Promise<SettingsService> {
   return SettingsService.open(new SettingsRepository(files));
 }
 
+/** 첫 번째 쓰기만 늦게 끝나는 데이터 폴더. 저장이 차례로 되는지 보려고 쓴다. */
+class SlowFirstWriteStore extends MemoryFileStore {
+  #first = true;
+
+  override async writeAtomic(name: string, text: string): Promise<void> {
+    if (this.#first) {
+      this.#first = false;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await super.writeAtomic(name, text);
+  }
+}
+
 function saved(): Record<string, unknown> {
   return JSON.parse(files.files.get(SETTINGS_FILE) ?? 'null');
 }
@@ -83,5 +96,22 @@ describe('설정 서비스', () => {
     expect(await repo.exists()).toBe(false);
     files.files.set(SETTINGS_FILE, '{}');
     expect(await repo.exists()).toBe(true);
+  });
+
+  it('WND-14 기다리지 않고 연달아 바꿔도 저장은 차례로 해서 마지막 설정이 남는다', async () => {
+    files = new SlowFirstWriteStore();
+    const service = await open();
+    const first = service.update({ left: 1 });
+    const second = service.update({ left: 2, pinned: false });
+    await Promise.all([first, second]);
+    expect(saved()).toMatchObject({ left: 2, pinned: false });
+  });
+
+  it('stage는 값이 undefined인 항목을 무시한다', async () => {
+    const service = await open();
+    service.stage({ pinned: undefined, left: 3 });
+    expect(service.current).toMatchObject({ pinned: true, left: 3 });
+    await service.save();
+    expect(saved()).toMatchObject({ pinned: true, left: 3 });
   });
 });

@@ -74,6 +74,18 @@ describe('저장', () => {
     await session.add('택배');
     expect(calls).toBe(before);
   });
+
+  it('STORE-01 화면 알림에서 오류가 나도 저장하고 다른 알림도 받는다', async () => {
+    const session = await open();
+    let calls = 0;
+    session.onChange(() => {
+      throw new Error('화면 오류');
+    });
+    session.onChange(() => calls++);
+    expect(await session.add('보고서')).toBe(true);
+    expect(savedTitles()).toEqual(['보고서']);
+    expect(calls).toBeGreaterThan(0);
+  });
 });
 
 describe('저장 실패와 파일 문제', () => {
