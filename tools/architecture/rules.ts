@@ -1,6 +1,10 @@
 import { posix } from 'node:path';
 
-export type Layer = 'domain' | 'application' | 'presentation' | 'adapters' | 'root';
+/**
+ * `testing`은 `src/testing/`의 테스트용 가짜다. 테스트 파일(*.test.ts, collectSources가 뺀다)만 가져올 수 있고,
+ * 제품 코드는 composition root(src/main.ts)까지 어느 층도 가져올 수 없다.
+ */
+export type Layer = 'domain' | 'application' | 'presentation' | 'adapters' | 'testing' | 'root';
 
 export interface SourceFile {
   path: string;
@@ -26,6 +30,7 @@ const ALLOWED_IMPORTS: Readonly<Record<Layer, readonly Layer[]>> = {
   application: ['domain', 'application'],
   presentation: ['domain', 'application', 'presentation'],
   adapters: ['domain', 'application', 'adapters'],
+  testing: ['domain', 'application', 'testing'],
   root: ['domain', 'application', 'presentation', 'adapters', 'root'],
 };
 
@@ -34,7 +39,7 @@ const IMPORT_PATTERN =
 const NETWORK_PATTERN = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|@tauri-apps\/plugin-(?:http|websocket|upload)/g;
 
 export function layerOf(path: string): Layer {
-  const match = /^src\/(domain|application|presentation|adapters)\//.exec(path);
+  const match = /^src\/(domain|application|presentation|adapters|testing)\//.exec(path);
   return match ? (match[1] as Layer) : 'root';
 }
 
@@ -72,6 +77,10 @@ function importViolations(file: SourceFile): Violation[] {
     if (!target.startsWith('src/'))
       continue;
     const to = layerOf(target);
+    if (to === 'testing' && from !== 'testing') {
+      violations.push({ path: file.path, line, message: `${from} 층은 테스트 전용 src/testing/(${specifier})을 가져올 수 없어요` });
+      continue;
+    }
     if (!ALLOWED_IMPORTS[from].includes(to))
       violations.push({ path: file.path, line, message: `${from} 층은 ${to} 층(${specifier})을 가져올 수 없어요` });
   }

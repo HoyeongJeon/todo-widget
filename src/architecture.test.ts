@@ -10,6 +10,7 @@ describe('층 구분', () => {
     expect(layerOf('src/domain/todo-list.ts')).toBe('domain');
     expect(layerOf('src/adapters/tauri/window.ts')).toBe('adapters');
     expect(layerOf('src/main.ts')).toBe('root');
+    expect(layerOf('src/testing/fake-clock.ts')).toBe('testing');
   });
 });
 
@@ -45,6 +46,32 @@ describe('의존 방향', () => {
   it('composition root(src/main.ts)는 모든 층을 가져올 수 있다', () => {
     const text = "import App from './presentation/App.svelte';\nimport { w } from './adapters/w.ts';";
     expect(checkArchitecture([file('src/main.ts', text)])).toEqual([]);
+  });
+
+  it('src/testing/의 가짜는 테스트 파일만 가져온다. composition root를 포함한 제품 코드는 가져올 수 없다', () => {
+    const violations = checkArchitecture([
+      file('src/main.ts', "import { FakeClock } from './testing/fake-clock.ts';"),
+      file('src/application/a.ts', "import { MemoryFileStore } from '../testing/memory-file-store.ts';"),
+      file('src/adapters/b.ts', "import { FakeTimer } from '../testing/fake-timer.ts';"),
+      file('src/presentation/c.ts', "import { FakeUpdater } from '../testing/fake-updater.ts';"),
+      file('src/domain/d.ts', "import { sequenceIds } from '../testing/sequence-ids.ts';"),
+    ]);
+    expect(violations.map((v) => v.message)).toEqual([
+      'root 층은 테스트 전용 src/testing/(./testing/fake-clock.ts)을 가져올 수 없어요',
+      'application 층은 테스트 전용 src/testing/(../testing/memory-file-store.ts)을 가져올 수 없어요',
+      'adapters 층은 테스트 전용 src/testing/(../testing/fake-timer.ts)을 가져올 수 없어요',
+      'presentation 층은 테스트 전용 src/testing/(../testing/fake-updater.ts)을 가져올 수 없어요',
+      'domain 층은 테스트 전용 src/testing/(../testing/sequence-ids.ts)을 가져올 수 없어요',
+    ]);
+  });
+
+  it('src/testing/의 가짜는 port를 구현하려고 domain·application과 다른 가짜를 가져올 수 있지만, adapters나 presentation은 안 된다', () => {
+    const ok = checkArchitecture([
+      file('src/testing/a.ts', "import type { FileStore } from '../application/ports/file-store.ts';\nimport { Timestamp } from '../domain/timestamp.ts';\nimport { FakeClock } from './fake-clock.ts';"),
+    ]);
+    const bad = checkArchitecture([file('src/testing/b.ts', "import { x } from '../adapters/x.ts';")]);
+    expect(ok).toEqual([]);
+    expect(bad.map((v) => v.message)).toEqual(['testing 층은 adapters 층(../adapters/x.ts)을 가져올 수 없어요']);
   });
 
   it('Tauri는 adapters와 src/main.ts에서만 쓴다', () => {

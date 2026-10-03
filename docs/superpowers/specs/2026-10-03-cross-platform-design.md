@@ -18,6 +18,7 @@
 - 2026-10-03: 12장 시작 시간 결과에 probe 측정의 한계(실행 파일 로딩과 화면 합성 제외)와 계획 5 체크리스트 최종 확인을 적고, Windows 자동 실행 결과를 "계획 4"로 바꿨다.
 - 2026-10-03: PM 결정 — 계획 2 측정 결과로 11장 숫자를 그대로 두고, REL-10(시험 빌드의 업데이트 확인 주소)을 더했다.
 - 2026-10-03: 계획 3 결과 — port 표를 실제 위치·이름으로 맞추고, 시계와 id 생성기는 domain이 쓰므로 domain에 둔다고 적었다. `FileSystem`은 `FileStore`로, `AppPaths`는 `FileStore`와 `resolveDataDir`로 대신했고, `Timer`를 더했다(5.1, 5.2).
+- 2026-10-03: 계획 3 최종 리뷰 — `src/testing/`을 테스트 파일만 가져오는 층으로 구조 테스트에 넣고, 저장 전 미리 보기 값은 ViewModel이 든다고 적었다(5.1). 5.3의 `addMany`를 실제 이름 `addLines`로 고쳤다.
 
 ## 1. 목적
 
@@ -152,7 +153,8 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 
 - 의존 방향과 네트워크 제한(PRIV-01)은 Vitest 구조 테스트(`src/architecture.test.ts`, 규칙은 `tools/architecture/`)로 막는다. 어기면 `pnpm test`와 CI가 실패한다. 별도 ESLint 규칙은 두지 않는다(개발 결정: 도구 하나로 충분하고, 규칙을 테스트로 읽을 수 있다).
 - ViewModel은 Svelte에 의존하지 않는다. View 프레임워크는 바꿀 수 있는 세부 사항이다.
-- 테스트용 가짜(port 구현)는 `src/testing/`에 둔다. 제품 코드는 import하지 않는다.
+- 테스트용 가짜(port 구현)는 `src/testing/`에 둔다. 테스트 파일(`*.test.ts`)만 가져오고, composition root(`src/main.ts`)를 포함한 제품 코드는 가져오지 않는다. 구조 테스트가 이것도 막는다.
+- 투명도 미리 보기(WND-12)처럼 아직 확정하지 않은 화면 값은 ViewModel이 들고 있다가, 메뉴를 닫을 때 `SettingsService.update()`로 확정한다. `SettingsService`는 확정된 설정만 들고 저장한다.
 
 ### 5.2 port
 
