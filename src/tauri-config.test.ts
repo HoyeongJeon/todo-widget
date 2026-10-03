@@ -22,7 +22,7 @@ const NETWORK_CRATES = [
 ];
 
 const DEPENDENCY_SECTION =
-  /^\[\s*(?:target\.(?:'[^']*'|"[^"]*"|[^.\]]+)\.)?dependencies(?:\.(?:"([^"]+)"|([A-Za-z0-9_-]+)))?\s*\]$/;
+  /^\[\s*(?:target\.(?:'[^']*'|"[^"]*"|[^.\]]+)\.)?dependencies(?:\.(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+)))?\s*\]$/;
 const DEPENDENCY_KEY = /^(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*[.=]/;
 const RENAMED_PACKAGE = /\bpackage\s*=\s*(?:"([^"]+)"|'([^']+)')/;
 
@@ -35,7 +35,7 @@ function dependencyNames(toml: string): string[] {
     const line = raw.replace(/#.*$/, '').trim();
     if (line.startsWith('[')) {
       const section = DEPENDENCY_SECTION.exec(line);
-      const tableName = section?.[1] ?? section?.[2];
+      const tableName = section?.[1] ?? section?.[2] ?? section?.[3];
       inDependencies = section !== null;
       inOneCrateTable = tableName !== undefined;
       if (tableName)
@@ -101,7 +101,11 @@ describe('Tauri 설정', () => {
       'web = { package = \'surf\' }',
       '[target."cfg(unix)".dependencies.reqwest]',
       'version = "0.12"',
+      '[dependencies.\'reqwest\']',
+      'version = "0.12"',
+      '[target.\'cfg(unix)\'.dependencies.\'reqwest\']',
+      'version = "0.12"',
     ].join('\n');
-    expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'isahc', 'web', 'surf', 'reqwest']);
+    expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'isahc', 'web', 'surf', 'reqwest', 'reqwest', 'reqwest']);
   });
 });

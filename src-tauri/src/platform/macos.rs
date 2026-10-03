@@ -41,6 +41,10 @@ pub fn set_full_screen_auxiliary(window: &WebviewWindow, pinned: bool) {
     let address = pointer as usize;
     let _ = window.run_on_main_thread(move || {
         // SAFETY: Tauri가 준 NSWindow 포인터이고, 메인 스레드에서만 쓴다.
+        // 포인터가 살아 있는 이유: 지금 부르는 쪽(setup, set_pinned command)은 모두 메인 스레드에서 돌므로
+        // run_on_main_thread가 이 closure를 그 자리에서 동기로 실행하고, 그동안 `window`를 빌려 쥐고 있어
+        // NSWindow가 풀리지 않는다. 부르는 쪽이 async(다른 스레드)로 바뀌면 closure가 나중에 돌 수 있으므로
+        // 그때는 포인터를 retain(예: Retained<NSWindow>)해서 넘겨야 한다.
         let ns_window: &NSWindow = unsafe { &*(address as *const NSWindow) };
         let mut behavior = ns_window.collectionBehavior() | NSWindowCollectionBehavior::CanJoinAllSpaces;
         if pinned {

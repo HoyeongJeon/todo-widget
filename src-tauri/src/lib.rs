@@ -50,6 +50,7 @@ pub fn run() {
                     platform::macos::set_full_screen_auxiliary(&window, true);
                 }
             }
+            let _ = app;
             Ok(())
         })
         .build(tauri::generate_context!())
