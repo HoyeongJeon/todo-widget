@@ -98,7 +98,9 @@ describe('상태', () => {
     const id = only().id;
     list.setStatus(id, 'done');
     clock.advance(60 * 60 * 1000);
+    const before = list.items;
     expect(list.setStatus(id, 'done')).toBe(false);
+    expect(list.items).toBe(before);
     expect(only().completedAt?.format()).toBe('2026-10-03T09:00:00+09:00');
   });
 
@@ -109,7 +111,9 @@ describe('상태', () => {
     expect(only().status).toBe('done');
     expect(list.setStatus(id, 'doing')).toBe(true);
     expect(only().status).toBe('doing');
+    const before = list.items;
     expect(list.setStatus(id, 'doing')).toBe(false);
+    expect(list.items).toBe(before);
   });
 });
 
@@ -119,12 +123,16 @@ describe('이름 바꾸기, 삭제, 모두 지우기', () => {
     const id = only().id;
     expect(list.rename(id, '  보고서\n초안  ')).toBe(true);
     expect(only().title).toBe('보고서 초안');
+    const before = list.items;
     expect(list.rename(id, '  보고서 초안 ')).toBe(false);
+    expect(list.items).toBe(before);
   });
 
   it('TASK-12 빈 제목으로는 이름을 바꿀 수 없다', () => {
     list.add('초안');
+    const before = list.items;
     expect(list.rename(only().id, '   ')).toBe(false);
+    expect(list.items).toBe(before);
     expect(only().title).toBe('초안');
   });
 
@@ -145,7 +153,9 @@ describe('이름 바꾸기, 삭제, 모두 지우기', () => {
     list.setStatus(b!, 'done');
     expect(list.clear()).toBe(true);
     expect(list.items).toEqual([]);
+    const before = list.items;
     expect(list.clear()).toBe(false);
+    expect(list.items).toBe(before);
   });
 
   it('TASK-15 없는 id로 조작하면 아무것도 바뀌지 않는다', () => {

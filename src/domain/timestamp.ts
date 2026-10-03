@@ -18,13 +18,13 @@ export class Timestamp {
     return new Timestamp(Math.floor(epochMs / 1000), offsetMinutes || 0);
   }
 
-  /** `2026-10-03T15:00:00+02:00` 형식만 읽는다. 아니면 null (STORE-05). */
+  /** `2026-10-03T15:00:00+02:00` 형식만 읽는다. 아니면 null. `-00:00`은 오프셋 0으로 읽는다 (STORE-05). */
   static parse(text: string): Timestamp | null {
     const match = ISO.exec(text);
     if (!match)
       return null;
     const offsetMinutesPart = Number(match[9]);
-    const offset = (match[7] === '-' ? -1 : 1) * (Number(match[8]) * 60 + offsetMinutesPart);
+    const offset = (match[7] === '-' ? -1 : 1) * (Number(match[8]) * 60 + offsetMinutesPart) || 0;
     if (offsetMinutesPart >= 60 || Math.abs(offset) > MAX_OFFSET_MINUTES)
       return null;
     const local = localSeconds(match);

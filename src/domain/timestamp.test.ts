@@ -19,6 +19,12 @@ describe('Timestamp', () => {
     expect(Object.is(Timestamp.fromEpochMs(0, -0).offsetMinutes, 0)).toBe(true);
   });
 
+  it('STORE-05 -00:00으로 쓴 시각은 오프셋 0으로 읽는다', () => {
+    const read = Timestamp.parse('2026-10-03T09:00:00-00:00');
+    expect(Object.is(read?.offsetMinutes, 0)).toBe(true);
+    expect(read?.format()).toBe('2026-10-03T09:00:00+00:00');
+  });
+
   it('STORE-05 쓴 시각을 다시 읽으면 같은 시점과 같은 시간대다', () => {
     const original = Timestamp.fromEpochMs(Date.UTC(2026, 9, 3, 13, 0, 0), -330);
     const read = Timestamp.parse(original.format());
