@@ -17,6 +17,7 @@
 - 2026-10-03: 12장 표에 계획 2 Mac 위험 확인 결과 칸을 더했다. macOS 크기 조절은 tao가 지원하지 않아 계획 4에서 직접 만든다.
 - 2026-10-03: 12장 시작 시간 결과에 probe 측정의 한계(실행 파일 로딩과 화면 합성 제외)와 계획 5 체크리스트 최종 확인을 적고, Windows 자동 실행 결과를 "계획 4"로 바꿨다.
 - 2026-10-03: PM 결정 — 계획 2 측정 결과로 11장 숫자를 그대로 두고, REL-10(시험 빌드의 업데이트 확인 주소)을 더했다.
+- 2026-10-03: 계획 3 결과 — port 표를 실제 위치·이름으로 맞추고, 시계와 id 생성기는 domain이 쓰므로 domain에 둔다고 적었다. `FileSystem`은 `FileStore`로, `AppPaths`는 `FileStore`와 `resolveDataDir`로 대신했고, `Timer`를 더했다(5.1, 5.2).
 
 ## 1. 목적
 
@@ -151,23 +152,27 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 
 - 의존 방향과 네트워크 제한(PRIV-01)은 Vitest 구조 테스트(`src/architecture.test.ts`, 규칙은 `tools/architecture/`)로 막는다. 어기면 `pnpm test`와 CI가 실패한다. 별도 ESLint 규칙은 두지 않는다(개발 결정: 도구 하나로 충분하고, 규칙을 테스트로 읽을 수 있다).
 - ViewModel은 Svelte에 의존하지 않는다. View 프레임워크는 바꿀 수 있는 세부 사항이다.
+- 테스트용 가짜(port 구현)는 `src/testing/`에 둔다. 제품 코드는 import하지 않는다.
 
 ### 5.2 port
 
-| port | 하는 일 | 구현 |
-|---|---|---|
-| `Clock` | 현재 시각 | 시스템 시계 / 테스트용 고정 시계 |
-| `FileSystem` | 읽기, 안전한 쓰기(임시 파일 → flush → 교체), 이름 바꾸기, 존재 확인 | Rust 명령 / 메모리 구현 |
-| `AutoStart` | 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | Windows 레지스트리 / macOS 로그인 항목(SMAppService) / 가짜 |
-| `WindowController` | 위치, 크기, 맨 위 고정, 앞으로 가져오기, 모니터 영역 | Tauri 창 API / 가짜 |
-| `Updater` | 새 버전 확인, 받기, 설치 후 재시작 | Tauri updater plugin / 가짜 |
-| `LocaleProvider` | OS 언어 | Tauri / 가짜 |
-| `AppPaths` | 데이터 폴더 위치 | OS별 / 임시 폴더 |
-| `Dialog` | OS 메시지 상자(STORE-10의 "할 일 파일을 열 수 없어요") | Tauri dialog / 가짜 |
-| `AppInfo` | 빌드 종류(개발 빌드인지, START-07)와 앱 버전(업데이트 비교, UPD) | Tauri / 가짜 |
+| port | 하는 일 | 위치 | 구현 |
+|---|---|---|---|
+| `Clock` | 지금 시각(PC 시간대 포함) | `src/domain/clock.ts` | `src/adapters/system/clock.ts` / `FakeClock` |
+| `IdGenerator` | 할 일 id | `src/domain/ids.ts` | `src/adapters/system/ids.ts` / `sequenceIds` |
+| `FileStore` | 데이터 폴더 파일 읽기, 안전한 쓰기, 존재 확인, 이름 바꾸기, 복사 | `src/application/ports/file-store.ts` | 계획 4 Rust 명령 / `MemoryFileStore` |
+| `AutoStart` | 자동 실행 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | `src/application/ports/auto-start.ts` | 계획 4 Windows 레지스트리·macOS 로그인 항목 / `FakeAutoStart` |
+| `Updater` | latest.json 확인, 받아서 설치 | `src/application/ports/updater.ts` | 계획 4 Tauri updater plugin / `FakeUpdater` |
+| `Timer` | 나중에 한 번 실행 | `src/application/ports/timer.ts` | 계획 4 / `FakeTimer` |
+| `AppInfo` | 앱 버전, 개발 빌드 여부 | `src/application/ports/app-info.ts` | 계획 4 |
+| `WindowController` | 위치, 크기, 맨 위 고정, 앞으로 가져오기, 모니터 영역 | 계획 4에서 `src/application/ports/`로 옮김 | 계획 4 |
+| `LocaleProvider` | OS 언어 | 계획 4 | 계획 4 |
+| `Dialog` | OS 대화 상자 (STORE-10) | 계획 4·5 (시작 흐름은 `cannotOpen` 결과를 돌려주고, 대화 상자는 composition root가 띄운다) | 계획 4 |
 
 - 저장 형식, 깨진 파일 백업, v1.4 데이터 변환 같은 **판단**은 TypeScript가 하고, Rust는 디스크에 안전하게 쓰는 일만 한다.
 - 모든 의존은 constructor로 주입한다. 전역 singleton은 쓰지 않는다.
+- `Clock`과 `IdGenerator`는 domain 규칙(할 일 추가, 상태 바꾸기)이 직접 쓰므로 domain에 둔다. 나머지 port는 application에 둔다.
+- 따로 `AppPaths`는 두지 않는다. 데이터 폴더 위치는 `resolveDataDir`(`src/application/data-dir.ts`)가 정하고, `FileStore` 구현이 그 폴더 안의 파일만 다룬다.
 
 ### 5.3 OOP와 캡슐화
 
