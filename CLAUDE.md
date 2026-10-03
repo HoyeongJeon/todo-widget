@@ -26,6 +26,7 @@
 | 지금 동작의 기준 (요구사항 ID, 확인 방법) | `spec/README.md`에서 시작 |
 | 구현 계획과 로드맵 | `docs/superpowers/plans/2026-10-03-v2-spec-baseline.md` (전체 로드맵 포함) |
 | 계획 2 (뼈대와 위험 확인) | `docs/superpowers/plans/2026-10-03-v2-skeleton-and-risk-check.md` |
+| 계획 3 (할 일 규칙과 앱 흐름) | `docs/superpowers/plans/2026-10-03-v2-domain-and-application.md` |
 | 계획 2 위험 확인 결과 | `docs/superpowers/reports/2026-10-03-plan2-risk-check.md` |
 | v1.4 설계와 당시 결정 | `docs/superpowers/specs/2026-09-30-todo-widget-design.md` (v1.3 기준. v1.4의 투명도 슬라이더와 초기화는 빠져 있다) |
 | v1.4 구현 계획 | `docs/superpowers/plans/2026-09-30-todo-widget.md` |
