@@ -1,9 +1,11 @@
-//! macOS 전용: Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces, 전체 화면 위 표시, 로그인 항목.
-use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior};
+//! macOS 전용: Dock 숨김, 메뉴 막대 아이콘, 로그인 항목.
+//! 모든 Spaces 따라다니기(MAC-06)는 `tauri.conf.json`의 `visibleOnAllWorkspaces: true`가 창을 만들 때
+//! `CanJoinAllSpaces`를 켜서 한다. `FullScreenAuxiliary`는 켜지 않으므로 전체 화면 앱에서는
+//! 📌와 관계없이 보이지 않는다(MAC-07).
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    App, WebviewWindow,
+    App,
 };
 
 /// Dock과 Cmd+Tab에 나오지 않게 한다 (MAC-02).
@@ -33,27 +35,6 @@ pub fn install_tray(app: &App) -> tauri::Result<()> {
         })
         .build(app)?;
     Ok(())
-}
-
-/// 모든 Spaces에 따라다니고(MAC-06), 📌가 켜져 있으면 전체 화면 앱 위에도 뜬다(MAC-07).
-pub fn set_full_screen_auxiliary(window: &WebviewWindow, pinned: bool) {
-    let Ok(pointer) = window.ns_window() else { return };
-    let address = pointer as usize;
-    let _ = window.run_on_main_thread(move || {
-        // SAFETY: Tauri가 준 NSWindow 포인터이고, 메인 스레드에서만 쓴다.
-        // 포인터가 살아 있는 이유: 지금 부르는 쪽(setup, set_pinned command)은 모두 메인 스레드에서 돌므로
-        // run_on_main_thread가 이 closure를 그 자리에서 동기로 실행하고, 그동안 `window`를 빌려 쥐고 있어
-        // NSWindow가 풀리지 않는다. 부르는 쪽이 async(다른 스레드)로 바뀌면 closure가 나중에 돌 수 있으므로
-        // 그때는 포인터를 retain(예: Retained<NSWindow>)해서 넘겨야 한다.
-        let ns_window: &NSWindow = unsafe { &*(address as *const NSWindow) };
-        let mut behavior = ns_window.collectionBehavior() | NSWindowCollectionBehavior::CanJoinAllSpaces;
-        if pinned {
-            behavior |= NSWindowCollectionBehavior::FullScreenAuxiliary;
-        } else {
-            behavior &= !NSWindowCollectionBehavior::FullScreenAuxiliary;
-        }
-        ns_window.setCollectionBehavior(behavior);
-    });
 }
 
 /// 로그인 항목 시험 (계획 2 Task 7). action: "status" | "register" | "unregister".

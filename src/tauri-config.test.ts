@@ -83,7 +83,7 @@ describe('Tauri 설정', () => {
 
   it('PRIV-01 Rust 쪽은 업데이트 말고 네트워크 crate와 plugin을 쓰지 않는다', () => {
     const names = dependencyNames(cargoToml);
-    expect(names).toEqual(expect.arrayContaining(['tauri', 'serde', 'objc2-app-kit']));
+    expect(names).toEqual(expect.arrayContaining(['tauri', 'serde', 'objc2-service-management']));
     expect(names.filter((name) => NETWORK_CRATES.includes(name))).toEqual([]);
   });
 

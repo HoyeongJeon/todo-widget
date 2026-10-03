@@ -18,13 +18,11 @@ fn show_main(app: AppHandle, painted_at_ms: f64) {
     bring_to_front(&app);
 }
 
-/// 📌 맨 위 고정 (WND-09). macOS는 전체 화면 위 표시도 함께 바꾼다 (MAC-07).
+/// 📌 맨 위 고정 (WND-09). 맨 위 고정만 바꾼다. macOS 전체 화면 앱에서는 📌와 관계없이 보이지 않는다 (MAC-07).
 #[tauri::command]
 fn set_pinned(app: AppHandle, pinned: bool) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.set_always_on_top(pinned);
-        #[cfg(target_os = "macos")]
-        platform::macos::set_full_screen_auxiliary(&window, pinned);
     }
 }
 
@@ -46,9 +44,6 @@ pub fn run() {
             {
                 platform::macos::hide_from_dock(app);
                 platform::macos::install_tray(app)?;
-                if let Some(window) = app.get_webview_window("main") {
-                    platform::macos::set_full_screen_auxiliary(&window, true);
-                }
             }
             let _ = app;
             Ok(())
