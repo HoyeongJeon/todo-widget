@@ -225,3 +225,11 @@ CI의 `windows-probe` job이 만든 NSIS 설치 파일로 확인한다. 확인�
 6. **지우기**: 설정 → 앱에서 TodoWidget을 제거한다.
 
 결과는 이 보고서의 요약 표와 "PM 결정 필요" 1번 표에 Windows 값으로 더한다.
+
+## CI 첫 실행 (2026-10-03)
+
+- 커밋 `bd768e8`을 push했다. 실행 [37121186550](https://github.com/HoyeongJeon/windows-todo-widget/actions/runs/37121186550)(push), [37121189704](https://github.com/HoyeongJeon/windows-todo-widget/actions/runs/37121189704)(Windows 시험 설치 파일).
+- macOS 검사 통과(약 3분), Windows 검사 통과(약 4~5분). Windows 로그에 Rust 경고는 없었다.
+- Windows 시험 설치 파일(artifact `todowidget-windows-probe`, 1.15MB)이 만들어졌다. 2026-10-10까지 받을 수 있다.
+- GitHub가 `actions/checkout@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`가 Node 20 기반이라 곧 지원이 끝난다고 알렸다. 다음 계획에서 버전을 올린다.
+- 경고가 없으므로 `RUSTFLAGS=-D warnings`를 다음 계획에서 넣는다.

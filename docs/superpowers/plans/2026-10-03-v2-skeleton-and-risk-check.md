@@ -1495,3 +1495,11 @@ PM에게 보고서를 보여 주고 다음을 정한다:
 - `feat/cross-platform` 브랜치를 push해서 CI를 처음 돌릴지, 그리고 Windows 시험 설치 파일(workflow 수동 실행)을 만들어 PM이 Windows에서 같은 확인(투명 창, 시작 시간, 메모리, 한글 입력)을 할지
 
 push와 workflow 실행은 PM이 승인한 뒤에만 한다.
+
+---
+
+## 실행 기록 (2026-10-03)
+
+- subagent 방식으로 Task 1~8을 실행했다(모두 Opus). 각 Task 리뷰에서 나온 작은 수정은 다음 Task에 함께 넣었다.
+- Task 7의 눈으로 보는 확인과 로그인 항목 시험은 controller가 PM과 함께 했다. 결과와 PM 결정(전체 화면에서는 📌와 관계없이 숨김, PERF 숫자 유지, REL-10 추가, push)은 보고서 `docs/superpowers/reports/2026-10-03-plan2-risk-check.md`에 있다.
+- 다음 계획으로 넘기는 일은 보고서의 "다음 계획으로 넘기는 일" 표가 기록이다. 여기에 CI 첫 실행에서 나온 두 가지(Actions 버전 올리기, `RUSTFLAGS=-D warnings`)를 더한다.
