@@ -9,6 +9,7 @@
 - 2026-10-03: spec 형식을 '### ID 제목' 제목으로 정하고, prefix를 정리했다(창 WND, Windows WIN, 시작 START 추가).
 - 2026-10-03: macOS 자동 실행을 LaunchAgent 대신 로그인 항목(SMAppService)으로 바꿨다(5.2, 6장). 사용자가 시스템 설정에서 끈 것을 꺼짐으로 정확히 알 수 있고, 최소 macOS 13이 된다. 자세한 규칙은 `spec/platform/macos.md` MAC-08.
 - 2026-10-03: `spec/` 기준선을 v1.4 테스트·화면 동작과 대조해 보완했다(4.3). 이제 동작의 기준은 `spec/`이고, 이 문서는 설계 시점의 기록으로 남는다.
+- 2026-10-03: 최종 리뷰 결정을 반영했다. port에 `Dialog`, `AppInfo`를 더하고(5.2), OS별 Rust 파일에 자동 실행 등록을 넣고(5.4), 최소 macOS 13(2장), 안내 줄 정의(8장), 모니터마다의 화면 밖 판단(9장), 자동 실행 직접 구현과 ad-hoc 서명 위험(12장), 체크리스트 시간(10장)을 맞췄다.
 
 ## 1. 목적
 
@@ -24,7 +25,7 @@ Windows 전용 위젯(v1.4, C# WPF)을 **Windows와 macOS에서 똑같이 동작
 
 | 항목 | 결정 |
 |---|---|
-| 대상 OS | Windows 10/11 (x64), macOS (Apple Silicon + Intel). Linux는 제외 |
+| 대상 OS | Windows 10/11 (x64), macOS 13 이상 (Apple Silicon + Intel). Linux는 제외 |
 | 원칙 | 행동은 두 OS가 같게, 겉모양은 각 OS에 맞게 |
 | 기술 | Tauri v2 + TypeScript. Rust는 OS와 닿는 얇은 부분에만 쓴다. 화면은 Svelte |
 | 교체 방식 | Windows와 macOS를 v2.0으로 한 번에 교체한다. WPF 코드는 저장소에서 내린다 |
@@ -156,6 +157,8 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | `Updater` | 새 버전 확인, 받기, 설치 후 재시작 | Tauri updater plugin / 가짜 |
 | `LocaleProvider` | OS 언어 | Tauri / 가짜 |
 | `AppPaths` | 데이터 폴더 위치 | OS별 / 임시 폴더 |
+| `Dialog` | OS 메시지 상자(STORE-10의 "할 일 파일을 열 수 없어요") | Tauri dialog / 가짜 |
+| `AppInfo` | 빌드 종류(개발 빌드인지, START-07)와 앱 버전(업데이트 비교, UPD) | Tauri / 가짜 |
 
 - 저장 형식, 깨진 파일 백업, v1.4 데이터 변환 같은 **판단**은 TypeScript가 하고, Rust는 디스크에 안전하게 쓰는 일만 한다.
 - 모든 의존은 constructor로 주입한다. 전역 singleton은 쓰지 않는다.
@@ -173,8 +176,8 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | 위치 | 내용 |
 |---|---|
 | `src/adapters/` 중 OS별 파일 | 자동 실행, 데이터 폴더 경로 |
-| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, 모든 Spaces 따라다니기, 📌일 때 전체 화면 위 표시 |
-| `src-tauri/src/platform/windows.rs` | 작업 표시줄 숨김 |
+| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, 모든 Spaces 따라다니기, 📌일 때 전체 화면 위 표시, 로그인 항목(SMAppService) 등록·해제·상태 읽기 |
+| `src-tauri/src/platform/windows.rs` | 작업 표시줄 숨김, 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기 |
 | `src/presentation/theme/` | OS·언어별 글꼴과 겉모양 (CSS 변수) |
 
 ### 5.5 테스트
@@ -232,7 +235,7 @@ Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 
 
 - 출시할 때 GitHub Release에 설치 파일과 함께 `latest.json`(최신 버전 번호와 파일 주소)을 올린다.
 - 위젯은 켤 때 한 번, 떠 있는 동안 하루 한 번 `latest.json`을 읽는다. 마지막 확인 시각은 `settings.json`에 둔다.
-- 새 버전이 있으면 위젯 하단에 "새 버전이 있어요 · 업데이트"를 한 줄로 표시한다. v1.4의 저장 실패 안내와 같은 자리, 같은 모양이다.
+- 새 버전이 있으면 위젯 하단의 안내 줄에 "새 버전이 있어요 · 업데이트"를 표시한다. 안내 줄은 한 번에 안내 하나를 보여 주는 줄이고, 글이 길면 두 줄까지 줄바꿈된다. v1.4의 저장 실패 안내와 같은 자리, 같은 모양이다.
 - 누르면 받아서 설치하고 위젯을 다시 띄운다. 누르지 않으면 지금 버전을 계속 쓴다.
 - 인터넷이 없거나 확인에 실패하면 조용히 넘어간다.
 - 업데이트 파일은 업데이트 전용 키로 서명한다. 서명이 맞지 않으면 설치하지 않는다.
@@ -247,7 +250,7 @@ Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 
 
 - **Windows는 v1.4와 같은 폴더를 쓴다.** 설치하고 켜면 기존 할 일이 그대로 보인다.
 - `settings.json`은 기존 항목을 유지하고 새 항목만 추가한다.
-- 저장된 창 위치가 화면 밖이면 기본 위치로 되돌리는 규칙이 그대로 적용된다.
+- 저장된 창 위치가 화면 밖이면 기본 위치로 되돌린다. v1.4는 모든 모니터를 감싼 사각형 하나로 판단했지만, v2.0은 모니터마다 헤더를 잡을 수 있는지 본다(`spec/behavior/window.md` WND-08).
 
 ### 9.1 시각 기록
 
@@ -311,7 +314,7 @@ v2.0이 v1.4 형식(배열, KST 시각)의 `tasks.json`을 처음 읽으면:
 
 **출시 절차**
 1. 버전 태그를 올리면 Windows 설치 파일(NSIS, x64), macOS dmg(universal), `latest.json`이 Release 초안으로 만들어진다.
-2. OS별 직접 확인 체크리스트를 진행한다. **Windows 확인은 PM이 한다.** 개발은 Mac에서 하므로 Windows 창을 직접 띄울 수 없다. macOS의 IME 입력 확인도 PM이 한다. 체크리스트는 10분 안에 끝나는 분량으로 만든다.
+2. OS별 직접 확인 체크리스트를 진행한다. **Windows 확인은 PM이 한다.** 개발은 Mac에서 하므로 Windows 창을 직접 띄울 수 없다. macOS의 IME 입력 확인도 PM이 한다. 체크리스트는 매 출시 묶음과 v2.0.0(또는 바뀐 부분) 묶음으로 나누고, OS 하나에 매 출시 15~20분, v2.0.0 전체 45~60분쯤 걸린다(`spec/release.md`).
 3. PM이 승인하면 공개한다.
 
 **버전**
@@ -351,7 +354,9 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 크기 조절, 헤더로 이동 |
 | macOS 메뉴 막대·Spaces | Dock 숨김, 모든 Spaces 따라다니기, 📌일 때 전체 화면 위 표시 |
 | IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 |
-| Windows 자동 실행 | 값 이름 `TodoWidget`을 그대로 쓰는지 (plugin 기본 이름이 다르면 직접 구현) |
+| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) |
+| macOS 자동 실행 | 로그인 항목(SMAppService)을 직접 구현한다. 켜기·끄기·상태 읽기와 켤 때마다 다시 등록하기가 실제 macOS에서 되는지 (MAC-08) |
+| macOS 자동 실행과 ad-hoc 서명 | ad-hoc 서명은 빌드마다 바뀐다. 그래서 업데이트할 때마다 로그인 항목이 "승인 필요"가 되거나 사라질 수 있고, 그러면 MAC-08이 자동 실행을 꺼짐으로 읽는다. 계획 2 초기 확인에서 두 빌드로 업데이트해 보고, 그렇다면 PM과 대응을 정한다 |
 | Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 |
 | 메모리 | 11장 기준 측정 |
 | macOS 업데이트 | 새 macOS가 나오면 투명 창(`macOSPrivateApi`)이 계속 동작하는지 |
