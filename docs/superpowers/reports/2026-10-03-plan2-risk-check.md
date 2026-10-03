@@ -176,7 +176,7 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 |---|---|---|
 | domain·application은 바깥 패키지 import를 허용 목록으로 막는다. 처음 목록은 비어 있다 | 계획 3 Task 1 (domain 코드보다 먼저) — 완료 (계획 3 Task 1) | 지금 구조 테스트는 층 사이 방향만 본다. domain 코드가 생기기 전에 막아야 고칠 코드가 없다 |
 | `src/` 제품 코드 전체에서 `node:` import를 막는다 | 계획 3 Task 1 — 완료 (계획 3 Task 1) | 제품 코드는 WebView에서 돈다. Node API는 쓸 수 없다 |
-| 제품 코드용 tsconfig(lib ES2022, types 없음, 테스트 제외)를 테스트·도구용과 나눈다 | 계획 3 Task 1 | 지금 `tsconfig.json`은 `src/` 전체에 Node 타입을 열어 둔다. 제품 코드가 Node API를 써도 타입 검사가 통과한다 |
+| 제품 코드용 tsconfig(lib ES2022, types 없음, 테스트 제외)를 테스트·도구용과 나눈다 | 계획 3 Task 1 — 완료 (계획 3 Task 2) | 지금 `tsconfig.json`은 `src/` 전체에 Node 타입을 열어 둔다. 제품 코드가 Node API를 써도 타입 검사가 통과한다 |
 | 구조 테스트의 정규식 한계(주석 안 따옴표, template literal 동적 import 등) | 계획 3 | 지금 규칙에는 충분하다. 규칙이 늘면 TypeScript compiler API로 바꿀지 다시 본다 |
 | 창 제어 port를 `src/application/ports/window-controller.ts`(`WindowController`)로 옮기고, adapter는 `satisfies`로 맞춘다 | 계획 4 | 지금 `src/presentation/window-controls.ts`는 계획 2 시험 화면용 임시 위치다 |
 | `ResizeEdge`에 North, NorthEast, NorthWest를 더한다 | 계획 4 | WND-03은 모든 가장자리와 모서리에서 크기를 바꾼다. 시험 화면에는 위쪽이 없다 |
