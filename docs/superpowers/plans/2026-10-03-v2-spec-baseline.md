@@ -17,7 +17,7 @@
 | # | 계획 | 결과물 |
 |---|---|---|
 | **1** | **spec 기준선 (이 문서)** | `spec/` 전체, `tools/spec-check/`, PM 승인 |
-| 2 | 뼈대와 위험 확인 | Tauri v2 + Svelte 뼈대, 층 의존 lint, GitHub Actions(Windows·macOS), WPF 코드 제거(v1.4.0 태그로 보존), 설계 문서 12장 초기 확인을 Mac에서 실제로 해 보고 보고 |
+| 2 | 뼈대와 위험 확인 | Tauri v2 + Svelte 뼈대, 층 의존 구조 테스트, GitHub Actions(Windows·macOS), WPF 코드 제거(v1.4.0 태그로 보존), 설계 문서 12장 초기 확인을 Mac에서 실제로 해 보고 보고 |
 | 3 | domain + application | 할 일 규칙, 섹션 높이 배분, 붙여넣기 해석, 저장 형식과 v1.4 변환, 시작 흐름, 업데이트 확인 흐름. 모두 가짜 port로 TDD |
 | 4 | adapters + platform | Rust 안전한 쓰기, 자동 실행, 두 번 실행 방지, 창 제어, macOS 메뉴 막대와 Spaces, 언어 감지, updater adapter |
 | 5 | presentation | ViewModel, Svelte 화면, OS별 테마, 4개 언어 사전 |

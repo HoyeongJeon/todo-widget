@@ -99,7 +99,7 @@ PM이 release 빌드를 직접 써 보고 확인했다.
 | 메뉴 막대 아이콘 | MAC-03, MAC-04 | 있다. 클릭·메뉴 된다 | 통과 (아이콘 모양은 계획 5) |
 | 다시 열기 | MAC-05 | 된다 | 통과 |
 | 모든 데스크톱 | MAC-06 | 된다. 따라온다기보다 같은 자리에 다시 생기는 느낌 | 통과 (macOS 동작 방식, PM 문제 없음) |
-| 전체 화면 위 | MAC-07 | 📌를 켜도 전체 화면 앱에서는 안 보인다 | spec과 다름 → PM 결정으로 spec을 바꾼다 (아래) |
+| 전체 화면 위 | MAC-07 | 📌를 켜도 전체 화면 앱에서는 안 보인다. PM이 본 빌드는 `3de2797`이다(`FullScreenAuxiliary`가 아직 있음). `6ce808e`에서 이 코드를 지웠으므로 계획 5에서 다시 본다 | spec과 다름 → PM 결정으로 spec을 바꾼다 (아래) |
 | 한글 입력 | INPUT-05, INPUT-06 | "보고서 쓰기" + 조합 중 Enter → 1개, 이어서 입력 된다 | 통과 |
 | 중국어 병음 | INPUT-06 | 你好 확정 + Enter → 1개 | 통과 |
 
@@ -134,7 +134,14 @@ PM 승인 뒤 진행했다(2026-10-03).
 
 ### 이미 정한 것
 
-- **전체 화면**: PM 결정(2026-10-03) — 전체 화면 앱에서는 📌와 관계없이 숨긴다. `spec/platform/macos.md` MAC-07, 설계 문서(2장, 3장, 5.4, 6장, 12장)를 바꿨고, 전체 화면 위 표시 코드(`FullScreenAuxiliary`)는 지웠다. 📌는 이제 맨 위 고정만 정한다.
+- **전체 화면**: PM 결정(2026-10-03) — 전체 화면 앱에서는 📌와 관계없이 숨긴다. 바꾼 곳은 이렇다.
+  - `spec/platform/macos.md`: MAC-07, 그리고 이에 맞춰 MAC-03·MAC-05와 한눈에 보기 표
+  - `spec/checklists/macos.md`: MAC-07 줄
+  - `spec/00-principles.md`: 다음 버전 후보에서 "전체 화면에서 비켜 주기"를 뺐다
+  - 설계 문서: 2장, 3장, 5.4, 6장, 12장
+  - 코드: 전체 화면 위 표시 코드(`FullScreenAuxiliary`)를 지웠다. 📌는 이제 맨 위 고정만 정한다.
+- **macOS 크기 조절**: tao가 macOS에서 끌어서 크기 조절을 지원하지 않는다. 계획 4에서 직접 만든다. WND-03은 그대로 둔다.
+- **그림자와 메뉴 막대 아이콘 모양**: 계획 5 디자인에서 v1.4에 맞춘다.
 
 ### 1. 가벼움 기준 숫자 (PERF) — 바꾸지 않기를 제안
 
@@ -158,3 +165,60 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 제안: "REL-10 시험 빌드는 빌드할 때 환경 변수 `TODOWIDGET_UPDATE_ENDPOINT`로 업데이트 확인 주소를 바꿀 수 있다. 출시 빌드는 이 변수를 쓰지 않는다(CI가 확인)."
 
 승인되면 `spec/release.md`에 REL-10으로 추가한다.
+
+## 다음 계획으로 넘기는 일
+
+계획 2 최종 리뷰에서 나온 일 가운데 이번에 하지 않은 것이다. 이 표가 기록이다.
+
+| 항목 | 계획 | 이유 |
+|---|---|---|
+| domain·application은 바깥 패키지 import를 허용 목록으로 막는다. 처음 목록은 비어 있다 | 계획 3 Task 1 (domain 코드보다 먼저) | 지금 구조 테스트는 층 사이 방향만 본다. domain 코드가 생기기 전에 막아야 고칠 코드가 없다 |
+| `src/` 제품 코드 전체에서 `node:` import를 막는다 | 계획 3 Task 1 | 제품 코드는 WebView에서 돈다. Node API는 쓸 수 없다 |
+| 제품 코드용 tsconfig(lib ES2022, types 없음, 테스트 제외)를 테스트·도구용과 나눈다 | 계획 3 Task 1 | 지금 `tsconfig.json`은 `src/` 전체에 Node 타입을 열어 둔다. 제품 코드가 Node API를 써도 타입 검사가 통과한다 |
+| 구조 테스트의 정규식 한계(주석 안 따옴표, template literal 동적 import 등) | 계획 3 | 지금 규칙에는 충분하다. 규칙이 늘면 TypeScript compiler API로 바꿀지 다시 본다 |
+| 창 제어 port를 `src/application/ports/window-controller.ts`(`WindowController`)로 옮기고, adapter는 `satisfies`로 맞춘다 | 계획 4 | 지금 `src/presentation/window-controls.ts`는 계획 2 시험 화면용 임시 위치다 |
+| `ResizeEdge`에 North, NorthEast, NorthWest를 더한다 | 계획 4 | WND-03은 모든 가장자리와 모서리에서 크기를 바꾼다. 시험 화면에는 위쪽이 없다 |
+| macOS 크기 조절을 직접 만든다. screenX/Y 기준으로 잰다. 위·왼쪽은 크기와 위치를 한 번에 바꾼다(Rust `setFrame` 권장. JS로 하면 capability `allow-set-size`·`allow-set-position`과 rAF) | 계획 4 | tao가 macOS에서 `drag_resize_window`를 지원하지 않는다(Step 5). 크기와 위치를 따로 바꾸면 창이 떨린다 |
+| 두 번 실행 방지 | 계획 4 | START-01, WIN-07. 아직 코드가 없다 |
+| `lib.rs`의 OS 분기를 `platform::setup`, `platform::on_run_event`로 옮긴다 | 계획 4 | OS별 코드는 정해진 위치에만 둔다(설계 문서 5.4) |
+| `tray-icon` feature는 macOS target에서만 켠다 | 계획 4 | Windows는 메뉴 막대 아이콘을 쓰지 않는다 |
+| `--probe-login-item`을 지운다 | 계획 4 (MAC-08 adapter를 만들 때) | 로그인 항목 시험(Step 6)용 임시 코드다 |
+| Rust 테스트가 tauri를 건드리면 Windows에서 `STATUS_ENTRYPOINT_NOT_FOUND`가 날 수 있다. 순수 로직은 tauri 없이 테스트한다 | 계획 4 | Windows CI에서 테스트 실행 파일이 뜨지 않을 수 있다 |
+| `show_main`이 3초 안에 오지 않으면 Rust가 창을 띄운다 | 계획 4 | JS가 실패하면 창이 숨은 채로 남는다 |
+| PRIV-01: updater 요청 내용을 테스트하고, `cargo tree -i reqwest` 경로가 updater 하나뿐인지 검사한다 | 계획 4 | updater가 들어오면 네트워크 crate가 생긴다. 다른 길로 들어오지 않았는지 봐야 한다 |
+| `rust-toolchain.toml`에 components(clippy, rustfmt)를 더하고 CI에 clippy·fmt 검사를 넣는다 | 계획 4 | 지금은 `profile = "minimal"`이라 둘 다 없다 |
+| 시험 화면(`App.svelte`, `window-controls.ts` 임시 위치 포함)을 실제 화면으로 바꾼다 | 계획 5 | 계획 2 위험 확인용 화면이다 |
+| 그림자와 메뉴 막대 아이콘 디자인을 v1.4 기준으로 맞춘다 | 계획 5 | 그림자가 잘 안 보였다(Step 5). 아이콘 모양은 아직 임시다 |
+| 헤더 끌기는 왼쪽 버튼만 받는다 | 계획 5 | 지금은 오른쪽 버튼으로 눌러도 창이 끌린다 |
+| 템플릿 아이콘 정리 | 계획 5 | 지금 메뉴 막대 아이콘은 기본 앱 아이콘을 template으로 쓴다 |
+| vite `server.watch.ignored: ['**/src-tauri/**']` | 계획 5 | 지금은 개발 서버가 `src-tauri` 아래 Rust 빌드 결과까지 감시한다 |
+| PERF-01, PERF-03을 실제 화면으로 다시 잰다. 최종 확인은 체크리스트 방식으로 한다 | 계획 5 | probe는 실행 파일 로딩을 빼서 실제보다 짧다. 지금은 빈 시험 화면으로 잰 값이다 |
+| MAC-03, MAC-05, MAC-07의 전체 화면 동작을 HEAD 빌드로 눈으로 다시 본다 | 계획 5 | PM은 `3de2797` 빌드로 봤다. 그 뒤 `6ce808e`에서 `FullScreenAuxiliary`를 지웠다 |
+| `probe.rs`(`TODOWIDGET_PROBE`)를 지우거나 기본 꺼진 cargo feature로 막는다. 출시 전 REL 체크리스트에 넣는다 | 계획 6 | 계획 2 측정용 코드다. 출시 빌드에 남기지 않는다 |
+| 쓰지 않는 crate-type(`staticlib`, `cdylib`) 정리를 검토한다 | 계획 6 | 둘은 모바일 빌드용이다. 데스크톱 앱에는 필요 없을 수 있다 |
+| 번들 아이콘 정리 | 계획 6 | Tauri 기본 아이콘 세트가 그대로 있다 |
+| CI에 `RUSTFLAGS=-D warnings`를 넣는다 | 첫 Windows CI 실행 뒤 | Windows에서만 나는 경고가 있는지 먼저 본다 |
+
+## Windows 확인 절차 (PM)
+
+CI의 `windows-probe` job이 만든 NSIS 설치 파일로 확인한다. 확인할 항목은 Step 5와 같다. 메뉴 막대 아이콘과 Spaces는 macOS 전용이라 뺀다.
+
+1. **설치**: artifact `todowidget-windows-probe`를 받아 `.exe`를 실행한다.
+2. **흰 화면 확인**: 설치 직후 처음 켤 때, 그리고 다시 켤 때 창이 흰색으로 번쩍이지 않는지 본다.
+3. **시작 시간 (PERF-01)**: 앱을 끈 뒤 명령 프롬프트(cmd)에서 아래를 실행한다.
+   ```
+   cmd /c "set TODOWIDGET_PROBE=1&& \"%LOCALAPPDATA%\Programs\TodoWidget\todo-widget.exe\" 2> %TEMP%\todowidget-probe.log"
+   ```
+   - 경로는 NSIS 사용자별 설치의 기본값이다. 다를 수 있다. 시작 메뉴에서 TodoWidget을 우클릭 → 파일 위치 열기 → 바로가기를 우클릭 → 파일 위치 열기로 실제 경로를 찾는다.
+   - 앱을 끈 뒤 `%TEMP%\todowidget-probe.log`를 메모장으로 열어 `probe: shown …ms` 값을 읽는다. 켤 때마다 파일을 새로 쓰므로 한 번 켤 때마다 읽는다. 10번 반복해 중앙값을 적는다.
+   - 이 값은 실행 파일 로딩을 빼고 잰다. 그래서 실제보다 조금 짧다.
+4. **메모리 (PERF-04)**: 켜고 1분쯤 가만히 둔다. 작업 관리자 → 세부 정보에서 `todo-widget.exe`와 그 아래 `msedgewebview2.exe` 프로세스들의 "메모리(활성 개인 작업 집합)"를 모두 더한다. 기준은 120MB 이하다.
+5. **눈으로 확인**:
+   - 투명한 둥근 카드 (WND-01), 투명도 슬라이더 (WND-13)
+   - 헤더 끌어 옮기기 (WND-02)
+   - 가장자리 크기 조절 (WND-03). Windows는 OS 기본 크기 조절을 쓰므로 되어야 한다
+   - 📌 맨 위 고정 (WND-09)
+   - 한글 입력: "보고서 쓰기" + 조합 중 Enter → 1개, 이어서 입력 (INPUT-05, INPUT-06)
+6. **지우기**: 설정 → 앱에서 TodoWidget을 제거한다.
+
+결과는 이 보고서의 요약 표와 "PM 결정 필요" 1번 표에 Windows 값으로 더한다.
