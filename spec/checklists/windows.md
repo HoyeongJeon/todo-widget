@@ -43,16 +43,16 @@
 ## Windows 전용
 
 - [ ] WIN-02 작업 표시줄과 트레이에 나오지 않는다 — 위젯을 띄운 채 작업 표시줄에 버튼이 없는지, 알림 영역(숨겨진 아이콘 표시 ^ 포함)에 아이콘이 없는지 본다
-- [ ] WIN-05 설치 파일은 관리자 권한 없이 사용자 폴더에 설치한다 — 설치 파일을 실행해 관리자 권한(UAC) 확인 창 없이 설치되는지, SmartScreen 경고를 "추가 정보" → "실행"으로 넘길 수 있는지, 시작 메뉴에 바로가기가 있는지 보고, 설정 → 앱 → 설치된 앱에서 제거한 뒤 `%APPDATA%\TodoWidget\`이 남아 있는지 본다
-- [ ] WIN-06 WebView2가 없으면 설치 파일이 함께 설치한다 — WebView2 런타임이 없는 Windows 10(새로 설치한 가상 머신 등)에서 설치 파일을 실행해 WebView2가 함께 설치되고 위젯이 뜨는지 본다
-- [ ] WIN-07 다시 실행하면 가려진 위젯이 앞으로 온다 — 위젯을 다른 창으로 가린 뒤 시작 메뉴와 바탕 화면 바로가기로 각각 다시 실행해 기존 위젯이 앞으로 오는지, 작업 관리자에 위젯 프로세스가 하나만 남는지 본다
+- [ ] WIN-05 설치 파일은 관리자 권한 없이 사용자 폴더에 설치한다 — 설치 파일을 실행해 관리자 권한(UAC) 확인 창 없이 설치되는지, SmartScreen 경고를 "추가 정보" → "실행"으로 넘길 수 있는지, 시작 메뉴에 바로가기가 있는지 보고, 설정 → 앱 → 설치된 앱(Windows 10은 설정 → 앱 → 앱 및 기능)에서 제거한 뒤 `%APPDATA%\TodoWidget\`이 남아 있는지, 레지스트리 편집기에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`에 `TodoWidget` 값이 없어졌는지 본다
+- [ ] WIN-06 WebView2가 없으면 설치 파일이 함께 설치한다 — v2.0.0 출시 때와 설치 파일 설정을 바꾼 출시 때만 한다. WebView2 런타임이 없는 Windows 10(새로 설치한 가상 머신 등)에서 설치 파일을 실행해 WebView2가 함께 설치되고 위젯이 뜨는지 본다
+- [ ] WIN-07 다시 실행하면 가려진 위젯이 앞으로 온다 — 위젯을 다른 창으로 가린 뒤 시작 메뉴의 바로가기로 다시 실행해 기존 위젯이 앞으로 오는지, 작업 관리자에 위젯 프로세스가 하나만 남는지 본다
 - [ ] WIN-08 글꼴은 맑은 고딕, Segoe UI, Microsoft YaHei다 — I18N-06을 확인하면서 한국어 화면은 맑은 고딕, 영어·독일어 화면은 Segoe UI, 중국어 간체 화면은 Microsoft YaHei로 보이는지 같은 글꼴로 쓴 메모장 글자와 비교해 본다
-- [ ] WIN-09 v1.4 데이터가 있는 PC에 설치하면 할 일이 그대로 보인다 — v1.4로 할 일·하는 중·끝낸 일을 몇 개씩 만들고 위치·크기·고정·투명도를 바꾼 뒤 자동 실행을 켠 채 v1.4를 종료한다. v2.0을 설치하고 켜서 할 일이 제목·상태·순서 그대로 보이는지, 창이 같은 위치·크기·고정·투명도로 뜨는지, `%APPDATA%\TodoWidget\`에 `tasks.v1-backup-....json`이 생겼는지 본다. 레지스트리 편집기에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `TodoWidget` 값이 v2.0 실행 파일 경로로 바뀌었는지 보고, 로그아웃했다가 다시 로그인해 v2.0만 뜨는지 본다
+- [ ] WIN-09 v1.4 데이터가 있는 PC에 설치하면 할 일이 그대로 보인다 — v2.0.0 출시 때와 설치 파일 설정을 바꾼 출시 때만 한다. v1.4로 할 일·하는 중·끝낸 일을 몇 개씩 만들고 위치·크기·고정·투명도를 바꾼 뒤 자동 실행을 켠 채 v1.4를 종료한다. v2.0을 설치하고 켜서 할 일이 제목·상태·순서 그대로 보이는지, 창이 같은 위치·크기·고정·투명도로 뜨는지, `%APPDATA%\TodoWidget\`에 `tasks.v1-backup-....json`이 생겼는지 본다. 레지스트리 편집기에서 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`의 `TodoWidget` 값이 v2.0 실행 파일 경로로 바뀌었는지 보고, 로그아웃했다가 다시 로그인해 v2.0만 뜨는지 본다
 
 ## 출시
 
 - [ ] REL-04 체크리스트를 마치고 PM이 승인해야 공개한다 — Release 초안의 설치 파일로 이 체크리스트와 다른 OS 체크리스트를 모두 마쳤는지, 맨 아래 확인 줄이 채워졌는지 보고, PM이 승인한 뒤에만 초안을 공개한다
-- [ ] REL-06 업데이트 서명 키는 잃어버리지 않게 보관한다 — GitHub 저장소 Settings → Secrets and variables → Actions에 `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`가 있는지, PM의 비밀번호 관리자에 개인 키와 비밀번호 백업 사본이 있는지, 저장소에 개인 키 파일이 올라가 있지 않은지 본다
+- [ ] REL-06 업데이트 서명 키는 잃어버리지 않게 보관한다 — GitHub 저장소 Settings → Secrets and variables → Actions에 `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`가 있는지, PM의 비밀번호 관리자에 개인 키와 비밀번호 백업 사본이 있는지(이 부분은 PM이 직접 확인한다), 저장소에 개인 키 파일이 올라가 있지 않은지 본다
 - [ ] REL-07 릴리스 안내에 설치와 교체 방법을 적는다 — Release 초안 본문과 README에 Windows SmartScreen("추가 정보" → "실행")과 macOS "그래도 열기" 방법이 있는지, v2.0.0이면 "기존 위젯을 먼저 종료하세요"와 v1.4로 되돌리는 법도 있는지 본다
 - [ ] REL-08 v2.0 출시 전에 저장소 이름을 `todo-widget`으로 바꾼다 — v2.0.0 출시 때만 본다. GitHub 저장소 주소가 `.../todo-widget`인지, 앱 설정의 업데이트 주소와 초안 `latest.json` 안의 파일 주소가 모두 새 이름을 가리키는지 본다
 

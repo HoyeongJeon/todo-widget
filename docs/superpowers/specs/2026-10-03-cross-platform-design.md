@@ -7,6 +7,7 @@
 **변경 이력**
 - 2026-10-03: 시각을 한국 표준시 고정 대신 각 PC의 시간대로 기록하도록 바꿨다(9장). 이에 따라 `tasks.json` 형식이 바뀌고, v1.4로 되돌리려면 백업 파일을 써야 한다.
 - 2026-10-03: spec 형식을 '### ID 제목' 제목으로 정하고, prefix를 정리했다(창 WND, Windows WIN, 시작 START 추가).
+- 2026-10-03: macOS 자동 실행을 LaunchAgent 대신 로그인 항목(SMAppService)으로 바꿨다(5.2, 6장). 사용자가 시스템 설정에서 끈 것을 꺼짐으로 정확히 알 수 있고, 최소 macOS 13이 된다. 자세한 규칙은 `spec/platform/macos.md` MAC-08.
 
 ## 1. 목적
 
@@ -149,7 +150,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 |---|---|---|
 | `Clock` | 현재 시각 | 시스템 시계 / 테스트용 고정 시계 |
 | `FileSystem` | 읽기, 안전한 쓰기(임시 파일 → flush → 교체), 이름 바꾸기, 존재 확인 | Rust 명령 / 메모리 구현 |
-| `AutoStart` | 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | Windows 레지스트리 / macOS LaunchAgent / 가짜 |
+| `AutoStart` | 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | Windows 레지스트리 / macOS 로그인 항목(SMAppService) / 가짜 |
 | `WindowController` | 위치, 크기, 맨 위 고정, 앞으로 가져오기, 모니터 영역 | Tauri 창 API / 가짜 |
 | `Updater` | 새 버전 확인, 받기, 설치 후 재시작 | Tauri updater plugin / 가짜 |
 | `LocaleProvider` | OS 언어 | Tauri / 가짜 |
@@ -194,7 +195,7 @@ Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 
 | 가려졌을 때 | 바로가기·시작 메뉴로 다시 실행하면 기존 위젯이 앞으로 | 메뉴 막대 아이콘 클릭. Spotlight로 다시 실행해도 같음 |
 | 종료 | ⋯ → 종료 | ⋯ → 종료, 메뉴 막대 아이콘 우클릭 → 종료 |
 | 데스크톱 전환 | 해당 없음 | 모든 Spaces에 따라다님. 📌 켜면 전체 화면 앱 위에도 뜸, 끄면 일반 창처럼 가려질 수 있음 |
-| 자동 실행 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, 값 이름 `TodoWidget` (v1.4와 같음) | 로그인 항목 (LaunchAgent) |
+| 자동 실행 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, 값 이름 `TodoWidget` (v1.4와 같음) | 로그인 항목(SMAppService) |
 | 처음 실행 | `settings.json`이 없으면 처음 실행 → 자동 실행 켬 | 같음 |
 | 두 번 실행 | 기존 위젯을 앞으로, 두 번째 프로세스는 종료 | 같음 |
 | 설치 위치 | 사용자 폴더 (관리자 권한 없음) | 응용 프로그램 폴더 |
