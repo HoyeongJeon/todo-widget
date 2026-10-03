@@ -33,6 +33,8 @@ export interface TaskLoad {
 export class TaskRepository {
   readonly #files: FileStore;
   readonly #clock: Clock;
+  /** v1 원본 백업을 이미 했다. 그 뒤로는 저장만 다시 시도한다 (STORE-12, STORE-13). */
+  #v1BackedUp = false;
 
   constructor(files: FileStore, clock: Clock) {
     this.#files = files;
@@ -71,7 +73,7 @@ export class TaskRepository {
     await this.#files.writeAtomic(TASKS_FILE, encodeTasks(items));
   }
 
-  /** v1.4 원본을 백업한 뒤 v2로 저장한다 (STORE-12, STORE-13의 다시 시도). 실패하면 FileAccessError. */
+  /** v1.4 원본을 백업한 뒤 v2로 저장한다 (STORE-12, STORE-13의 다시 시도). 백업은 한 번만 한다. 실패하면 FileAccessError. */
   async convert(items: readonly TodoItem[]): Promise<void> {
     await this.#backUpV1();
     await this.save(items);
@@ -96,7 +98,10 @@ export class TaskRepository {
   }
 
   async #backUpV1(): Promise<void> {
+    if (this.#v1BackedUp)
+      return;
     await this.#files.copy(TASKS_FILE, await this.#freeName(V1_BACKUP_PREFIX));
+    this.#v1BackedUp = true;
   }
 
   /** `prefix-yyyyMMdd-HHmmss.json`, 이미 있으면 `-2`, `-3`… (STORE-08, STORE-12). */

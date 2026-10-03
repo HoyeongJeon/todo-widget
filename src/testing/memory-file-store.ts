@@ -28,7 +28,7 @@ export class MemoryFileStore implements FileStore {
 
   async rename(from: string, to: string): Promise<void> {
     const text = this.files.get(from);
-    if (this.failRename || text === undefined)
+    if (this.failRename || text === undefined || this.files.has(to))
       throw new FileAccessError(`${from}의 이름을 바꾸지 못했어요`);
     this.files.delete(from);
     this.files.set(to, text);
@@ -36,7 +36,7 @@ export class MemoryFileStore implements FileStore {
 
   async copy(from: string, to: string): Promise<void> {
     const text = this.files.get(from);
-    if (this.failCopy || text === undefined)
+    if (this.failCopy || text === undefined || this.files.has(to))
       throw new FileAccessError(`${from}을 복사하지 못했어요`);
     this.files.set(to, text);
   }

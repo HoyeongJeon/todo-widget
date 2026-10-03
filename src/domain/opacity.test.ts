@@ -24,7 +24,7 @@ describe('배경 투명도', () => {
     expect(opacityFromPercent(-5)).toBe(1);
   });
 
-  it('WND-11 고른 %가 비정상이면 0%로 보고, 무한대는 40%로 제한한다', () => {
+  it('WND-11 고른 %가 NaN이나 -무한대면 0%, +무한대면 40%로 본다', () => {
     expect(opacityFromPercent(NaN)).toBe(1);
     expect(opacityFromPercent(Infinity)).toBe(0.6);
     expect(opacityFromPercent(-Infinity)).toBe(1);

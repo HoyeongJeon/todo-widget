@@ -95,6 +95,14 @@ describe('읽기', () => {
     expect(done?.completedAt).toBeNull();
   });
 
+  it('STORE-09 completedAt 필드가 아예 없는 항목은 끝낸 시각이 없는 것으로 받아들인다', () => {
+    const [todo] = itemsOf(v2({ ...validTask, completedAt: undefined }));
+    expect(todo?.completedAt).toBeNull();
+    const [done] = itemsOf(v2({ ...validTask, status: 'done', completedAt: undefined }));
+    expect(done?.status).toBe('done');
+    expect(done?.completedAt).toBeNull();
+  });
+
   it('STORE-12 v1.4 배열 형식은 한국 표준시로 읽고, v2로 쓰면 spec의 변환 결과와 같다', () => {
     const v1 = JSON.stringify([
       { id: 'a', title: '보고서 초안 쓰기', status: 'doing', createdAt: '2026-09-30 09:12:40', completedAt: null },

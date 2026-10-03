@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeClock, ts } from '../../testing/fake-clock.ts';
 import { MemoryFileStore } from '../../testing/memory-file-store.ts';
+import { FileAccessError } from '../ports/file-store.ts';
 import { CannotOpenError, TASKS_FILE, TaskRepository } from './task-repository.ts';
 import { encodeTasks } from './tasks-codec.ts';
 
@@ -62,7 +63,10 @@ describe('불러오기', () => {
   it('STORE-10 깨진 파일의 이름을 바꾸지 못하면 같은 방식으로 알리고 원본을 남긴다', async () => {
     files.files.set(TASKS_FILE, '{깨짐');
     files.failRename = true;
-    await expect(repo.load()).rejects.toBeInstanceOf(CannotOpenError);
+    const error = await repo.load().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(CannotOpenError);
+    expect((error as CannotOpenError).path).toBe('/data/tasks.json');
+    expect((error as CannotOpenError).detail).toContain('이름을 바꾸지 못했어요');
     expect(files.files.get(TASKS_FILE)).toBe('{깨짐');
   });
 
@@ -94,6 +98,8 @@ describe('불러오기', () => {
     const load = await repo.load();
     expect(load.notice).toBe('backup');
     expect([...files.files.keys()].some((k) => k.startsWith('tasks.v1-backup'))).toBe(false);
+    expect(files.files.has('tasks.broken-20261003-090000.json')).toBe(true);
+    expect(files.files.has(TASKS_FILE)).toBe(false);
   });
 
   it('STORE-12 백업은 했지만 변환한 내용을 저장하지 못하면 저장 실패로 시작한다', async () => {
@@ -121,6 +127,41 @@ describe('불러오기', () => {
     files.files.set(TASKS_FILE, newer);
     expect(await repo.load()).toEqual({ items: [], mode: 'readOnly', notice: 'newerFile', saveFailed: false });
     expect([...files.files.entries()]).toEqual([[TASKS_FILE, newer]]);
+  });
+});
+
+const v1Backups = (): string[] => [...files.files.keys()].filter((k) => k.startsWith('tasks.v1-backup'));
+
+describe('v1 변환 다시 시도', () => {
+  it('STORE-13 백업이 된 뒤에는 저장만 다시 시도하고 백업을 또 만들지 않는다', async () => {
+    files.files.set(TASKS_FILE, V1);
+    files.failCopy = true;
+    const load = await repo.load();
+    expect(load.mode).toBe('pendingConversion');
+
+    files.failCopy = false;
+    files.failWrites = true;
+    await expect(repo.convert(load.items)).rejects.toBeInstanceOf(FileAccessError);
+    await expect(repo.convert(load.items)).rejects.toBeInstanceOf(FileAccessError);
+    expect(v1Backups()).toEqual(['tasks.v1-backup-20261003-090000.json']);
+
+    files.failWrites = false;
+    await repo.convert(load.items);
+    expect(v1Backups()).toEqual(['tasks.v1-backup-20261003-090000.json']);
+    expect(files.files.get('tasks.v1-backup-20261003-090000.json')).toBe(V1);
+    expect(files.files.get(TASKS_FILE)).toBe(encodeTasks(load.items));
+  });
+
+  it('STORE-12 불러올 때 백업은 했지만 저장하지 못했으면 나중에 변환할 때 백업을 또 만들지 않는다', async () => {
+    files.files.set(TASKS_FILE, V1);
+    files.failWrites = true;
+    const load = await repo.load();
+    expect(load.saveFailed).toBe(true);
+
+    files.failWrites = false;
+    await repo.convert(load.items);
+    expect(v1Backups()).toEqual(['tasks.v1-backup-20261003-090000.json']);
+    expect(files.files.get(TASKS_FILE)).toBe(encodeTasks(load.items));
   });
 });
 
