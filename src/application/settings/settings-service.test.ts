@@ -90,6 +90,24 @@ describe('설정 서비스', () => {
     expect((await open()).current.pinned).toBe(true);
   });
 
+  it('STORE-15 읽지 못한 settings.json은 그 실행에서 덮어쓰지 않고, 바꾼 설정은 화면에만 적용한다', async () => {
+    files.files.set(SETTINGS_FILE, '{"pinned": false}');
+    files.unreadable.add(SETTINGS_FILE);
+    const settings = await open();
+    files.unreadable.delete(SETTINGS_FILE);
+    await settings.update({ opacity: 50 });
+    expect(settings.current.opacity).toBe(50);
+    expect(await settings.save()).toBe(false);
+    expect(files.writeAttempts).toEqual([]);
+    expect(files.files.get(SETTINGS_FILE)).toBe('{"pinned": false}');
+  });
+
+  it('STORE-15 객체가 아닌 깨진 settings.json은 읽은 것이므로 다음 저장 때 덮어쓴다', async () => {
+    files.files.set(SETTINGS_FILE, '깨진 내용');
+    expect(await (await open()).save()).toBe(true);
+    expect(saved()).toMatchObject({ pinned: true });
+  });
+
   it('exists는 settings.json이 있는지 알려 준다 (처음 실행 판단)', async () => {
     const repo = new SettingsRepository(files);
     expect(await repo.exists()).toBe(false);

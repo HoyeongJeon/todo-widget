@@ -3,14 +3,17 @@ import type { IdGenerator } from '../domain/ids.ts';
 import type { AppInfo } from './ports/app-info.ts';
 import type { AutoStart } from './ports/auto-start.ts';
 import type { FileStore } from './ports/file-store.ts';
+import type { Timer } from './ports/timer.ts';
 import { SettingsRepository } from './settings/settings-repository.ts';
 import { SettingsService } from './settings/settings-service.ts';
+import { RetryingFileStore } from './storage/read-retry.ts';
 import { CannotOpenError, TaskRepository } from './storage/task-repository.ts';
 import { TodoSession } from './todo-session.ts';
 
 export interface StartupDeps {
   files: FileStore;
   clock: Clock;
+  timer: Timer;
   newId: IdGenerator;
   autoStart: AutoStart;
   appInfo: AppInfo;
@@ -21,16 +24,17 @@ export type StartupResult =
   | { kind: 'ready'; session: TodoSession; settings: SettingsService };
 
 /**
- * 할 일을 먼저 읽는다. 읽지 못하면 자동 실행과 첫 설정 파일을 건드리지 않고 멈춘다(STORE-10).
+ * 읽기에 실패하면 잠깐 다시 읽는다(STORE-20). 할 일을 먼저 읽는다. 읽지 못하면 자동 실행과 첫 설정 파일을 건드리지 않고 멈춘다(STORE-10).
  * 그다음 자동 실행(START-02, START-03, START-07)과 첫 설정 파일(START-02). 이 둘의 실패는 조용히 넘어간다(START-06).
  */
 export async function startApp(deps: StartupDeps): Promise<StartupResult> {
-  const settingsRepo = new SettingsRepository(deps.files);
+  const files = new RetryingFileStore(deps.files, deps.timer);
+  const settingsRepo = new SettingsRepository(files);
   const firstRun = !(await settingsRepo.exists());
 
   let session: TodoSession;
   try {
-    session = await TodoSession.open(new TaskRepository(deps.files, deps.clock), deps.clock, deps.newId);
+    session = await TodoSession.open(new TaskRepository(files, deps.clock), deps.clock, deps.newId);
   } catch (error) {
     if (error instanceof CannotOpenError)
       return { kind: 'cannotOpen', path: error.path, detail: error.detail };

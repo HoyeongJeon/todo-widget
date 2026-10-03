@@ -7,6 +7,10 @@ import { FileAccessError, type FileStore } from '../application/ports/file-store
 export class MemoryFileStore implements FileStore {
   readonly files = new Map<string, string>();
   readonly unreadable = new Set<string>();
+  /** 이름마다 남은 횟수만큼 읽기가 실패한 뒤 성공한다. 잠깐 잠긴 파일이다. */
+  readonly readFailures = new Map<string, number>();
+  /** 실패한 것까지 모든 읽기 시도. */
+  readonly readAttempts: string[] = [];
   /** 성공한 쓰기. */
   readonly writes: string[] = [];
   /** 실패한 것까지 모든 쓰기 시도. */
@@ -17,7 +21,11 @@ export class MemoryFileStore implements FileStore {
   failRename = false;
 
   async read(name: string): Promise<string | null> {
-    if (this.unreadable.has(name))
+    this.readAttempts.push(name);
+    const failuresLeft = this.readFailures.get(name) ?? 0;
+    if (failuresLeft > 0)
+      this.readFailures.set(name, failuresLeft - 1);
+    if (this.unreadable.has(name) || failuresLeft > 0)
       throw new FileAccessError(`${name}을 읽지 못했어요 (잠김)`);
     return this.files.get(name) ?? null;
   }

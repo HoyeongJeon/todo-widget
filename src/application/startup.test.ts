@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeAutoStart } from '../testing/fake-auto-start.ts';
 import { FakeClock } from '../testing/fake-clock.ts';
+import { ImmediateTimer } from '../testing/immediate-timer.ts';
 import { MemoryFileStore } from '../testing/memory-file-store.ts';
 import { sequenceIds } from '../testing/sequence-ids.ts';
 import { FileAccessError } from './ports/file-store.ts';
@@ -26,7 +27,7 @@ beforeEach(() => {
 });
 
 function start(isDevBuild = false): Promise<StartupResult> {
-  return startApp({ files, clock: new FakeClock(), newId: sequenceIds(), autoStart, appInfo: { version: '2.0.0', isDevBuild } });
+  return startApp({ files, clock: new FakeClock(), timer: new ImmediateTimer(), newId: sequenceIds(), autoStart, appInfo: { version: '2.0.0', isDevBuild } });
 }
 
 describe('시작', () => {
@@ -77,6 +78,27 @@ describe('시작', () => {
     expect(result).toEqual({ kind: 'cannotOpen', path: '/data/tasks.json', detail: expect.stringContaining('읽지 못했어요') });
     expect(autoStart.calls).toEqual([]);
     expect(files.files.has(SETTINGS_FILE)).toBe(false);
+  });
+
+  it('STORE-20 켤 때 tasks.json과 settings.json이 잠깐 잠겨 있어도 다시 읽어서 평소처럼 뜬다', async () => {
+    files.files.set(TASKS_FILE, '{"version":2,"tasks":[{"id":"a","title":"보고서","status":"todo","createdAt":"2026-10-03T09:00:00+09:00","completedAt":null}]}');
+    files.files.set(SETTINGS_FILE, '{"pinned": false}');
+    files.readFailures.set(TASKS_FILE, 3);
+    files.readFailures.set(SETTINGS_FILE, 3);
+    const result = await start();
+    if (result.kind !== 'ready')
+      throw new Error('준비되지 않았어요');
+    expect(result.session.items.map((i) => i.title)).toEqual(['보고서']);
+    expect(result.settings.current.pinned).toBe(false);
+    await result.settings.update({ opacity: 50 });
+    expect(JSON.parse(files.files.get(SETTINGS_FILE) ?? '')).toMatchObject({ pinned: false, opacity: 50 });
+  });
+
+  it('STORE-10 STORE-20 다시 읽어도 tasks.json을 읽지 못해야 위젯을 띄우지 않는다', async () => {
+    files.files.set(TASKS_FILE, '{"version":2,"tasks":[]}');
+    files.unreadable.add(TASKS_FILE);
+    expect((await start()).kind).toBe('cannotOpen');
+    expect(files.readAttempts.filter((name) => name === TASKS_FILE)).toHaveLength(4);
   });
 
   it('준비되면 할 일 세션과 설정을 돌려준다', async () => {

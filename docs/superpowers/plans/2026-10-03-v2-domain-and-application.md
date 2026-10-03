@@ -3985,6 +3985,7 @@ git commit -m "docs: 계획 3 결과를 설계 문서 port 표와 문서 지도�
 - `startApp`은 `CannotOpenError`가 아닌 오류를 그대로 던진다. 이것을 어떻게 다룰지는 진입점(`src/main.ts`)이 정한다. 설치에 성공하면 adapter가 앱을 다시 띄운다(그동안 상태는 `installing`에 머문다).
 - composition root는 끝내기 전(START-08)과 `prepareRestart`(UPD-04)에서 `TodoSession.whenSaved()`를 기다린다.
 - `pickLanguage`는 BCP47 태그(예: `ko-KR`, `en-US`)를 받는다. `LocaleProvider` adapter가 OS 언어를 그 형식으로 넘긴다.
+- `startApp`은 `timer`를 받는다(STORE-20 다시 읽기). composition root가 진짜 `Timer` adapter를 넘긴다.
 
 ---
 
@@ -4001,3 +4002,14 @@ git commit -m "docs: 계획 3 결과를 설계 문서 port 표와 문서 지도�
   - `AutoStartControl.toggle`은 차례로 처리한다.
   - 구조 테스트에 `testing` 층을 더해 제품 코드가 `src/testing/`을 가져오지 못하게 했다.
 - PM 확인이 필요한 것: 보고 메시지와 다음 계획 작성 때 함께 정한다(v2 항목에 `completedAt` 필드가 없으면 null로 읽음, 읽지 못한 `settings.json`을 다음 저장이 덮어씀, `notice.backup`이 그 실행 동안 업데이트 안내를 가림).
+
+### PM 결정 반영 (2026-10-04)
+
+- `completedAt` 항목이 없으면 상태와 관계없이 `null`로 읽는다. 원래 그렇게 동작했고, STORE-09에 적었다.
+- `notice.backup`이 그 실행 동안 업데이트 안내를 가리는 것은 START-09 우선순위대로 둔다.
+- 읽지 못한 `settings.json`: PM이 C안을 골랐다.
+  - 켤 때 읽기에 실패하면 100ms 간격으로 세 번까지 다시 읽는다(STORE-20). `RetryingFileStore`가 `startApp` 안에서 `tasks.json`과 `settings.json` 읽기를 모두 감싼다.
+  - 그래도 못 읽으면 `SettingsRepository`가 그 실행에서는 `settings.json`을 쓰지 않는다(STORE-15).
+  - `tasks.json`에도 다시 읽기를 적용한 것은 개발 판단이다. 한 번 잠긴 것만으로 위젯이 안 뜨는(STORE-10) 일을 줄인다.
+- 테스트용 `ImmediateTimer`와 `MemoryFileStore.readFailures`·`readAttempts`를 더했다. 테스트는 245개다.
+
