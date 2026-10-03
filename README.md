@@ -1,5 +1,7 @@
 # windows-todo-widget
 
+> **v2.0 개발 중.** Windows·macOS용 v2.0을 `feat/cross-platform` 브랜치에서 다시 만들고 있다. 아래 설명은 v1.4(Windows, WPF) 기준이고, v1.4 코드는 태그 `v1.4.0`에 있다.
+
 A small, always-on desktop to-do widget for Windows. It sits on your desktop and shows at a glance how much is left to do.
 
 The UI is in Korean.
