@@ -16,9 +16,9 @@ export function transparencyPercent(opacity: number | null): number {
   return roundHalfUp((1 - resolveOpacity(opacity)) * 100);
 }
 
-/** 고른 %를 1% 단위(.5는 올림)로 맞추고 0~40%로 제한해 불투명도로 바꾼다 (WND-11). */
+/** 고른 %를 1% 단위(.5는 올림)로 맞추고 0~40%로 제한해 불투명도로 바꾼다. NaN이면 0%로 본다 (WND-11). */
 export function opacityFromPercent(percent: number): number {
-  const p = clamp(roundHalfUp(percent), 0, MAX_TRANSPARENCY_PERCENT);
+  const p = Number.isNaN(percent) ? 0 : clamp(roundHalfUp(percent), 0, MAX_TRANSPARENCY_PERCENT);
   return (100 - p) / 100;
 }
 
