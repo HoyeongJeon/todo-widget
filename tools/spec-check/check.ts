@@ -1,8 +1,8 @@
 import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ALL_PREFIXES, CHECKLIST_GLOB, PREFIXES_BY_FILE, SPEC_GLOB, TEST_GLOBS } from './config.ts';
-import { type CoverageReport, checkCoverage } from './coverage.ts';
-import { type Reference, findReferences } from './links.ts';
+import { ALL_PREFIXES, CHECKLIST_GLOB, CHECKLISTS_BY_FILE, PREFIXES_BY_FILE, SPEC_GLOB, TEST_GLOBS } from './config.ts';
+import { type ChecklistGap, type CoverageReport, checkCoverage } from './coverage.ts';
+import { findReferences, findTestReferences } from './links.ts';
 import { type Requirement, type SpecError, parseSpec } from './parse.ts';
 import { validateRequirements } from './validate.ts';
 
@@ -29,8 +29,9 @@ export function runSpecCheck(root: string, options: { strict: boolean }): CheckR
 
   const coverage = checkCoverage(
     requirements,
-    references(root, files(root, TEST_GLOBS)),
-    references(root, [...checklists]),
+    files(root, TEST_GLOBS).flatMap((file) => findTestReferences(read(root, file), file, ALL_PREFIXES)),
+    [...checklists].flatMap((file) => findReferences(read(root, file), file, ALL_PREFIXES)),
+    CHECKLISTS_BY_FILE,
   );
 
   const failed =
@@ -53,7 +54,7 @@ export function formatResult(result: CheckResult, strict: boolean): string {
   for (const r of coverage.unknown)
     lines.push(`오류 ${r.file}:${r.line} spec에 없는 ID를 가리켜요: ${r.id}`);
   if (coverage.unlinkedManual.length > 0)
-    lines.push(`오류 체크리스트에 없는 직접 확인 항목 ${coverage.unlinkedManual.length}개: ${ids(coverage.unlinkedManual)}`);
+    lines.push(`오류 체크리스트에 없는 직접 확인 항목 ${coverage.unlinkedManual.length}개: ${gaps(coverage.unlinkedManual)}`);
   if (coverage.unlinkedAuto.length > 0)
     lines.push(`${strict ? '오류' : '안내'} 테스트 없는 자동 테스트 항목 ${coverage.unlinkedAuto.length}개: ${ids(coverage.unlinkedAuto)}`);
 
@@ -72,10 +73,10 @@ function read(root: string, file: string): string {
   return readFileSync(join(root, file), 'utf8');
 }
 
-function references(root: string, list: string[]): Reference[] {
-  return list.flatMap((file) => findReferences(read(root, file), file, ALL_PREFIXES));
-}
-
 function ids(requirements: Requirement[]): string {
   return requirements.map((r) => r.id).join(', ');
+}
+
+function gaps(list: ChecklistGap[]): string {
+  return list.map((g) => `${g.requirement.id}(${g.missing.join(', ')})`).join(', ');
 }
