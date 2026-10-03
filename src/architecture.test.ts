@@ -79,6 +79,26 @@ describe('네트워크 사용 제한', () => {
     expect(violations[0]?.message).toBe('네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): fetch(');
   });
 
+  it('PRIV-01 Tauri의 websocket·upload plugin도 이름을 바꿔 가져와도 네트워크로 본다', () => {
+    const violations = checkArchitecture([
+      file('src/adapters/sock.ts', "import Sock from '@tauri-apps/plugin-websocket';"),
+      file('src/adapters/send.ts', "import { upload as send } from '@tauri-apps/plugin-upload';"),
+      file('src/adapters/updater/sock.ts', "import Sock from '@tauri-apps/plugin-websocket';"),
+    ]);
+    expect(violations).toEqual([
+      {
+        path: 'src/adapters/sock.ts',
+        line: 1,
+        message: '네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): @tauri-apps/plugin-websocket',
+      },
+      {
+        path: 'src/adapters/send.ts',
+        line: 1,
+        message: '네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): @tauri-apps/plugin-upload',
+      },
+    ]);
+  });
+
   it('PRIV-01 실제 소스가 층 규칙과 네트워크 제한을 지킨다', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     expect(checkArchitecture(collectSources(root))).toEqual([]);

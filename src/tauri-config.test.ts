@@ -1,0 +1,104 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const config = JSON.parse(readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
+const mainWindow = config.app.windows.find((w: { label: string }) => w.label === 'main');
+const cargoToml = readFileSync(new URL('../src-tauri/Cargo.toml', import.meta.url), 'utf8');
+
+/** 업데이트 확인(tauri-plugin-updater) 말고는 Rust 쪽에서 네트워크를 쓰지 않는다 (PRIV-01) */
+const NETWORK_CRATES = [
+  'reqwest',
+  'hyper',
+  'ureq',
+  'isahc',
+  'surf',
+  'attohttpc',
+  'curl',
+  'tungstenite',
+  'tokio-tungstenite',
+  'tauri-plugin-http',
+  'tauri-plugin-websocket',
+  'tauri-plugin-upload',
+];
+
+const DEPENDENCY_SECTION =
+  /^\[\s*(?:target\.(?:'[^']*'|"[^"]*"|[^.\]]+)\.)?dependencies(?:\.(?:"([^"]+)"|([A-Za-z0-9_-]+)))?\s*\]$/;
+const DEPENDENCY_KEY = /^(?:"([^"]+)"|([A-Za-z0-9_-]+))\s*[.=]/;
+const RENAMED_PACKAGE = /\bpackage\s*=\s*"([^"]+)"/;
+
+/** [dependencies]와 [target.*.dependencies]에 적힌 crate 이름을 줄 단위로 모은다. package = "..."로 바꾼 이름도 본다. */
+function dependencyNames(toml: string): string[] {
+  const names: string[] = [];
+  let inDependencies = false;
+  let inOneCrateTable = false;
+  for (const raw of toml.split('\n')) {
+    const line = raw.replace(/#.*$/, '').trim();
+    if (line.startsWith('[')) {
+      const section = DEPENDENCY_SECTION.exec(line);
+      const tableName = section?.[1] ?? section?.[2];
+      inDependencies = section !== null;
+      inOneCrateTable = tableName !== undefined;
+      if (tableName)
+        names.push(tableName);
+      continue;
+    }
+    if (!inDependencies)
+      continue;
+    const key = inOneCrateTable ? null : DEPENDENCY_KEY.exec(line);
+    if (key)
+      names.push(key[1] ?? key[2] ?? '');
+    const renamed = RENAMED_PACKAGE.exec(line);
+    if (renamed?.[1])
+      names.push(renamed[1]);
+  }
+  return names;
+}
+
+describe('Tauri 설정', () => {
+  it('MAC-10 투명 창을 위해 macOSPrivateApi를 켠다', () => {
+    expect(config.app.macOSPrivateApi).toBe(true);
+    expect(mainWindow.transparent).toBe(true);
+  });
+
+  it('REL-09 macOS 빌드는 ad-hoc 서명을 한다', () => {
+    expect(config.bundle.macOS.signingIdentity).toBe('-');
+  });
+
+  it('창은 테두리 없이 숨긴 채 시작하고 작업 표시줄에 나오지 않는다', () => {
+    expect(mainWindow).toMatchObject({
+      decorations: false,
+      visible: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      visibleOnAllWorkspaces: true,
+      shadow: false,
+    });
+  });
+
+  it('식별자와 제품 이름이 정해진 값이다', () => {
+    expect(config.identifier).toBe('io.github.hoyeongjeon.todowidget');
+    expect(config.productName).toBe('TodoWidget');
+  });
+
+  it('PRIV-01 Rust 쪽은 업데이트 말고 네트워크 crate와 plugin을 쓰지 않는다', () => {
+    const names = dependencyNames(cargoToml);
+    expect(names).toEqual(expect.arrayContaining(['tauri', 'serde', 'objc2-app-kit']));
+    expect(names.filter((name) => NETWORK_CRATES.includes(name))).toEqual([]);
+  });
+
+  it('PRIV-01 Cargo.toml 읽기는 target 표, 하위 표, 바꾼 이름까지 찾는다', () => {
+    const toml = [
+      '[package]',
+      'name = "reqwest"',
+      '[build-dependencies]',
+      'curl = "0.4"',
+      '[dependencies]',
+      'net = { package = "ureq", version = "2" } # 이름을 바꿔도 찾는다',
+      '[target.\'cfg(windows)\'.dependencies]',
+      'hyper.version = "1"',
+      '[target."cfg(unix)".dependencies.reqwest]',
+      'version = "0.12"',
+    ].join('\n');
+    expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'reqwest']);
+  });
+});
