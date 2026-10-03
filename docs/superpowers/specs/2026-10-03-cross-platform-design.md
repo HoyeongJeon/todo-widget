@@ -13,6 +13,8 @@
 - 2026-10-03: PM 결정 — 켜는 속도 목표를 0.5초로 당기고, 로그인 직후 2초·다시 부르기 0.1초 기준을 더했다(11장, PERF-01·06·07).
 - 2026-10-03: 의존 방향과 네트워크 제한(PRIV-01)을 lint 규칙 대신 Vitest 구조 테스트로 막기로 했다(5.1).
 - 2026-10-03: 10장 자동 검사 목록에서 lint를 빼고 Vitest 항목에 층 구조·PRIV-01 구조 테스트를 넣어 5.1과 맞췄다.
+- 2026-10-03: PM 결정 — 전체 화면에서는 📌와 관계없이 숨긴다(2장, 3장 다음 버전 후보에서 뺌, 5.4, 6장, 12장). 계획 2 확인에서 전체 화면 위 표시가 기대대로 되지 않았고, PM이 숨는 쪽을 골랐다. 자세한 규칙은 `spec/platform/macos.md` MAC-07.
+- 2026-10-03: 12장 표에 계획 2 Mac 위험 확인 결과 칸을 더했다. macOS 크기 조절은 tao가 지원하지 않아 계획 4에서 직접 만든다.
 
 ## 1. 목적
 
@@ -37,7 +39,7 @@ Windows 전용 위젯(v1.4, C# WPF)을 **Windows와 macOS에서 똑같이 동작
 | 배포 | GitHub Release 링크. 코드 서명 없음. Windows는 설치 파일, macOS는 dmg |
 | 업데이트 | 하단 한 줄 안내 + 클릭. 켤 때와 떠 있는 동안 하루 한 번 확인 |
 | 개인정보 | 사용자 데이터는 기기 밖으로 나가지 않는다 |
-| macOS 표시 | 메뉴 막대 아이콘만. Dock과 Cmd+Tab에는 없다. 모든 데스크톱(Spaces)에 따라다닌다 |
+| macOS 표시 | 메뉴 막대 아이콘만. Dock과 Cmd+Tab에는 없다. 모든 데스크톱(Spaces)에 따라다닌다. 전체 화면 앱에서는 📌와 관계없이 보이지 않는다 |
 | 저장소 | `windows-todo-widget` → `todo-widget`으로 이름 변경 (v2.0 출시 전) |
 | 개발 방식 | spec-driven + TDD. clean architecture, OOP, 느슨한 결합 |
 
@@ -55,7 +57,6 @@ Windows 전용 위젯(v1.4, C# WPF)을 **Windows와 macOS에서 똑같이 동작
 - v1.3 설계 9장의 제외 목록(동기화, 마감일, 드래그 정렬, 검색, 다크 모드, 단축키 등)은 그대로 제외다.
 
 **다음 버전 후보**
-- macOS 전체 화면 앱 위에서는 위젯이 비켜 주기. PM 의견: "전체 화면에서는 거슬린다." macOS adapter의 창 설정 하나만 바꾸면 된다(6장).
 - macOS 메뉴 막대 아이콘에 남은 개수 표시.
 
 ## 4. spec 구조와 운영
@@ -179,7 +180,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | 위치 | 내용 |
 |---|---|
 | `src/adapters/` 중 OS별 파일 | 자동 실행, 데이터 폴더 경로 |
-| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, 모든 Spaces 따라다니기, 📌일 때 전체 화면 위 표시, 로그인 항목(SMAppService) 등록·해제·상태 읽기 |
+| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, 로그인 항목(SMAppService) 등록·해제·상태 읽기. 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
 | `src-tauri/src/platform/windows.rs` | 작업 표시줄 숨김, 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기 |
 | `src/presentation/theme/` | OS·언어별 글꼴과 겉모양 (CSS 변수) |
 
@@ -201,7 +202,7 @@ Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 
 | 앱이 보이는 곳 | 위젯만. 작업 표시줄, 트레이 없음 (v1.4와 같음) | 위젯 + 메뉴 막대 아이콘. Dock, Cmd+Tab 없음 |
 | 가려졌을 때 | 바로가기·시작 메뉴로 다시 실행하면 기존 위젯이 앞으로 | 메뉴 막대 아이콘 클릭. Spotlight로 다시 실행해도 같음 |
 | 종료 | ⋯ → 종료 | ⋯ → 종료, 메뉴 막대 아이콘 우클릭 → 종료 |
-| 데스크톱 전환 | 해당 없음 | 모든 Spaces에 따라다님. 📌 켜면 전체 화면 앱 위에도 뜸, 끄면 일반 창처럼 가려질 수 있음 |
+| 데스크톱 전환 | 해당 없음 | 모든 Spaces에 따라다님. 전체 화면 앱에서는 📌와 관계없이 보이지 않음. 📌는 일반 데스크톱에서 맨 위 고정만 정함 |
 | 자동 실행 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, 값 이름 `TodoWidget` (v1.4와 같음) | 로그인 항목(SMAppService) |
 | 처음 실행 | `settings.json`이 없으면 처음 실행 → 자동 실행 켬 | 같음 |
 | 두 번 실행 | 기존 위젯을 앞으로, 두 번째 프로세스는 종료 | 같음 |
@@ -353,17 +354,24 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 
 개발 초기에 실제로 띄워서 확인하고, 기대와 다르면 바로 PM에게 보고한다.
 
-| 항목 | 확인할 것 |
-|---|---|
-| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 크기 조절, 헤더로 이동 |
-| macOS 메뉴 막대·Spaces | Dock 숨김, 모든 Spaces 따라다니기, 📌일 때 전체 화면 위 표시 |
-| IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 |
-| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) |
-| macOS 자동 실행 | 로그인 항목(SMAppService)을 직접 구현한다. 켜기·끄기·상태 읽기와 켤 때마다 다시 등록하기가 실제 macOS에서 되는지 (MAC-08) |
-| macOS 자동 실행과 ad-hoc 서명 | ad-hoc 서명은 빌드마다 바뀐다. 그래서 업데이트할 때마다 로그인 항목이 "승인 필요"가 되거나 사라질 수 있고, 그러면 MAC-08이 자동 실행을 꺼짐으로 읽는다. 계획 2 초기 확인에서 두 빌드로 업데이트해 보고, 그렇다면 PM과 대응을 정한다 |
-| Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 |
-| 메모리 | 11장 기준 측정 |
-| macOS 업데이트 | 새 macOS가 나오면 투명 창(`macOSPrivateApi`)이 계속 동작하는지 |
+결과는 계획 2 위험 확인(Mac, 2026-10-03)의 결과다. 자세한 숫자와 방법은 [보고서](../reports/2026-10-03-plan2-risk-check.md)에 있다. Windows 항목은 아직 확인하지 않았다.
+
+| 항목 | 확인할 것 | 결과 |
+|---|---|---|
+| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 메뉴 막대·Spaces | Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces 따라다니기 | 통과. Dock·Cmd+Tab에 없고, 메뉴 막대 아이콘 클릭·메뉴·다시 열기가 되고, 모든 데스크톱에 보인다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 전체 화면 | 📌일 때 전체 화면 위 표시 (처음 계획) | PM 결정으로 바뀜. 📌를 켜도 전체 화면 앱 위에 뜨지 않았고, PM이 숨는 쪽을 골랐다. 이제 전체 화면에서는 📌와 관계없이 숨는다(MAC-07). 전체 화면 위 표시 코드는 지웠다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 | 통과 (Mac). 한글, 중국어 병음 모두 하나만 추가되고 이어서 입력된다. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| 시작 시간 | 11장 기준 측정 (PERF-01) | 통과 (Mac). 중앙값 428ms, 기준 500ms와의 여유는 70ms쯤이다. 설치·업데이트 뒤 첫 실행은 2.3초였다(PERF-01 조건 밖, 참고). Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 2) |
+| 메모리 | 11장 기준 측정 (PERF-04) | 통과 (Mac). 관련 프로세스 4개 합 53.5~57.5MB, 기준 120MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
+| 가만히 있을 때 CPU | 11장 기준 측정 (PERF-03) | 주의 (Mac). 1분 평균이 6구간 중 5구간은 1% 미만, 1구간은 1.2%였다. 실제 화면을 만든 뒤 계획 5에서 다시 잰다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
+| 설치 파일 크기 | 11장 기준 측정 (PERF-05) | 통과 (Mac). dmg 1.55MB, 기준 15MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 1) |
+| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) | Windows 확인 전 |
+| macOS 자동 실행 | 로그인 항목(SMAppService)을 직접 구현한다. 켜기·끄기·상태 읽기와 켤 때마다 다시 등록하기가 실제 macOS에서 되는지 (MAC-08) | 통과. 등록·해제·상태 읽기가 된다. 로그아웃 뒤 다시 로그인했을 때 실제로 켜지는지는 PERF-06 확인 때 본다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
+| macOS 자동 실행과 ad-hoc 서명 | ad-hoc 서명은 빌드마다 바뀐다. 그래서 업데이트할 때마다 로그인 항목이 "승인 필요"가 되거나 사라질 수 있고, 그러면 MAC-08이 자동 실행을 꺼짐으로 읽는다. 계획 2 초기 확인에서 두 빌드로 업데이트해 보고, 그렇다면 PM과 대응을 정한다 | 통과. 2.0.0으로 등록하고 2.0.1로 덮어써 서명(CDHash)이 바뀐 뒤에도 켜짐으로 남았다. MAC-08 방식을 그대로 간다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
+| Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 | Windows 확인 전 |
+| macOS 업데이트 | 새 macOS가 나오면 투명 창(`macOSPrivateApi`)이 계속 동작하는지 | 지금은 해당 없음. 새 macOS가 나오면 MAC-12로 본다 |
 
 ## 13. 기술 선택 기록
 

@@ -4,6 +4,7 @@
 - 2026-10-03: 처음 작성 (v2.0 기준)
 - 2026-10-03: 최종 리뷰 반영 — 출시 항목은 Windows 체크리스트에만 두고, 체크리스트를 매 출시와 v2.0.0(또는 바뀐 부분) 묶음으로 나눠 예상 시간을 적었다. UPD-09용 pre-release를 REL-04에 넣었다
 - 2026-10-03: PM 승인 (v2.0 spec 기준선)
+- 2026-10-03: REL-01의 lint를 Vitest 구조 테스트로 바로잡았다(설계 문서 5.1, 10장)
 
 빌드, 배포, 서명 키, 버전 규칙, 출시 순서를 적는다. 사용자가 받는 업데이트 동작은 `behavior/update.md`에 있다.
 
@@ -31,7 +32,7 @@ PM 승인 ──▶ 공개 ──▶ 사용자 위젯이 새 버전을 알아챈
 
 ### REL-01 코드를 올릴 때마다 두 OS에서 자동 검사한다
 - 동작: 코드를 GitHub에 올리거나 pull request를 연다
-- 결과: GitHub Actions가 Windows와 macOS에서 각각 lint(의존 방향 규칙 포함), Vitest, `cargo test`, `pnpm spec:check`, 빌드를 돌린다. 다국어 사전 키 검사(I18N-03)는 Vitest 안에서 돈다. 하나라도 실패하면 검사 전체가 실패로 표시된다
+- 결과: GitHub Actions가 Windows와 macOS에서 각각 Vitest(층 의존 방향·PRIV-01 구조 테스트 `src/architecture.test.ts` 포함), `cargo test`, `pnpm spec:check`, 빌드를 돌린다. 다국어 사전 키 검사(I18N-03)는 Vitest 안에서 돈다. 하나라도 실패하면 검사 전체가 실패로 표시된다
 - 확인: 자동 테스트
 
 ### REL-02 출시 전에는 strict 검사가 통과해야 한다
