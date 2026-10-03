@@ -61,6 +61,32 @@ describe('의존 방향', () => {
       },
     ]);
   });
+
+  it('domain과 application은 바깥 패키지를 가져올 수 없다', () => {
+    const violations = checkArchitecture([
+      file('src/domain/a.ts', "import { writable } from 'svelte/store';"),
+      file('src/application/b.ts', "import dayjs from 'dayjs';"),
+      file('src/presentation/c.ts', "import { mount } from 'svelte';"),
+      file('src/adapters/d.ts', "import { listen } from '@tauri-apps/api/event';"),
+    ]);
+    expect(violations).toEqual([
+      { path: 'src/domain/a.ts', line: 1, message: 'domain 층은 바깥 패키지 svelte/store를 쓸 수 없어요. 허용 목록: 없음' },
+      { path: 'src/application/b.ts', line: 1, message: 'application 층은 바깥 패키지 dayjs를 쓸 수 없어요. 허용 목록: 없음' },
+    ]);
+  });
+
+  it('제품 코드는 어느 층에서도 Node 모듈을 쓸 수 없다', () => {
+    const violations = checkArchitecture([
+      file('src/presentation/a.ts', "import { readFileSync } from 'node:fs';"),
+      file('src/main.ts', "import path from 'node:path';"),
+      file('src/adapters/b.ts', "const os = await import('node:os');"),
+    ]);
+    expect(violations.map((v) => v.message)).toEqual([
+      '제품 코드는 Node 모듈(node:fs)을 쓸 수 없어요. 앱은 WebView에서 돌아요',
+      '제품 코드는 Node 모듈(node:path)을 쓸 수 없어요. 앱은 WebView에서 돌아요',
+      '제품 코드는 Node 모듈(node:os)을 쓸 수 없어요. 앱은 WebView에서 돌아요',
+    ]);
+  });
 });
 
 describe('네트워크 사용 제한', () => {

@@ -16,6 +16,11 @@ export interface Violation {
 /** 네트워크를 쓸 수 있는 유일한 곳 (PRIV-01) */
 export const NETWORK_ALLOWED_DIR = 'src/adapters/updater/';
 
+/** domain·application이 import해도 되는 바깥 패키지. 늘리려면 PM과 설계 문서 5.1을 함께 고친다. */
+export const CORE_PACKAGE_ALLOWLIST: readonly string[] = [];
+
+const CORE_LAYERS: readonly Layer[] = ['domain', 'application'];
+
 const ALLOWED_IMPORTS: Readonly<Record<Layer, readonly Layer[]>> = {
   domain: ['domain'],
   application: ['domain', 'application'],
@@ -50,6 +55,15 @@ function importViolations(file: SourceFile): Violation[] {
           line,
           message: `${from} 층은 ${specifier}를 쓸 수 없어요. Tauri는 adapters와 src/main.ts에서만 써요`,
         });
+      continue;
+    }
+    if (specifier.startsWith('node:')) {
+      violations.push({ path: file.path, line, message: `제품 코드는 Node 모듈(${specifier})을 쓸 수 없어요. 앱은 WebView에서 돌아요` });
+      continue;
+    }
+    if (!specifier.startsWith('.') && CORE_LAYERS.includes(from) && !CORE_PACKAGE_ALLOWLIST.includes(specifier)) {
+      const allowed = CORE_PACKAGE_ALLOWLIST.length === 0 ? '없음' : CORE_PACKAGE_ALLOWLIST.join(', ');
+      violations.push({ path: file.path, line, message: `${from} 층은 바깥 패키지 ${specifier}를 쓸 수 없어요. 허용 목록: ${allowed}` });
       continue;
     }
     if (!specifier.startsWith('.'))

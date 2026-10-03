@@ -26,10 +26,12 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: '-D warnings'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -54,10 +56,12 @@ jobs:
     name: Windows 시험 설치 파일
     if: github.event_name == 'workflow_dispatch' && inputs.windows_probe
     runs-on: windows-latest
+    env:
+      RUSTFLAGS: '-D warnings'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -67,7 +71,7 @@ jobs:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
       - run: pnpm tauri build --bundles nsis
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: todowidget-windows-probe
           path: src-tauri/target/release/bundle/nsis/*.exe

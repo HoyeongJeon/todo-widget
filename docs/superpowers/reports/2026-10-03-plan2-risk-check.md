@@ -174,8 +174,8 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 
 | 항목 | 계획 | 이유 |
 |---|---|---|
-| domain·application은 바깥 패키지 import를 허용 목록으로 막는다. 처음 목록은 비어 있다 | 계획 3 Task 1 (domain 코드보다 먼저) | 지금 구조 테스트는 층 사이 방향만 본다. domain 코드가 생기기 전에 막아야 고칠 코드가 없다 |
-| `src/` 제품 코드 전체에서 `node:` import를 막는다 | 계획 3 Task 1 | 제품 코드는 WebView에서 돈다. Node API는 쓸 수 없다 |
+| domain·application은 바깥 패키지 import를 허용 목록으로 막는다. 처음 목록은 비어 있다 | 계획 3 Task 1 (domain 코드보다 먼저) — 완료 (계획 3 Task 1) | 지금 구조 테스트는 층 사이 방향만 본다. domain 코드가 생기기 전에 막아야 고칠 코드가 없다 |
+| `src/` 제품 코드 전체에서 `node:` import를 막는다 | 계획 3 Task 1 — 완료 (계획 3 Task 1) | 제품 코드는 WebView에서 돈다. Node API는 쓸 수 없다 |
 | 제품 코드용 tsconfig(lib ES2022, types 없음, 테스트 제외)를 테스트·도구용과 나눈다 | 계획 3 Task 1 | 지금 `tsconfig.json`은 `src/` 전체에 Node 타입을 열어 둔다. 제품 코드가 Node API를 써도 타입 검사가 통과한다 |
 | 구조 테스트의 정규식 한계(주석 안 따옴표, template literal 동적 import 등) | 계획 3 | 지금 규칙에는 충분하다. 규칙이 늘면 TypeScript compiler API로 바꿀지 다시 본다 |
 | 창 제어 port를 `src/application/ports/window-controller.ts`(`WindowController`)로 옮기고, adapter는 `satisfies`로 맞춘다 | 계획 4 | 지금 `src/presentation/window-controls.ts`는 계획 2 시험 화면용 임시 위치다 |
@@ -199,7 +199,7 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 | `probe.rs`(`TODOWIDGET_PROBE`)를 지우거나 기본 꺼진 cargo feature로 막는다. 출시 전 REL 체크리스트에 넣는다 | 계획 6 | 계획 2 측정용 코드다. 출시 빌드에 남기지 않는다 |
 | 쓰지 않는 crate-type(`staticlib`, `cdylib`) 정리를 검토한다 | 계획 6 | 둘은 모바일 빌드용이다. 데스크톱 앱에는 필요 없을 수 있다 |
 | 번들 아이콘 정리 | 계획 6 | Tauri 기본 아이콘 세트가 그대로 있다 |
-| CI에 `RUSTFLAGS=-D warnings`를 넣는다 | 첫 Windows CI 실행 뒤 | Windows에서만 나는 경고가 있는지 먼저 본다 |
+| CI에 `RUSTFLAGS=-D warnings`를 넣는다 | 첫 Windows CI 실행 뒤 — 완료 (계획 3 Task 1) | Windows에서만 나는 경고가 있는지 먼저 본다 |
 
 ## Windows 확인 절차 (PM)
 
@@ -231,5 +231,5 @@ CI의 `windows-probe` job이 만든 NSIS 설치 파일로 확인한다. 확인�
 - 커밋 `bd768e8`을 push했다. 실행 [37121186550](https://github.com/HoyeongJeon/windows-todo-widget/actions/runs/37121186550)(push), [37121189704](https://github.com/HoyeongJeon/windows-todo-widget/actions/runs/37121189704)(Windows 시험 설치 파일).
 - macOS 검사 통과(약 3분), Windows 검사 통과(약 4~5분). Windows 로그에 Rust 경고는 없었다.
 - Windows 시험 설치 파일(artifact `todowidget-windows-probe`, 1.15MB)이 만들어졌다. 2026-10-10까지 받을 수 있다.
-- GitHub가 `actions/checkout@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`가 Node 20 기반이라 곧 지원이 끝난다고 알렸다. 다음 계획에서 버전을 올린다.
-- 경고가 없으므로 `RUSTFLAGS=-D warnings`를 다음 계획에서 넣는다.
+- GitHub가 `actions/checkout@v4`, `actions/setup-node@v4`, `pnpm/action-setup@v4`가 Node 20 기반이라 곧 지원이 끝난다고 알렸다. 다음 계획에서 버전을 올린다. — 완료 (계획 3 Task 1)
+- 경고가 없으므로 `RUSTFLAGS=-D warnings`를 다음 계획에서 넣는다. — 완료 (계획 3 Task 1)
