@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["node", "svelte"]
+    "types": ["node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte", "tools/architecture/**/*.ts"]
+  "include": ["tools/**/*.ts"]
 }
