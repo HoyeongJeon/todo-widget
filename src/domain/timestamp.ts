@@ -13,8 +13,9 @@ export class Timestamp {
     this.#offsetMinutes = offsetMinutes;
   }
 
+  /** 오프셋 -0(UTC)은 0으로 맞춘다. */
   static fromEpochMs(epochMs: number, offsetMinutes: number): Timestamp {
-    return new Timestamp(Math.floor(epochMs / 1000), offsetMinutes);
+    return new Timestamp(Math.floor(epochMs / 1000), offsetMinutes || 0);
   }
 
   /** `2026-10-03T15:00:00+02:00` 형식만 읽는다. 아니면 null (STORE-05). */

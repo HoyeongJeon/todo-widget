@@ -9,7 +9,10 @@ export function ts(iso: string): Timestamp {
   return parsed;
 }
 
-/** 테스트용 고정 시계. 기본 "지금"은 2026-10-03T09:00:00+09:00. */
+/**
+ * 테스트용 고정 시계. 기본 "지금"은 2026-10-03T09:00:00+09:00.
+ * 시각은 초 단위로만 갖고 있어서, 1초보다 짧게 나눠 advance하면 그 차이는 사라진다.
+ */
 export class FakeClock implements Clock {
   #now: Timestamp;
 

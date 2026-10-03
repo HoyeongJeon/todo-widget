@@ -15,6 +15,10 @@ describe('Timestamp', () => {
     expect(Timestamp.fromEpochMs(instant, 345).format()).toBe('2026-10-03T18:45:00+05:45');
   });
 
+  it('STORE-05 UTC 오프셋 -0은 0으로 맞춘다', () => {
+    expect(Object.is(Timestamp.fromEpochMs(0, -0).offsetMinutes, 0)).toBe(true);
+  });
+
   it('STORE-05 쓴 시각을 다시 읽으면 같은 시점과 같은 시간대다', () => {
     const original = Timestamp.fromEpochMs(Date.UTC(2026, 9, 3, 13, 0, 0), -330);
     const read = Timestamp.parse(original.format());
