@@ -11,6 +11,13 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: REL-01 검사 (${{ matrix.os }})
@@ -64,4 +71,5 @@ jobs:
         with:
           name: todowidget-windows-probe
           path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
           retention-days: 7

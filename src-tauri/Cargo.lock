@@ -3364,7 +3364,6 @@ checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 name = "todo-widget"
 version = "2.0.0"
 dependencies = [
- "objc2",
  "objc2-service-management",
  "serde",
  "serde_json",
