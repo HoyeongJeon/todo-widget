@@ -27,6 +27,9 @@ export class UpdateService {
   readonly #listeners = new Set<Listener>();
   #state: UpdateNoticeState = 'none';
   #cancelScheduled: (() => void) | null = null;
+  /** 진행 중인 확인. 겹쳐 부르면 이것을 함께 기다린다. */
+  #checking: Promise<void> | null = null;
+  #disposed = false;
 
   constructor(deps: UpdateDeps) {
     this.#deps = deps;
@@ -46,8 +49,18 @@ export class UpdateService {
     return this.check();
   }
 
-  /** 성공하면 확인한 시각을 저장하고 24시간 뒤, 실패하면 1시간 뒤 다시 확인한다 (UPD-01, UPD-06). */
-  async check(): Promise<void> {
+  /**
+   * 성공하면 확인한 시각을 저장하고 24시간 뒤, 실패하면 1시간 뒤 다시 확인한다 (UPD-01, UPD-06).
+   * 확인하는 중에 또 부르면(예: 예약된 확인과 잠자기에서 깨어남) 새로 확인하지 않고 진행 중인 확인을 함께 기다린다.
+   */
+  check(): Promise<void> {
+    this.#checking ??= this.#runCheck().finally(() => {
+      this.#checking = null;
+    });
+    return this.#checking;
+  }
+
+  async #runCheck(): Promise<void> {
     this.#cancel();
     let latest: { version: string };
     try {
@@ -56,9 +69,15 @@ export class UpdateService {
       this.#schedule(RETRY_INTERVAL_MS);
       return;
     }
-    await this.#deps.settings.update({ lastUpdateCheck: this.#deps.clock.now() });
-    if (this.#state !== 'installing')
-      this.#setState(isNewerVersion(latest.version, this.#deps.appInfo.version) ? 'available' : 'none');
+    try {
+      await this.#deps.settings.update({ lastUpdateCheck: this.#deps.clock.now() });
+      if (this.#state !== 'installing')
+        this.#setState(isNewerVersion(latest.version, this.#deps.appInfo.version) ? 'available' : 'none');
+    } catch {
+      // 예상 못 한 오류(예: 안내를 받는 쪽의 오류)로 확인 일정이 끊기지 않게 1시간 뒤 다시 확인한다.
+      this.#schedule(RETRY_INTERVAL_MS);
+      return;
+    }
     this.#schedule(CHECK_INTERVAL_MS);
   }
 
@@ -83,12 +102,17 @@ export class UpdateService {
     }
   }
 
+  /** 예약된 확인을 취소한다. 진행 중인 확인이 끝나도 다시 예약하거나 상태를 바꾸지 않는다. */
   dispose(): void {
+    this.#disposed = true;
     this.#cancel();
     this.#listeners.clear();
   }
 
   #schedule(ms: number): void {
+    this.#cancel();
+    if (this.#disposed)
+      return;
     this.#cancelScheduled = this.#deps.timer.schedule(ms, () => {
       void this.check();
     });
@@ -100,7 +124,7 @@ export class UpdateService {
   }
 
   #setState(state: UpdateNoticeState): void {
-    if (this.#state === state)
+    if (this.#disposed || this.#state === state)
       return;
     this.#state = state;
     for (const listener of this.#listeners)

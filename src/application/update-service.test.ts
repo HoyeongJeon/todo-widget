@@ -177,6 +177,44 @@ describe('설치', () => {
   });
 });
 
+/** 확인을 멈춰 두고, 돌려준 함수를 부르면 풀어 준다. */
+function gateFetch(): () => void {
+  let open = (): void => undefined;
+  updater.fetchGate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return open;
+}
+
+describe('겹침과 오류', () => {
+  it('UPD-01 확인이 겹치면 하나로 합쳐 한 번만 확인하고, 다음 확인도 하나만 예약한다', async () => {
+    const service = await makeService('2026-10-02T08:00:00+09:00');
+    const open = gateFetch();
+    const checking = service.check();
+    const waking = service.onWake();
+    await flush();
+    open();
+    await Promise.all([checking, waking]);
+    expect(updater.fetches).toBe(1);
+
+    await timer.advance(24 * HOUR);
+    expect(updater.fetches).toBe(2);
+    await timer.advance(24 * HOUR);
+    expect(updater.fetches).toBe(3);
+  });
+
+  it('확인 뒤 처리에서 예상 못 한 오류가 나도 확인 일정은 이어진다', async () => {
+    const service = await makeService();
+    service.onChange(() => {
+      throw new Error('화면 오류');
+    });
+    await service.start();
+    expect(updater.fetches).toBe(1);
+    await timer.advance(HOUR);
+    expect(updater.fetches).toBe(2);
+  });
+});
+
 describe('알림과 정리', () => {
   it('상태가 바뀌면 알리고, dispose하면 예약된 확인을 취소한다', async () => {
     const service = await makeService();
@@ -188,5 +226,18 @@ describe('알림과 정리', () => {
     await timer.advance(25 * HOUR);
     expect(updater.fetches).toBe(1);
     expect(ts('2026-10-03T09:00:00+09:00').compare(settings.current.lastUpdateCheck ?? ts('2000-01-01T00:00:00+00:00'))).toBe(0);
+  });
+
+  it('확인하는 중에 dispose하면 그 확인이 끝나도 다시 예약하지 않고 상태도 바꾸지 않는다', async () => {
+    const service = await makeService();
+    const open = gateFetch();
+    const checking = service.start();
+    await flush();
+    service.dispose();
+    open();
+    await checking;
+    expect(service.state).toBe('none');
+    await timer.advance(5 * 24 * HOUR);
+    expect(updater.fetches).toBe(1);
   });
 });

@@ -50,6 +50,7 @@ describe('시작', () => {
     expect(result.kind).toBe('ready');
     expect(autoStart.calls).toEqual(['refresh']);
     expect(files.files.has(SETTINGS_FILE)).toBe(false);
+    expect(files.writes).toEqual([]);
   });
 
   it('START-06 자동 실행 등록이나 첫 설정 저장이 실패해도 위젯은 뜬다', async () => {
