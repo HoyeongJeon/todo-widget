@@ -101,19 +101,25 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
 
     startDragging: () => api.startDragging(),
 
-    async resize(edge: ResizeEdge, start: PointerStart, limits: SizeLimits): Promise<Rect> {
-      const { coords, scale } = await context();
-      const final = await trackResize(
+    /** pointer 듣기는 IPC를 기다리기 전에 바로 건다. 읽는 동안 놓아도 놓친 것 없이 끝난다. */
+    resize(edge: ResizeEdge, start: PointerStart, limits: SizeLimits): Promise<Rect> {
+      const ready = context();
+      const final = trackResize(
         { source: deps.pointer, requestFrame: deps.requestFrame, setFrame },
         {
           edge,
           start,
-          startRect: await nativeBounds(coords, scale),
-          limits: coords.limitsToNative(limits, scale),
-          nativePerCss: coords.nativePerCss(scale),
+          prepare: async () => {
+            const { coords, scale } = await ready;
+            return {
+              startRect: await nativeBounds(coords, scale),
+              limits: coords.limitsToNative(limits, scale),
+              nativePerCss: coords.nativePerCss(scale),
+            };
+          },
         },
       );
-      return coords.nativeToSpec(final, scale);
+      return Promise.all([ready, final]).then(([{ coords, scale }, rect]) => coords.nativeToSpec(rect, scale));
     },
 
     onMoved(listener: () => void): () => void {

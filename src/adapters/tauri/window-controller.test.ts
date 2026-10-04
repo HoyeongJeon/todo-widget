@@ -6,7 +6,7 @@ function monitor(x: number, y: number, width: number, height: number, scaleFacto
   return { position: { x, y }, size: { width, height }, scaleFactor, workArea: { position: { x, y }, size: { width, height: workHeight } } };
 }
 
-function setup(os: 'windows' | 'macos', scale: number) {
+function setup(os: 'windows' | 'macos', scale: number, overrides: Partial<TauriWindowApi> = {}) {
   let movedHandler: (() => void) | null = null;
   const unlisten = vi.fn();
   const api: TauriWindowApi = {
@@ -20,6 +20,7 @@ function setup(os: 'windows' | 'macos', scale: number) {
     },
     primaryMonitor: async () => monitor(0, 0, 1920 * scale, 1080 * scale, scale, 1040 * scale),
     availableMonitors: async () => [monitor(0, 0, 1920 * scale, 1080 * scale, scale, 1040 * scale)],
+    ...overrides,
   };
   const invoke = vi.fn(async (_command: string, _args?: Record<string, unknown>) => undefined);
   const listeners = new Map<string, (event: PointerLike) => void>();
@@ -67,10 +68,46 @@ describe('Tauri 창 제어 adapter', () => {
   it('WND-03 크기 조절은 native 단위로 따라가고, 놓으면 spec 좌표로 돌려준다 (Windows 배율 2)', async () => {
     const { controller, invoke, listeners } = setup('windows', 2);
     const done = controller.resize('East', { screenX: 100, screenY: 100 }, { minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
-    await vi.waitFor(() => expect(listeners.has('pointerup')).toBe(true));
+    expect(listeners.has('pointerup')).toBe(true);
     listeners.get('pointerup')?.({ screenX: 150, screenY: 100 });
     expect(await done).toEqual({ left: 1576, top: 24, width: 370, height: 520 });
     expect(invoke).toHaveBeenLastCalledWith('set_frame', { left: 3152, top: 48, width: 740, height: 1040 });
+  });
+
+  it('WND-03 IPC가 끝나기 전에 놓아도 놓은 위치로 크기 조절을 끝낸다', async () => {
+    let openGate: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      openGate = resolve;
+    });
+    const held = <T>(value: T) => async () => {
+      await gate;
+      return value;
+    };
+    const { controller, invoke, listeners } = setup('windows', 2, {
+      outerPosition: held({ x: 3152, y: 48 }),
+      outerSize: held({ width: 640, height: 1040 }),
+      scaleFactor: held(2),
+      primaryMonitor: held(monitor(0, 0, 3840, 2160, 2, 2080)),
+    });
+    const done = controller.resize('East', { screenX: 100, screenY: 100 }, { minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
+    listeners.get('pointerup')?.({ screenX: 150, screenY: 100 });
+    expect(listeners.size).toBe(0);
+    expect(invoke).not.toHaveBeenCalled();
+    openGate();
+    expect(await done).toEqual({ left: 1576, top: 24, width: 370, height: 520 });
+    expect(invoke).toHaveBeenCalledExactlyOnceWith('set_frame', { left: 3152, top: 48, width: 740, height: 1040 });
+  });
+
+  it('WND-07 Windows 혼합 배율에서 위치는 주 모니터 배율, 크기는 창 배율로 바꾼다 (주 1.5, 창 1)', async () => {
+    const { controller, invoke } = setup('windows', 1, {
+      outerPosition: async () => ({ x: 3000, y: 150 }),
+      outerSize: async () => ({ width: 320, height: 520 }),
+      scaleFactor: async () => 1,
+      primaryMonitor: async () => monitor(0, 0, 2880, 1620, 1.5, 1560),
+    });
+    expect(await controller.bounds()).toEqual({ left: 2000, top: 100, width: 320, height: 520 });
+    await controller.setBounds({ left: 100, top: 50, width: 300, height: 400 });
+    expect(invoke).toHaveBeenCalledWith('set_frame', { left: 150, top: 75, width: 300, height: 400 });
   });
 
   it('WND-02 이동 신호를 넘기고, 그만 받으면 Tauri 듣기를 푼다', async () => {
