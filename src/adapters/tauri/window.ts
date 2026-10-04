@@ -1,6 +1,6 @@
-type ResizeEdge = 'East' | 'South' | 'SouthEast' | 'West' | 'SouthWest';
+import type { Invoke } from './invoke.ts';
 
-type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
+type ResizeEdge = 'East' | 'South' | 'SouthEast' | 'West' | 'SouthWest';
 
 interface CurrentWindow {
   startDragging(): Promise<void>;

@@ -1,4 +1,6 @@
 //! JS가 부르는 Tauri 명령과 그 명령들이 함께 쓰는 창 동작.
+pub mod files;
+
 use tauri::{AppHandle, Manager, State};
 use todowidget_core::show_gate::{ShowGate, SHOW_FALLBACK_DELAY};
 

@@ -3704,6 +3704,10 @@ dependencies = [
 [[package]]
 name = "todowidget-core"
 version = "0.0.0"
+dependencies = [
+ "dirs",
+ "tempfile",
+]
 
 [[package]]
 name = "tokio"

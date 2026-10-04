@@ -6,5 +6,7 @@ publish = false
 description = "Tauri 없이 테스트하는 TodoWidget 로직"
 
 [dependencies]
+dirs = "7"
 
 [dev-dependencies]
+tempfile = "3"
