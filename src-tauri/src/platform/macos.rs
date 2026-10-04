@@ -5,11 +5,15 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    App, AppHandle, RunEvent,
+    App, AppHandle, RunEvent, WebviewWindow,
 };
 
+use objc2::MainThreadMarker;
+use objc2_app_kit::{NSScreen, NSWindow};
+use objc2_foundation::{NSPoint, NSRect, NSSize};
 use objc2_service_management::{SMAppService, SMAppServiceStatus};
 use todowidget_core::autostart::{AutoStart, LoginItem, LoginItemAutoStart, LoginItemStatus};
+use todowidget_core::frame::{cocoa_origin_y, Frame};
 
 /// Dock과 Cmd+Tab에 나오지 않게 한다 (MAC-02).
 fn hide_from_dock(app: &mut App) {
@@ -89,4 +93,22 @@ impl LoginItem for MainAppLoginItem {
 /// 자동 실행 (MAC-08). 판정은 `todowidget_core::autostart::LoginItemAutoStart`가 한다.
 pub fn auto_start() -> Box<dyn AutoStart> {
     Box::new(LoginItemAutoStart::new(MainAppLoginItem))
+}
+
+/// 포인트 좌표로 창 영역을 한 번에 바꾼다 (WND-03). AppKit은 메인 스레드에서만 부른다.
+pub fn set_frame(window: &WebviewWindow, frame: Frame) -> Result<(), String> {
+    let ns_window = window.ns_window().map_err(|e| e.to_string())? as usize;
+    window
+        .run_on_main_thread(move || {
+            let mtm = MainThreadMarker::new().expect("메인 스레드에서 불러야 해요");
+            // SAFETY: Tauri가 준 이 창의 NSWindow 포인터이고, 창이 살아 있는 동안 메인 스레드에서만 쓴다.
+            let ns_window = unsafe { &*(ns_window as *const NSWindow) };
+            // 첫 화면이 메뉴 막대가 있는 주 화면이고, Cocoa 좌표의 원점이다.
+            let primary_height = NSScreen::screens(mtm)
+                .firstObject()
+                .map_or(0.0, |screen| screen.frame().size.height);
+            let origin = NSPoint::new(frame.left, cocoa_origin_y(frame, primary_height));
+            ns_window.setFrame_display(NSRect::new(origin, NSSize::new(frame.width, frame.height)), true);
+        })
+        .map_err(|e| e.to_string())
 }

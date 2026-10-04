@@ -9,3 +9,4 @@ description = "Tauri 없이 테스트하는 TodoWidget Windows API"
 todowidget-core = { path = "../core" }
 windows-registry = "0.6"
 windows-result = "0.4"
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

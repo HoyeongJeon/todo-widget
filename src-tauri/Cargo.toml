@@ -28,6 +28,10 @@ todowidget-windows = { path = "crates/windows" }
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri = { version = "=2.12.1", features = ["macos-private-api", "tray-icon"] }
 objc2-service-management = { version = "0.3", features = ["SMAppService"] }
+objc2 = "0.6"
+# 기본 feature는 AppKit·Foundation 전체를 켜서 빌드가 느려진다. 쓰는 것만 켠다.
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWindow", "NSScreen", "NSResponder"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry", "NSArray"] }
 
 [profile.release]
 codegen-units = 1

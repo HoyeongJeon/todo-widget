@@ -25,6 +25,7 @@ pub fn run() {
             commands::show_main,
             commands::keep_hidden,
             commands::set_pinned,
+            commands::set_frame,
             commands::files::data_dir_info,
             commands::files::data_file_read,
             commands::files::data_file_write_atomic,

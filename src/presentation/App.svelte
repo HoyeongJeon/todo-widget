@@ -1,8 +1,9 @@
 <script lang="ts">
   // 계획 2의 위험 확인용 시험 화면이다. 실제 위젯 화면은 계획 5에서 만든다.
-  import type { ResizeEdge, WindowControlsPort } from './window-controls.ts';
+  import type { WindowController } from '../application/ports/window-controller.ts';
+  import { type ResizeEdge, resizeLimits } from '../domain/resize.ts';
 
-  let { controls, startedAt }: { controls: WindowControlsPort; startedAt: number } = $props();
+  let { windowController, startedAt }: { windowController: WindowController; startedAt: number } = $props();
 
   let items = $state<string[]>([]);
   let text = $state('');
@@ -10,7 +11,7 @@
   let transparency = $state(0);
 
   $effect(() => {
-    void controls.ready(performance.now() - startedAt);
+    void windowController.show(performance.now() - startedAt);
   });
 
   function onKeydown(event: KeyboardEvent): void {
@@ -25,19 +26,20 @@
 
   function togglePin(): void {
     pinned = !pinned;
-    void controls.setPinned(pinned);
+    void windowController.setPinned(pinned);
   }
 
   function resize(edge: ResizeEdge) {
     return (event: PointerEvent): void => {
       event.preventDefault();
-      void controls.startResize(edge);
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+      void windowController.resize(edge, event, resizeLimits(globalThis.screen.availHeight));
     };
   }
 </script>
 
 <main class="card" style:--card-alpha={1 - transparency / 100}>
-  <header role="presentation" onpointerdown={() => void controls.startDragging()}>
+  <header role="presentation" onpointerdown={() => void windowController.startDragging()}>
     <h1>할 일 (시험 화면)</h1>
     <button onpointerdown={(e) => e.stopPropagation()} onclick={togglePin}>{pinned ? '📌 켬' : '📌 끔'}</button>
   </header>
@@ -52,6 +54,11 @@
 <div class="edge east" role="presentation" onpointerdown={resize('East')}></div>
 <div class="edge south" role="presentation" onpointerdown={resize('South')}></div>
 <div class="edge south-east" role="presentation" onpointerdown={resize('SouthEast')}></div>
+<div class="edge north" role="presentation" onpointerdown={resize('North')}></div>
+<div class="edge west" role="presentation" onpointerdown={resize('West')}></div>
+<div class="edge north-east" role="presentation" onpointerdown={resize('NorthEast')}></div>
+<div class="edge north-west" role="presentation" onpointerdown={resize('NorthWest')}></div>
+<div class="edge south-west" role="presentation" onpointerdown={resize('SouthWest')}></div>
 
 <style>
   :global(html),
@@ -113,5 +120,45 @@
     width: 14px;
     height: 14px;
     cursor: nwse-resize;
+  }
+
+  .north {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    cursor: ns-resize;
+  }
+
+  .west {
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    cursor: ew-resize;
+  }
+
+  .north-east {
+    top: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nesw-resize;
+  }
+
+  .north-west {
+    top: 0;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+  }
+
+  .south-west {
+    bottom: 0;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nesw-resize;
   }
 </style>

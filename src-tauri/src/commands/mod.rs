@@ -3,6 +3,7 @@ pub mod auto_start;
 pub mod files;
 
 use tauri::{AppHandle, Manager, State};
+use todowidget_core::frame::Frame;
 use todowidget_core::show_gate::{ShowGate, SHOW_FALLBACK_DELAY};
 
 use crate::probe;
@@ -36,6 +37,21 @@ pub fn set_pinned(app: AppHandle, pinned: bool) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.set_always_on_top(pinned);
     }
+}
+
+/// 창 위치와 크기를 한 번에 바꾼다. 값은 OS 좌표다(Windows 실제 픽셀, macOS 포인트). 변환은 JS `coordinates.ts`가 한다.
+#[tauri::command]
+pub fn set_frame(app: AppHandle, left: f64, top: f64, width: f64, height: f64) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("창이 없어요")?;
+    crate::platform::set_frame(
+        &window,
+        Frame {
+            left,
+            top,
+            width,
+            height,
+        },
+    )
 }
 
 /// `SHOW_FALLBACK_DELAY` 안에 화면이 창을 띄우지 않으면 Rust가 띄운다.

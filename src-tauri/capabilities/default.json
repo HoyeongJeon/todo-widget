@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "주 창 권한",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-start-dragging", "core:window:allow-start-resize-dragging"]
+  "permissions": ["core:default", "core:window:allow-start-dragging"]
 }
