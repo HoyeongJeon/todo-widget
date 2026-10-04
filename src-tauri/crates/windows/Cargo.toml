@@ -1,0 +1,11 @@
+[package]
+name = "todowidget-windows"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Tauri 없이 테스트하는 TodoWidget Windows API"
+
+[target.'cfg(windows)'.dependencies]
+todowidget-core = { path = "../core" }
+windows-registry = "0.6"
+windows-result = "0.4"

@@ -8,6 +8,9 @@ use tauri::{
     App, AppHandle, RunEvent,
 };
 
+use objc2_service_management::{SMAppService, SMAppServiceStatus};
+use todowidget_core::autostart::{AutoStart, LoginItem, LoginItemAutoStart, LoginItemStatus};
+
 /// Dock과 Cmd+Tab에 나오지 않게 한다 (MAC-02).
 fn hide_from_dock(app: &mut App) {
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -53,4 +56,37 @@ pub fn on_run_event(app: &AppHandle, event: RunEvent) {
     if let RunEvent::Reopen { .. } = event {
         crate::commands::bring_to_front(app);
     }
+}
+
+/// 앱 자체를 로그인 항목으로 (MAC-08, macOS 13 이상).
+struct MainAppLoginItem;
+
+impl LoginItem for MainAppLoginItem {
+    fn status(&self) -> LoginItemStatus {
+        // SAFETY: SMAppService는 macOS 13 이상에서 쓸 수 있고, minimumSystemVersion이 13.0이다.
+        let status = unsafe { SMAppService::mainAppService().status() };
+        match status {
+            SMAppServiceStatus::Enabled => LoginItemStatus::Enabled,
+            SMAppServiceStatus::RequiresApproval => LoginItemStatus::RequiresApproval,
+            SMAppServiceStatus::NotFound => LoginItemStatus::NotFound,
+            _ => LoginItemStatus::NotRegistered,
+        }
+    }
+
+    fn register(&self) -> Result<(), String> {
+        // SAFETY: 위와 같다.
+        unsafe { SMAppService::mainAppService().registerAndReturnError() }
+            .map_err(|error| error.localizedDescription().to_string())
+    }
+
+    fn unregister(&self) -> Result<(), String> {
+        // SAFETY: 위와 같다.
+        unsafe { SMAppService::mainAppService().unregisterAndReturnError() }
+            .map_err(|error| error.localizedDescription().to_string())
+    }
+}
+
+/// 자동 실행 (MAC-08). 판정은 `todowidget_core::autostart::LoginItemAutoStart`가 한다.
+pub fn auto_start() -> Box<dyn AutoStart> {
+    Box::new(LoginItemAutoStart::new(MainAppLoginItem))
 }

@@ -20,6 +20,7 @@ pub fn run() {
         }))
         .manage(ShowGate::default())
         .manage(DataDir::new(data_dir))
+        .manage(commands::auto_start::AutoStartState(platform::auto_start()))
         .invoke_handler(tauri::generate_handler![
             commands::show_main,
             commands::keep_hidden,
@@ -29,7 +30,11 @@ pub fn run() {
             commands::files::data_file_write_atomic,
             commands::files::data_file_exists,
             commands::files::data_file_rename,
-            commands::files::data_file_copy
+            commands::files::data_file_copy,
+            commands::auto_start::auto_start_is_enabled,
+            commands::auto_start::auto_start_enable,
+            commands::auto_start::auto_start_disable,
+            commands::auto_start::auto_start_refresh
         ])
         .setup(|app| {
             platform::setup(app)?;

@@ -12,7 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "=2.7.1", features = [] }
 
 [workspace]
-members = ["crates/core"]
+members = ["crates/core", "crates/windows"]
 
 [dependencies]
 tauri = { version = "=2.12.1", features = ["macos-private-api"] }
@@ -20,6 +20,9 @@ tauri-plugin-single-instance = "=2.5.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 todowidget-core = { path = "crates/core" }
+
+[target.'cfg(windows)'.dependencies]
+todowidget-windows = { path = "crates/windows" }
 
 # 메뉴 막대 아이콘은 macOS만 쓴다(설계 문서 6장). Windows 빌드에는 tray 코드를 넣지 않는다.
 [target.'cfg(target_os = "macos")'.dependencies]

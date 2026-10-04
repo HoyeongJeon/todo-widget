@@ -1,4 +1,5 @@
 //! JS가 부르는 Tauri 명령과 그 명령들이 함께 쓰는 창 동작.
+pub mod auto_start;
 pub mod files;
 
 use tauri::{AppHandle, Manager, State};
