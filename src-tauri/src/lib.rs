@@ -1,68 +1,32 @@
+mod commands;
 mod platform;
 mod probe;
 
-use tauri::{AppHandle, Manager};
-
-/// 창을 앞으로 가져온다. 처음 띄울 때와 다시 부를 때 같이 쓴다.
-pub(crate) fn bring_to_front(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
-}
-
-/// 화면이 준비되면 JS가 부른다. 숨긴 창에서는 requestAnimationFrame이 오지 않으므로 mount 직후에 부른다.
-#[tauri::command]
-fn show_main(app: AppHandle, painted_at_ms: f64) {
-    // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
-    probe::report_shown(painted_at_ms);
-    bring_to_front(&app);
-}
-
-/// 📌 맨 위 고정 (WND-09). 맨 위 고정만 바꾼다. macOS 전체 화면 앱에서는 📌와 관계없이 보이지 않는다 (MAC-07).
-#[tauri::command]
-fn set_pinned(app: AppHandle, pinned: bool) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_always_on_top(pinned);
-    }
-}
+use todowidget_core::show_gate::ShowGate;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
     probe::mark_process_start();
 
-    // 계획 2 시험 코드. 계획 4에서 MAC-08 adapter를 만들 때 지운다.
-    #[cfg(target_os = "macos")]
-    if let Some(position) = std::env::args_os().position(|a| a == std::ffi::OsStr::new("--probe-login-item")) {
-        let action = std::env::args_os()
-            .nth(position + 1)
-            .map(|a| a.to_string_lossy().into_owned())
-            .unwrap_or_else(|| "status".into());
-        println!("{}", platform::macos::probe_login_item(&action));
-        return;
-    }
-
     let app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![show_main, set_pinned])
+        // 가장 먼저 등록한다. 두 번째 프로세스는 창을 만들거나 파일을 읽기 전에 끝나고, 떠 있는 위젯이 앞으로 온다 (START-01, WIN-07, MAC-05).
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            commands::bring_to_front(app)
+        }))
+        .manage(ShowGate::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::show_main,
+            commands::keep_hidden,
+            commands::set_pinned
+        ])
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            {
-                platform::macos::hide_from_dock(app);
-                platform::macos::install_tray(app)?;
-            }
-            let _ = app;
+            platform::setup(app)?;
+            commands::spawn_show_fallback(app.handle().clone());
             Ok(())
         })
         .build(tauri::generate_context!())
         .expect("TodoWidget을 실행하지 못했어요");
 
-    app.run(|app, event| {
-        // Spotlight·응용 프로그램 폴더에서 다시 열면 macOS가 Reopen을 보낸다 (MAC-05).
-        #[cfg(target_os = "macos")]
-        if let tauri::RunEvent::Reopen { .. } = event {
-            bring_to_front(app);
-        }
-        let _ = (app, event);
-    });
+    app.run(platform::on_run_event);
 }

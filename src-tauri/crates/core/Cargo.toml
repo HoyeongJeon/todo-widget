@@ -1,0 +1,10 @@
+[package]
+name = "todowidget-core"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Tauri 없이 테스트하는 TodoWidget 로직"
+
+[dependencies]
+
+[dev-dependencies]

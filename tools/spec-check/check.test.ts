@@ -52,6 +52,16 @@ describe('runSpecCheck', () => {
     expect(runSpecCheck(root, { strict: true }).exitCode).toBe(0);
   });
 
+  it('src-tauri/crates 아래 crate의 Rust 테스트 주석도 참조로 센다', () => {
+    write('src-tauri/crates/core/src/files.rs', '/// TASK-01 추가\n#[cfg(windows)]\n#[test]\nfn adds() {}');
+    expect(runSpecCheck(root, { strict: true }).exitCode).toBe(0);
+  });
+
+  it('src-tauri/crates에서도 테스트에 붙지 않은 ID 언급은 참조로 세지 않는다', () => {
+    write('src-tauri/crates/core/src/files.rs', '// TASK-01 설명\nfn adds() {}');
+    expect(runSpecCheck(root, { strict: true }).coverage.unlinkedAuto.map((r) => r.id)).toEqual(['TASK-01']);
+  });
+
   it('직접 확인 항목이 체크리스트에 없으면 기본 모드도 실패한다', () => {
     write('spec/checklists/windows.md', '');
     const result = runSpecCheck(root, { strict: false });

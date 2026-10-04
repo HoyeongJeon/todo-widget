@@ -47,8 +47,12 @@ jobs:
         run: pnpm typecheck
       - name: spec 검사
         run: pnpm spec:check
+      - name: Rust 형식 검사
+        run: cargo fmt --check --manifest-path src-tauri/Cargo.toml --all
+      - name: Rust lint
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
       - name: Rust 테스트
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        run: cargo test --manifest-path src-tauri/Cargo.toml --workspace
       - name: 빌드 확인
         run: pnpm tauri build --debug --no-bundle
 

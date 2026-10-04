@@ -61,7 +61,7 @@ OS에 실제 효과가 있는 자동 테스트 항목은 port 호출까지만 �
   #[test]
   fn keeps_original_file_on_write_failure() { /* ... */ }
   ```
-- `pnpm spec:check`가 참조로 세는 곳은 `src/**/*.test.ts`, `src-tauri/src/**/*.rs`, `src-tauri/tests/**/*.rs`, `.github/workflows/*.yml`이다. `src-tauri/src/`에서는 3줄 안에 `#[test]`가 오는 `//`·`///` 주석의 ID만 센다. TypeScript에서 `.skip(`이나 `.todo(`가 있는 줄의 ID는 세지 않는다. workflow는 출시·성능 검사 단계 이름에 ID를 적는다(예: REL-05, PERF-05).
+- `pnpm spec:check`가 참조로 세는 곳은 `src/**/*.test.ts`, `src-tauri/src/**/*.rs`, `src-tauri/crates/*/src/**/*.rs`, `src-tauri/tests/**/*.rs`, `.github/workflows/*.yml`이다. `src-tauri/src/`와 `src-tauri/crates/*/src/`에서는 3줄 안에 `#[test]`가 오는 `//`·`///` 주석의 ID만 센다. TypeScript에서 `.skip(`이나 `.todo(`가 있는 줄의 ID는 세지 않는다. workflow는 출시·성능 검사 단계 이름에 ID를 적는다(예: REL-05, PERF-05).
 
 ## v1.4와 다른 점
 

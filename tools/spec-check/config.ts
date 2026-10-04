@@ -51,6 +51,7 @@ export const CHECKLISTS_BY_FILE: Readonly<Record<string, readonly string[]>> = {
 export const TEST_GLOBS: readonly string[] = [
   'src/**/*.test.ts',
   'src-tauri/src/**/*.rs',
+  'src-tauri/crates/*/src/**/*.rs',
   'src-tauri/tests/**/*.rs',
   '.github/workflows/*.yml',
 ];
