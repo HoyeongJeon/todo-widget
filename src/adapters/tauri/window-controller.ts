@@ -1,3 +1,4 @@
+import { availableMonitors, getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window';
 import type { PointerStart, ScreenLayout, WindowController } from '../../application/ports/window-controller.ts';
 import type { ResizeEdge, SizeLimits } from '../../domain/resize.ts';
 import type { Rect } from '../../domain/window-geometry.ts';
@@ -32,6 +33,20 @@ export interface TauriWindowApi {
   onMoved(handler: () => void): Promise<() => void>;
   primaryMonitor(): Promise<TauriMonitor | null>;
   availableMonitors(): Promise<TauriMonitor[]>;
+}
+
+/** 실제 Tauri 창 API. Monitor 객체는 필요한 필드(position, size, scaleFactor, workArea)를 그대로 가진다. */
+export function tauriWindowApi(): TauriWindowApi {
+  const current = getCurrentWindow();
+  return {
+    outerPosition: () => current.outerPosition(),
+    outerSize: () => current.outerSize(),
+    scaleFactor: () => current.scaleFactor(),
+    startDragging: () => current.startDragging(),
+    onMoved: (handler) => current.onMoved(() => handler()),
+    primaryMonitor,
+    availableMonitors,
+  };
 }
 
 export interface WindowControllerDeps {
