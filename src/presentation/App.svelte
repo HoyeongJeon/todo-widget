@@ -128,6 +128,9 @@
   }
 
   .card {
+    /* 계획 5에서 내용에 맞춘 높이를 넣기 전까지는 카드가 창 높이를 채워 가장자리가 카드 위에 오게 한다. */
+    box-sizing: border-box;
+    min-height: calc(100vh - 20px);
     margin: 10px;
     padding: 12px;
     border-radius: 12px;
@@ -164,6 +167,8 @@
 
   .edge {
     position: fixed;
+    /* 투명한 창은 alpha가 0인 픽셀의 클릭을 뒤로 넘긴다(macOS). 눈에 거의 안 보이지만 0이 아닌 배경을 둔다. */
+    background: rgba(0, 0, 0, 0.01);
   }
 
   .east {

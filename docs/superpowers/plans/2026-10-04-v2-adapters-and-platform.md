@@ -5126,6 +5126,7 @@ Windows 시험 설치 파일은 필요할 때 workflow_dispatch(`windows_probe`)
 - 시험 화면(`App.svelte`)을 실제 화면으로 바꾼다. 문구는 I18N 사전으로 옮긴다.
   - 대상: launch 대화 상자 문구, 메뉴 막대 메뉴 "열기"·"종료"(지금은 Rust에 한국어로 있다)
 - 창 높이를 내용에 맞춰 줄인다(WND-03 "내용이 짧으면 창은 내용만큼"). `WindowPlacement`에 method를 더한다.
+- macOS에서 크기 조절 가장자리 영역은 완전히 투명하면 안 되고(alpha 0인 픽셀은 클릭이 뒤로 넘어간다), 보이는 카드 위에 있어야 한다.
 - `LocaleProvider`로 화면 언어를 고른다(`pickLanguage`).
 - 업데이트 서명 실제 키와 endpoint 저장소 이름은 계획 6에서 바꾼다.
 

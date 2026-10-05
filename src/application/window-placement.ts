@@ -22,6 +22,8 @@ export class WindowPlacement {
   readonly #deps: PlacementDeps;
   #cancelSave: (() => void) | null = null;
   #stopMoved: (() => void) | null = null;
+  /** 마지막 apply()에서 읽은 주 모니터 작업 영역 높이. 크기 조절을 기다림 없이 시작하는 데 쓴다. */
+  #workAreaHeight: number | null = null;
 
   constructor(deps: PlacementDeps) {
     this.#deps = deps;
@@ -30,6 +32,7 @@ export class WindowPlacement {
   async apply(): Promise<void> {
     const { window, settings } = this.#deps;
     const screen = await window.screen();
+    this.#workAreaHeight = screen.primaryWorkArea.height;
     const saved = settings.current;
     const size = resolveWidgetSize(saved.width, saved.maxHeight, screen.primaryWorkArea.height);
     const position = resolveWidgetPosition(saved, size.width, screen.monitors, screen.primaryWorkArea);
@@ -43,12 +46,17 @@ export class WindowPlacement {
     await this.#deps.settings.update({ pinned });
   }
 
+  /**
+   * window.resize는 기다림 없이 바로 부른다. 그 전에 IPC를 기다리면 그 사이 놓은 pointer를 adapter가 놓쳐
+   * 크기 조절이 끝나지 않고 저장도 되지 않는다. 그래서 작업 영역 높이는 apply()에서 읽어 둔 값을 쓴다.
+   */
   async resize(edge: ResizeEdge, start: PointerStart): Promise<void> {
     const { window, settings } = this.#deps;
-    const screen = await window.screen();
-    const rect = await window.resize(edge, start, resizeLimits(screen.primaryWorkArea.height));
+    const known = this.#workAreaHeight;
+    const workAreaHeight = known === null ? (await window.screen()).primaryWorkArea.height : known;
+    const rect = await window.resize(edge, start, resizeLimits(workAreaHeight));
     this.#cancelPending();
-    const size = resolveWidgetSize(rect.width, rect.height, screen.primaryWorkArea.height);
+    const size = resolveWidgetSize(rect.width, rect.height, workAreaHeight);
     await settings.update({ left: rect.left, top: rect.top, width: size.width, maxHeight: size.maxHeight });
   }
 
