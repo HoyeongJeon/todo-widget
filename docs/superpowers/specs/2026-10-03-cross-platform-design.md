@@ -20,6 +20,7 @@
 - 2026-10-03: 계획 3 결과 — port 표를 실제 위치·이름으로 맞추고, 시계와 id 생성기는 domain이 쓰므로 domain에 둔다고 적었다. `FileSystem`은 `FileStore`로, `AppPaths`는 `FileStore`와 `resolveDataDir`로 대신했고, `Timer`를 더했다(5.1, 5.2).
 - 2026-10-03: 계획 3 최종 리뷰 — `src/testing/`을 테스트 파일만 가져오는 층으로 구조 테스트에 넣고, 저장 전 미리 보기 값은 ViewModel이 든다고 적었다(5.1). 5.3의 `addMany`를 실제 이름 `addLines`로 고쳤다.
 - 2026-10-04: 계획 4 반영 — port 위치와 구현, OS 분기 위치, Rust crate 구성, 기술 선택(5.2, 5.4, 5.5, 12장, 13장)
+- 2026-10-05: 계획 4 최종 리뷰 — `show_main`은 ShowGate 결정과 관계없이 창을 띄운다고 적고(5.4), 5.5의 Rust 테스트 명령(`--exclude todo-widget`)과 로컬 Windows 검사 명령을 실제와 맞췄다
 
 ## 1. 목적
 
@@ -207,7 +208,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | `todowidget-core` | `src-tauri/crates/core/` | Tauri 없이 테스트하는 순수 로직. 안전한 쓰기와 데이터 폴더(`files`), 자동 실행 판정(`autostart`), 창 영역 값(`frame`), 창 띄우기 결정(`show_gate`) |
 | `todowidget-windows` | `src-tauri/crates/windows/` | Tauri 없는 Windows API. Windows에서만 컴파일된다 |
 
-- 창을 띄울지는 `ShowGate`가 한 번만 정한다(정하지 않음·띄움·숨긴 채 둠). `show_main`, `keep_hidden`(STORE-10 대화 상자), 3초 대비책 중 먼저 온 쪽이 정한다.
+- 창을 띄울지는 `ShowGate`가 한 번만 정한다(정하지 않음·띄움·숨긴 채 둠). `show_main`, `keep_hidden`(STORE-10 대화 상자), 3초 대비책 중 먼저 온 쪽이 정한다. 다만 `show_main`은 결정과 관계없이 늘 창을 띄운다(두 명령 모두 JS가 부르므로 순서는 JS가 책임진다). 결정을 따르는 것은 `reveal()`과 3초 대비책이다.
 - 다시 실행(START-01), 메뉴 막대 "열기", macOS Reopen은 모두 `reveal()`을 거친다. `keep_hidden`이 "숨긴 채 둠"으로 정했으면 `reveal()`은 아무것도 하지 않는다. 대화 상자 중에 빈 창이 뜨지 않게 하기 위해서다.
 
 ### 5.5 테스트
@@ -216,12 +217,12 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 |---|---|---|
 | domain, application | Vitest + 가짜 port | 공통 행동 spec 대부분 |
 | presentation | Vitest, DOM 없이 ViewModel만 | 입력 흐름(조합 중 Enter 무시, Esc, 이름 바꾸기 저장·취소), 메뉴 상태, 업데이트 안내 |
-| adapters | `cargo test --workspace`(core, windows crate), Vitest port 계약 테스트, `pnpm privacy:check` | 안전한 쓰기, 데이터 폴더, 자동 실행 판정, Windows 레지스트리(Windows CI). 가짜와 진짜 구현이 같은 계약을 지키는지. HTTP crate를 updater plugin만 쓰는지(PRIV-01) |
+| adapters | `cargo test --workspace --exclude todo-widget`(core, windows crate. 앱 crate는 테스트가 없고, Windows에서 테스트 실행 파일이 rfd·common-controls 링크 때문에 뜨지 않을 수 있어 뺀다), Vitest port 계약 테스트, `pnpm privacy:check` | 안전한 쓰기, 데이터 폴더, 자동 실행 판정, Windows 레지스트리(Windows CI). 가짜와 진짜 구현이 같은 계약을 지키는지. HTTP crate를 updater plugin만 쓰는지(PRIV-01) |
 | 실제 앱 | OS별 직접 확인 체크리스트 | 창 모양, 실제 IME 입력, 메뉴 막대, Spaces, 설치·업데이트 |
 
 Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 아래 동작을 최대한 ViewModel로 끌어내려 자동 테스트 범위를 넓힌다.
 
-Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowidget-windows`뿐이다(`cargo clippy -p todowidget-core -p todowidget-windows --target x86_64-pc-windows-msvc`). 앱 crate의 Windows 빌드는 CI에서 확인한다(13장 개발 결정).
+Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowidget-windows`뿐이다(`PATH="/opt/homebrew/opt/llvm/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml -p todowidget-core -p todowidget-windows --all-targets --target x86_64-pc-windows-msvc -- -D warnings`). 앱 crate의 Windows 빌드는 CI에서 확인한다(13장 개발 결정).
 
 ## 6. OS별 동작
 

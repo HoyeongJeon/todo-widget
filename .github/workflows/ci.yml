@@ -52,7 +52,7 @@ jobs:
       - name: Rust lint
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
       - name: Rust 테스트
-        run: cargo test --manifest-path src-tauri/Cargo.toml --workspace
+        run: cargo test --manifest-path src-tauri/Cargo.toml --workspace --exclude todo-widget
       - name: PRIV-01 Rust 네트워크 crate 검사
         run: pnpm privacy:check
       - name: 빌드 확인

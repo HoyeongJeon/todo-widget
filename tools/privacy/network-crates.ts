@@ -27,7 +27,12 @@ export function checkNetworkCrates(run: (crate: string) => string | null): strin
       problems.push(`${crate}가 의존성에 있어요 (PRIV-01)`);
       continue;
     }
-    for (const user of directDependents(tree).filter((name) => !allowed.includes(name)))
+    const users = directDependents(tree);
+    if (users.length === 0) {
+      problems.push(`${crate} 의존 트리를 읽지 못했어요 (cargo tree 출력 형식이 바뀌었을 수 있어요) (PRIV-01)`);
+      continue;
+    }
+    for (const user of users.filter((name) => !allowed.includes(name)))
       problems.push(`${crate}를 ${user}가 써요. 네트워크는 ${allowed.join(', ')}만 써야 해요 (PRIV-01)`);
   }
   return problems;

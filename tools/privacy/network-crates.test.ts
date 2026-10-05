@@ -23,4 +23,11 @@ describe('Rust 네트워크 crate 검사', () => {
       'ureq가 의존성에 있어요 (PRIV-01)',
     ]);
   });
+
+  it('PRIV-01 의존 트리에서 바로 위 의존자를 하나도 읽지 못하면 통과시키지 않고 알린다', () => {
+    const unreadable = 'reqwest v0.12.24\n└── tauri-plugin-updater v2.13.1';
+    expect(checkNetworkCrates((crate) => (crate === 'reqwest' ? unreadable : null))).toEqual([
+      'reqwest 의존 트리를 읽지 못했어요 (cargo tree 출력 형식이 바뀌었을 수 있어요) (PRIV-01)',
+    ]);
+  });
 });
