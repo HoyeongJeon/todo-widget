@@ -36,7 +36,7 @@ const ALLOWED_IMPORTS: Readonly<Record<Layer, readonly Layer[]>> = {
 
 const IMPORT_PATTERN =
   /\b(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|\bimport\s+['"]([^'"]+)['"]/g;
-const NETWORK_PATTERN = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|@tauri-apps\/plugin-(?:http|websocket|upload)/g;
+const NETWORK_PATTERN = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|@tauri-apps\/plugin-(?:http|websocket|upload|updater)/g;
 
 export function layerOf(path: string): Layer {
   const match = /^src\/(domain|application|presentation|adapters|testing)\//.exec(path);

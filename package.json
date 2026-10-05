@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.tools.json && tsc --noEmit -p tsconfig.core.json && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "spec:check": "node tools/spec-check/cli.ts",
-    "spec:check:strict": "node tools/spec-check/cli.ts --strict"
+    "spec:check:strict": "node tools/spec-check/cli.ts --strict",
+    "privacy:check": "node tools/privacy/cli.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.3.1",
@@ -26,6 +27,8 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@tauri-apps/api": "2.12.1"
+    "@tauri-apps/api": "2.12.1",
+    "@tauri-apps/plugin-process": "2.4.0",
+    "@tauri-apps/plugin-updater": "2.13.1"
   }
 }

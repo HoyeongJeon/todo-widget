@@ -18,6 +18,9 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             commands::bring_to_front(app)
         }))
+        // 업데이트 확인·설치 (UPD-01~08). 네트워크 요청은 이 plugin 하나뿐이다 (PRIV-01).
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(ShowGate::default())
         .manage(DataDir::new(data_dir))
         .manage(commands::auto_start::AutoStartState(platform::auto_start()))

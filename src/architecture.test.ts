@@ -152,6 +152,16 @@ describe('네트워크 사용 제한', () => {
     ]);
   });
 
+  it('PRIV-01 Tauri updater plugin은 updater adapter에서만 쓴다', () => {
+    const violations = checkArchitecture([
+      file('src/adapters/tauri/x.ts', "import { check } from '@tauri-apps/plugin-updater';"),
+      file('src/adapters/updater/tauri-updater.ts', "import { check } from '@tauri-apps/plugin-updater';"),
+    ]);
+    expect(violations).toEqual([
+      { path: 'src/adapters/tauri/x.ts', line: 1, message: '네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): @tauri-apps/plugin-updater' },
+    ]);
+  });
+
   it('PRIV-01 실제 소스가 층 규칙과 네트워크 제한을 지킨다', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     expect(checkArchitecture(collectSources(root))).toEqual([]);
