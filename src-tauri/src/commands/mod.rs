@@ -5,6 +5,7 @@ pub mod files;
 use serde::Serialize;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use todowidget_core::frame::Frame;
 use todowidget_core::show_gate::{Decision, ShowGate, SHOW_FALLBACK_DELAY};
 
@@ -26,10 +27,15 @@ pub fn bring_to_front(app: &AppHandle) {
 /// 가려진 위젯 꺼내기: 다시 실행했을 때(START-01), 메뉴 막대 아이콘·"열기"(MAC-03), Reopen(MAC-05).
 /// STORE-10 대화 상자 때문에 숨긴 채 두기로 했으면 빈 창을 띄우지 않는다.
 /// 아직 정하지 않았으면(화면 준비 전) 띄우되 결정은 하지 않는다. 뒤에 오는 `keep_hidden`이 이길 수 있게 하기 위해서다.
+/// 확인과 띄우기를 메인 스레드에서 한 번에 한다. `keep_hidden`(동기 명령이라 메인 스레드)이 그 사이에 끼지 못하게 하기 위해서다.
+/// single-instance 콜백은 macOS에서 async runtime 스레드에서 온다.
 pub fn reveal(app: &AppHandle) {
-    if !app.state::<ShowGate>().is_hidden() {
-        bring_to_front(app);
-    }
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        if !handle.state::<ShowGate>().is_hidden() {
+            bring_to_front(&handle);
+        }
+    });
 }
 
 /// 화면이 준비되면 JS가 부른다. 숨긴 창에서는 requestAnimationFrame이 오지 않으므로 mount 직후에 부른다.
@@ -100,7 +106,7 @@ pub fn app_info(app: AppHandle) -> AppInfo {
     AppInfo {
         version: app.package_info().version.to_string(),
         is_dev_build: cfg!(debug_assertions),
-        os: if cfg!(windows) { "windows" } else { "macos" },
+        os: crate::platform::OS_NAME,
     }
 }
 
@@ -108,6 +114,22 @@ pub fn app_info(app: AppHandle) -> AppInfo {
 #[tauri::command]
 pub fn os_locale() -> Option<String> {
     sys_locale::get_locale()
+}
+
+/// 오류 대화 상자 (STORE-10). 창에 붙이지 않는다(parent 없음). STORE-10에서는 창이 숨어 있어,
+/// 창에 붙이면 macOS sheet가 보이지 않고 닫히지도 않는다. parent가 없으면 macOS는 창 없는 알림(`CFUserNotification`),
+/// Windows는 `MessageBoxW`로 뜬다. 닫힐 때까지 기다리므로 메인 스레드를 막지 않게 async 명령에서 blocking 스레드로 넘긴다.
+#[tauri::command]
+pub async fn show_error_dialog(app: AppHandle, title: String, message: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.dialog()
+            .message(message)
+            .title(title)
+            .kind(MessageDialogKind::Error)
+            .blocking_show();
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 /// JS 종료 흐름이 저장을 마친 뒤 부른다 (START-08).

@@ -2,12 +2,12 @@
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
-pub use macos::{auto_start, on_run_event, set_frame, setup};
+pub use macos::{auto_start, on_run_event, set_frame, setup, OS_NAME};
 
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-pub use windows::{auto_start, on_run_event, set_frame, setup};
+pub use windows::{auto_start, on_run_event, set_frame, setup, OS_NAME};
 
 #[cfg(not(any(target_os = "macos", windows)))]
 compile_error!("TodoWidget은 Windows와 macOS만 지원해요");

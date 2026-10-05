@@ -25,4 +25,14 @@ describe('앱 프로세스', () => {
     stop();
     expect(unlisten).toHaveBeenCalledOnce();
   });
+
+  it('START-08 종료 요청 듣기를 시작하지 못해도 처리하지 않은 거부를 남기지 않는다', async () => {
+    const listen = vi.fn(async () => {
+      throw new Error('듣기 실패');
+    });
+    const stop = createTauriProcess(async () => undefined, listen).onQuitRequested(() => undefined);
+    await vi.waitFor(() => expect(listen).toHaveBeenCalledOnce());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(() => stop()).not.toThrow();
+  });
 });

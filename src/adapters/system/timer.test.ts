@@ -6,7 +6,7 @@ afterEach(() => {
 });
 
 describe('시스템 타이머', () => {
-  it('정한 시간 뒤에 한 번 실행하고, 취소하면 실행하지 않는다', () => {
+  it('UPD-01 정한 시간 뒤에 한 번 실행하고, 취소하면 실행하지 않는다', () => {
     vi.useFakeTimers();
     const timer = createSystemTimer();
     const ran: string[] = [];

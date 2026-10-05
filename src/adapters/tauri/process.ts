@@ -14,12 +14,13 @@ export function createTauriProcess(invoke: Invoke, listen: Listen): AppProcess {
     onQuitRequested(listener: () => void): () => void {
       let stopped = false;
       let unlisten: (() => void) | null = null;
+      // 듣기를 시작하지 못하면 OS 종료 요청은 Rust 대비 종료(3초)만 남는다. 거부를 처리하지 않은 채 두지 않는다.
       void listen(QUIT_REQUESTED_EVENT, listener).then((stop) => {
         if (stopped)
           stop();
         else
           unlisten = stop;
-      });
+      }).catch(() => undefined);
       return () => {
         stopped = true;
         unlisten?.();

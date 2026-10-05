@@ -4,6 +4,9 @@ use todowidget_core::autostart::{AutoStart, RunKeyAutoStart, RUN_VALUE_NAME};
 use todowidget_core::frame::Frame;
 use todowidget_windows::run_key::HkcuRunKey;
 
+/// JS `DesktopOs`와 같은 이름. `app_info` 명령이 돌려준다.
+pub const OS_NAME: &str = "windows";
+
 pub fn setup(_app: &mut App) -> tauri::Result<()> {
     Ok(())
 }

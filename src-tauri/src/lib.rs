@@ -22,7 +22,7 @@ pub fn run() {
         // 업데이트 확인·설치 (UPD-01~08). 네트워크 요청은 이 plugin 하나뿐이다 (PRIV-01).
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        // STORE-10 오류 대화 상자.
+        // STORE-10 오류 대화 상자. JS는 이 plugin을 직접 부르지 않고 `commands::show_error_dialog`를 부른다.
         .plugin(tauri_plugin_dialog::init())
         .manage(ShowGate::default())
         .manage(DataDir::new(data_dir))
@@ -44,7 +44,8 @@ pub fn run() {
             commands::auto_start::auto_start_refresh,
             commands::app_info,
             commands::os_locale,
-            commands::quit_app
+            commands::quit_app,
+            commands::show_error_dialog
         ])
         // Alt+F4 같은 창 닫기도 종료 흐름을 거쳐 위치를 저장한다 (WND-14).
         .on_window_event(|window, event| {

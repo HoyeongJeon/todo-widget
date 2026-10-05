@@ -41,7 +41,7 @@ describe('잠자기에서 깨어남', () => {
     expect(WAKE_GAP_MS).toBe(2 * WAKE_CHECK_INTERVAL_MS);
   });
 
-  it('멈추면 interval을 지운다', () => {
+  it('UPD-01 멈추면 interval을 지운다', () => {
     const intervals = fakeIntervals();
     watchWake(() => undefined, intervals.api)();
     expect(intervals.isCleared()).toBe(true);

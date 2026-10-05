@@ -1,16 +1,19 @@
-import { message as tauriMessage } from '@tauri-apps/plugin-dialog';
+import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import type { Dialog } from '../../application/ports/dialog.ts';
+import type { Invoke } from './invoke.ts';
 
-type MessageFn = (text: string, options: { title: string; kind: 'error' }) => Promise<unknown>;
-
-export function createDialog(message: MessageFn): Dialog {
+/**
+ * Rust `show_error_dialog` 명령. 창에 붙이지 않고(parent 없이) 띄운다.
+ * STORE-10에서는 창이 숨어 있어, 창에 붙인 macOS sheet는 보이지 않고 닫히지도 않기 때문이다.
+ */
+export function createDialog(invoke: Invoke): Dialog {
   return {
-    async showError(title: string, text: string): Promise<void> {
-      await message(text, { title, kind: 'error' });
+    async showError(title: string, message: string): Promise<void> {
+      await invoke('show_error_dialog', { title, message });
     },
   };
 }
 
 export function tauriDialog(): Dialog {
-  return createDialog(tauriMessage);
+  return createDialog(tauriInvoke);
 }

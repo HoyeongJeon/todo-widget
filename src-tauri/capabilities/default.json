@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "주 창 권한",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-start-dragging", "updater:default", "process:allow-restart", "dialog:allow-message"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "updater:default", "process:allow-restart"]
 }

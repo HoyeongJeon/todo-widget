@@ -15,6 +15,9 @@ use objc2_service_management::{SMAppService, SMAppServiceStatus};
 use todowidget_core::autostart::{AutoStart, LoginItem, LoginItemAutoStart, LoginItemStatus};
 use todowidget_core::frame::{cocoa_origin_y, Frame};
 
+/// JS `DesktopOs`와 같은 이름. `app_info` 명령이 돌려준다.
+pub const OS_NAME: &str = "macos";
+
 /// Dock과 Cmd+Tab에 나오지 않게 한다 (MAC-02).
 fn hide_from_dock(app: &mut App) {
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);
