@@ -2,11 +2,18 @@
 pub mod auto_start;
 pub mod files;
 
-use tauri::{AppHandle, Manager, State};
+use serde::Serialize;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, State};
 use todowidget_core::frame::Frame;
 use todowidget_core::show_gate::{Decision, ShowGate, SHOW_FALLBACK_DELAY};
 
 use crate::probe;
+
+/// JS가 이 시간 안에 저장을 마치고 끝내지 않으면 Rust가 끝낸다.
+const QUIT_FALLBACK_DELAY: Duration = Duration::from_secs(3);
+/// JS `src/adapters/tauri/process.ts`의 `QUIT_REQUESTED_EVENT`와 같다.
+const QUIT_EVENT: &str = "quit-requested";
 
 /// 창을 앞으로 가져온다. 처음 띄울 때와 `reveal`이 같이 쓴다.
 pub fn bring_to_front(app: &AppHandle) {
@@ -76,5 +83,45 @@ pub fn spawn_show_fallback(app: AppHandle) {
         if app.state::<ShowGate>().claim(Decision::Shown) {
             bring_to_front(&app);
         }
+    });
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppInfo {
+    version: String,
+    is_dev_build: bool,
+    os: &'static str,
+}
+
+/// 앱 버전과 개발 빌드 여부(START-07), OS.
+#[tauri::command]
+pub fn app_info(app: AppHandle) -> AppInfo {
+    AppInfo {
+        version: app.package_info().version.to_string(),
+        is_dev_build: cfg!(debug_assertions),
+        os: if cfg!(windows) { "windows" } else { "macos" },
+    }
+}
+
+/// OS 언어(BCP 47). 화면 언어를 고르는 데 쓴다 (I18N-01).
+#[tauri::command]
+pub fn os_locale() -> Option<String> {
+    sys_locale::get_locale()
+}
+
+/// JS 종료 흐름이 저장을 마친 뒤 부른다 (START-08).
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+/// OS 쪽 종료 요청(메뉴 막대 "종료", 창 닫기)을 JS 종료 흐름으로 넘긴다. 위치를 저장해야 하기 때문이다 (WND-14).
+pub fn request_quit(app: &AppHandle) {
+    let _ = app.emit(QUIT_EVENT, ());
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(QUIT_FALLBACK_DELAY);
+        app.exit(0);
     });
 }
