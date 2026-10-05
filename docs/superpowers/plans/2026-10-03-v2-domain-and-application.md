@@ -3978,14 +3978,14 @@ git commit -m "docs: 계획 3 결과를 설계 문서 port 표와 문서 지도�
 
 계획 3 최종 리뷰에서 나왔고, 계획 4(adapter와 composition root)에서 처리한다.
 
-- `FileStore` adapter는 모든 거부를 `FileAccessError`로 바꾼다(Tauri `invoke`는 문자열로 거부한다). `MemoryFileStore`와 진짜 구현이 같은 계약을 지키는지 port 계약 테스트를 둔다.
-- `Updater` port를 받기·서명 확인과 설치로 나눌지 검토한다(Tauri API가 나뉘어 있다). 그러면 `prepareRestart`를 받기와 확인 뒤, 설치 전에 부를 수 있다.
-- 데이터 폴더는 Rust가 정하고(`TODOWIDGET_DATA_DIR` 포함, STORE-18), TS `FileStore`는 파일 이름만 넘긴다. 그때 설계 문서 5.2의 `resolveDataDir` 문구를 고친다.
-- `Timer` adapter는 잠자기를 고려한다. 잠자는 동안 타이머가 멈출 수 있어, 깨어남을 `UpdateService.onWake()`로 알려 다시 예약하게 한다.
-- `startApp`은 `CannotOpenError`가 아닌 오류를 그대로 던진다. 이것을 어떻게 다룰지는 진입점(`src/main.ts`)이 정한다. 설치에 성공하면 adapter가 앱을 다시 띄운다(그동안 상태는 `installing`에 머문다).
-- composition root는 끝내기 전(START-08)과 `prepareRestart`(UPD-04)에서 `TodoSession.whenSaved()`를 기다린다.
-- `pickLanguage`는 BCP47 태그(예: `ko-KR`, `en-US`)를 받는다. `LocaleProvider` adapter가 OS 언어를 그 형식으로 넘긴다.
-- `startApp`은 `timer`를 받는다(STORE-20 다시 읽기). composition root가 진짜 `Timer` adapter를 넘긴다.
+- `FileStore` adapter는 모든 거부를 `FileAccessError`로 바꾼다(Tauri `invoke`는 문자열로 거부한다). `MemoryFileStore`와 진짜 구현이 같은 계약을 지키는지 port 계약 테스트를 둔다. — 완료 (계획 4 Task 3)
+- `Updater` port를 받기·서명 확인과 설치로 나눌지 검토한다(Tauri API가 나뉘어 있다). 그러면 `prepareRestart`를 받기와 확인 뒤, 설치 전에 부를 수 있다. — 나누지 않기로 함 (계획 4 개발 결정)
+- 데이터 폴더는 Rust가 정하고(`TODOWIDGET_DATA_DIR` 포함, STORE-18), TS `FileStore`는 파일 이름만 넘긴다. 그때 설계 문서 5.2의 `resolveDataDir` 문구를 고친다. — 완료 (계획 4 Task 3, 설계 문서는 Task 11)
+- `Timer` adapter는 잠자기를 고려한다. 잠자는 동안 타이머가 멈출 수 있어, 깨어남을 `UpdateService.onWake()`로 알려 다시 예약하게 한다. — 완료 (계획 4 Task 8, 연결은 Task 9)
+- `startApp`은 `CannotOpenError`가 아닌 오류를 그대로 던진다. 이것을 어떻게 다룰지는 진입점(`src/main.ts`)이 정한다. 설치에 성공하면 adapter가 앱을 다시 띄운다(그동안 상태는 `installing`에 머문다). — 완료 (계획 4 Task 9, 다시 띄우기는 Task 7)
+- composition root는 끝내기 전(START-08)과 `prepareRestart`(UPD-04)에서 `TodoSession.whenSaved()`를 기다린다. — 완료 (계획 4 Task 9)
+- `pickLanguage`는 BCP47 태그(예: `ko-KR`, `en-US`)를 받는다. `LocaleProvider` adapter가 OS 언어를 그 형식으로 넘긴다. — 완료 (계획 4 Task 8)
+- `startApp`은 `timer`를 받는다(STORE-20 다시 읽기). composition root가 진짜 `Timer` adapter를 넘긴다. — 완료 (계획 4 Task 10)
 
 ---
 

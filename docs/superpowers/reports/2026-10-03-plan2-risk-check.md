@@ -178,16 +178,16 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 | `src/` 제품 코드 전체에서 `node:` import를 막는다 | 계획 3 Task 1 — 완료 (계획 3 Task 1) | 제품 코드는 WebView에서 돈다. Node API는 쓸 수 없다 |
 | 제품 코드용 tsconfig(lib ES2022, types 없음, 테스트 제외)를 테스트·도구용과 나눈다 | 계획 3 Task 1 — 완료 (계획 3 Task 2) | 지금 `tsconfig.json`은 `src/` 전체에 Node 타입을 열어 둔다. 제품 코드가 Node API를 써도 타입 검사가 통과한다 |
 | 구조 테스트의 정규식 한계(주석 안 따옴표, template literal 동적 import 등) | 계획 3 | 지금 규칙에는 충분하다. 규칙이 늘면 TypeScript compiler API로 바꿀지 다시 본다 |
-| 창 제어 port를 `src/application/ports/window-controller.ts`(`WindowController`)로 옮기고, adapter는 `satisfies`로 맞춘다 | 계획 4 | 지금 `src/presentation/window-controls.ts`는 계획 2 시험 화면용 임시 위치다 |
-| `ResizeEdge`에 North, NorthEast, NorthWest를 더한다 | 계획 4 | WND-03은 모든 가장자리와 모서리에서 크기를 바꾼다. 시험 화면에는 위쪽이 없다 |
-| macOS 크기 조절을 직접 만든다. screenX/Y 기준으로 잰다. 위·왼쪽은 크기와 위치를 한 번에 바꾼다(Rust `setFrame` 권장. JS로 하면 capability `allow-set-size`·`allow-set-position`과 rAF) | 계획 4 | tao가 macOS에서 `drag_resize_window`를 지원하지 않는다(Step 5). 크기와 위치를 따로 바꾸면 창이 떨린다 |
+| 창 제어 port를 `src/application/ports/window-controller.ts`(`WindowController`)로 옮기고, adapter는 `satisfies`로 맞춘다 | 계획 4 — 완료 (계획 4 Task 5. adapter는 `satisfies` 대신 반환 타입 `WindowController`로 맞춘다) | 지금 `src/presentation/window-controls.ts`는 계획 2 시험 화면용 임시 위치다 |
+| `ResizeEdge`에 North, NorthEast, NorthWest를 더한다 | 계획 4 — 완료 (계획 4 Task 5) | WND-03은 모든 가장자리와 모서리에서 크기를 바꾼다. 시험 화면에는 위쪽이 없다 |
+| macOS 크기 조절을 직접 만든다. screenX/Y 기준으로 잰다. 위·왼쪽은 크기와 위치를 한 번에 바꾼다(Rust `setFrame` 권장. JS로 하면 capability `allow-set-size`·`allow-set-position`과 rAF) | 계획 4 — 완료 (계획 4 Task 5) | tao가 macOS에서 `drag_resize_window`를 지원하지 않는다(Step 5). 크기와 위치를 따로 바꾸면 창이 떨린다 |
 | 두 번 실행 방지 | 계획 4 — 완료 (계획 4 Task 2) | START-01, WIN-07. 아직 코드가 없다 |
 | `lib.rs`의 OS 분기를 `platform::setup`, `platform::on_run_event`로 옮긴다 | 계획 4 — 완료 (계획 4 Task 2) | OS별 코드는 정해진 위치에만 둔다(설계 문서 5.4) |
 | `tray-icon` feature는 macOS target에서만 켠다 | 계획 4 — 완료 (계획 4 Task 2) | Windows는 메뉴 막대 아이콘을 쓰지 않는다 |
 | `--probe-login-item`을 지운다 | 계획 4 (MAC-08 adapter를 만들 때) — 완료 (계획 4 Task 2) | 로그인 항목 시험(Step 6)용 임시 코드다 |
 | Rust 테스트가 tauri를 건드리면 Windows에서 `STATUS_ENTRYPOINT_NOT_FOUND`가 날 수 있다. 순수 로직은 tauri 없이 테스트한다 | 계획 4 — 완료 (계획 4 Task 2) | Windows CI에서 테스트 실행 파일이 뜨지 않을 수 있다 |
 | `show_main`이 3초 안에 오지 않으면 Rust가 창을 띄운다 | 계획 4 — 완료 (계획 4 Task 2) | JS가 실패하면 창이 숨은 채로 남는다 |
-| PRIV-01: updater 요청 내용을 테스트하고, `cargo tree -i reqwest` 경로가 updater 하나뿐인지 검사한다 | 계획 4 | updater가 들어오면 네트워크 crate가 생긴다. 다른 길로 들어오지 않았는지 봐야 한다 |
+| PRIV-01: updater 요청 내용을 테스트하고, `cargo tree -i reqwest` 경로가 updater 하나뿐인지 검사한다 | 계획 4 — 완료 (계획 4 Task 7) | updater가 들어오면 네트워크 crate가 생긴다. 다른 길로 들어오지 않았는지 봐야 한다 |
 | `rust-toolchain.toml`에 components(clippy, rustfmt)를 더하고 CI에 clippy·fmt 검사를 넣는다 | 계획 4 — 완료 (계획 4 Task 2) | 지금은 `profile = "minimal"`이라 둘 다 없다 |
 | 시험 화면(`App.svelte`, `window-controls.ts` 임시 위치 포함)을 실제 화면으로 바꾼다 | 계획 5 | 계획 2 위험 확인용 화면이다 |
 | 그림자와 메뉴 막대 아이콘 디자인을 v1.4 기준으로 맞춘다 | 계획 5 | 그림자가 잘 안 보였다(Step 5). 아이콘 모양은 아직 임시다 |

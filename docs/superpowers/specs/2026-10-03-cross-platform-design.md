@@ -19,6 +19,7 @@
 - 2026-10-03: PM 결정 — 계획 2 측정 결과로 11장 숫자를 그대로 두고, REL-10(시험 빌드의 업데이트 확인 주소)을 더했다.
 - 2026-10-03: 계획 3 결과 — port 표를 실제 위치·이름으로 맞추고, 시계와 id 생성기는 domain이 쓰므로 domain에 둔다고 적었다. `FileSystem`은 `FileStore`로, `AppPaths`는 `FileStore`와 `resolveDataDir`로 대신했고, `Timer`를 더했다(5.1, 5.2).
 - 2026-10-03: 계획 3 최종 리뷰 — `src/testing/`을 테스트 파일만 가져오는 층으로 구조 테스트에 넣고, 저장 전 미리 보기 값은 ViewModel이 든다고 적었다(5.1). 5.3의 `addMany`를 실제 이름 `addLines`로 고쳤다.
+- 2026-10-04: 계획 4 반영 — port 위치와 구현, OS 분기 위치, Rust crate 구성, 기술 선택(5.2, 5.4, 5.5, 12장, 13장)
 
 ## 1. 목적
 
@@ -162,19 +163,22 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 |---|---|---|---|
 | `Clock` | 지금 시각(PC 시간대 포함) | `src/domain/clock.ts` | `src/adapters/system/clock.ts` / `FakeClock` |
 | `IdGenerator` | 할 일 id | `src/domain/ids.ts` | `src/adapters/system/ids.ts` / `sequenceIds` |
-| `FileStore` | 데이터 폴더 파일 읽기, 안전한 쓰기, 존재 확인, 이름 바꾸기, 복사 | `src/application/ports/file-store.ts` | 계획 4 Rust 명령 / `MemoryFileStore` |
-| `AutoStart` | 자동 실행 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | `src/application/ports/auto-start.ts` | 계획 4 Windows 레지스트리·macOS 로그인 항목 / `FakeAutoStart` |
-| `Updater` | latest.json 확인, 받아서 설치 | `src/application/ports/updater.ts` | 계획 4 Tauri updater plugin / `FakeUpdater` |
-| `Timer` | 나중에 한 번 실행 | `src/application/ports/timer.ts` | 계획 4 / `FakeTimer` |
-| `AppInfo` | 앱 버전, 개발 빌드 여부 | `src/application/ports/app-info.ts` | 계획 4 |
-| `WindowController` | 위치, 크기, 맨 위 고정, 앞으로 가져오기, 모니터 영역 | 계획 4에서 `src/application/ports/`로 옮김 | 계획 4 |
-| `LocaleProvider` | OS 언어 | 계획 4 | 계획 4 |
-| `Dialog` | OS 대화 상자 (STORE-10) | 계획 4·5 (시작 흐름은 `cannotOpen` 결과를 돌려주고, 대화 상자는 composition root가 띄운다) | 계획 4 |
+| `FileStore` | 데이터 폴더 파일 읽기, 안전한 쓰기, 존재 확인, 이름 바꾸기, 복사 | `src/application/ports/file-store.ts` | `src/adapters/tauri/file-store.ts` → Rust `todowidget_core::files::DataDir` / `MemoryFileStore` |
+| `AutoStart` | 자동 실행 켜짐 확인, 켜기, 끄기, 등록 경로 갱신 | `src/application/ports/auto-start.ts` | `src/adapters/tauri/auto-start.ts` → Rust `todowidget_core::autostart` (Windows `todowidget_windows::run_key`, macOS `platform/macos.rs`) / `FakeAutoStart` |
+| `Updater` | latest.json 확인, 받아서 설치 | `src/application/ports/updater.ts` | `src/adapters/updater/tauri-updater.ts` / `FakeUpdater` |
+| `Timer` | 나중에 한 번 실행 | `src/application/ports/timer.ts` | `src/adapters/system/timer.ts` / `FakeTimer`, `ManualTimer`, `ImmediateTimer` |
+| `AppInfo` | 앱 버전, 개발 빌드 여부 | `src/application/ports/app-info.ts` | `src/adapters/tauri/app-info.ts` |
+| `WindowController` | 위치, 크기, 맨 위 고정, 보이기·숨긴 채 두기, 끌어 옮기기, 크기 조절, 모니터 영역 | `src/application/ports/window-controller.ts` | `src/adapters/tauri/window-controller.ts` / `FakeWindowController` |
+| `LocaleProvider` | OS 언어 (BCP 47) | `src/application/ports/locale.ts` | `src/adapters/tauri/locale.ts` |
+| `Dialog` | OS 대화 상자 (STORE-10) | `src/application/ports/dialog.ts` | `src/adapters/tauri/dialog.ts` / `FakeDialog` |
+| `AppProcess` | 종료, OS 쪽 종료 요청 받기 (START-08, MAC-04) | `src/application/ports/app-process.ts` | `src/adapters/tauri/process.ts` / `FakeProcess` |
 
 - 저장 형식, 깨진 파일 백업, v1.4 데이터 변환 같은 **판단**은 TypeScript가 하고, Rust는 디스크에 안전하게 쓰는 일만 한다.
 - 모든 의존은 constructor로 주입한다. 전역 singleton은 쓰지 않는다.
 - `Clock`과 `IdGenerator`는 domain 규칙(할 일 추가, 상태 바꾸기)이 직접 쓰므로 domain에 둔다. 나머지 port는 application에 둔다.
-- 따로 `AppPaths`는 두지 않는다. 데이터 폴더 위치는 `resolveDataDir`(`src/application/data-dir.ts`)가 정하고, `FileStore` 구현이 그 폴더 안의 파일만 다룬다.
+- 따로 `AppPaths`는 두지 않는다. 데이터 폴더 위치는 Rust(`todowidget_core::files::resolve_data_dir`)가 정하고, `FileStore`는 파일 이름만 넘긴다. WebView는 환경 변수를 읽지 못하기 때문이다.
+- `Dialog`의 Tauri 구현은 Rust 명령 `show_error_dialog`를 부른다. 이 명령은 창에 붙이지 않은(parent 없는) OS 오류 대화 상자를 띄운다. STORE-10에서는 위젯 창이 숨어 있어, 창에 붙이면 macOS sheet가 보이지 않기 때문이다. 그래서 JS 패키지 `@tauri-apps/plugin-dialog`는 쓰지 않고, Rust crate `tauri-plugin-dialog`만 쓴다.
+- 테스트용 가짜는 모두 `src/testing/`에 있다. `AppInfo`는 값뿐이라 테스트에서 객체를 바로 만든다. `LocaleProvider`는 아직 application이 쓰지 않는다(화면 언어 고르기는 계획 5).
 
 ### 5.3 OOP와 캡슐화
 
@@ -188,10 +192,23 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 
 | 위치 | 내용 |
 |---|---|
-| `src/adapters/` 중 OS별 파일 | 자동 실행, 데이터 폴더 경로 |
-| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, 로그인 항목(SMAppService) 등록·해제·상태 읽기. 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
-| `src-tauri/src/platform/windows.rs` | 작업 표시줄 숨김, 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기 |
-| `src/presentation/theme/` | OS·언어별 글꼴과 겉모양 (CSS 변수) |
+| `src/adapters/` 중 OS별 파일 | (없음 — 데이터 폴더는 Rust가 정한다. 자동 실행 adapter도 Rust 명령만 부르므로 OS 분기가 없다) |
+| `src/adapters/tauri/coordinates.ts` | 좌표 단위. Windows는 실제 픽셀을 위치는 주 모니터 배율로, 크기는 창이 있는 모니터 배율로 나눈다. macOS는 포인트 그대로다(window.md 용어 "크기와 좌표") |
+| `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, Reopen 받기, 로그인 항목(SMAppService) 등록·해제·상태 읽기, 창 영역 한 번에 바꾸기(`NSWindow`), OS 이름(`OS_NAME`). 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
+| `src-tauri/src/platform/windows.rs` | `todowidget_windows`를 앱에 잇는다(자동 실행, 창 영역), OS 이름(`OS_NAME`). 작업 표시줄 숨김은 Tauri 설정 `skipTaskbar`로 한다 |
+| `src-tauri/crates/windows/` | 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기(`run_key.rs`), 창 위치·크기 한 번에 바꾸기(`frame.rs`, `SetWindowPos`) |
+| `src/presentation/theme/` | OS·언어별 글꼴과 겉모양 (CSS 변수). 계획 5에서 만든다 |
+
+**Rust crate 구성**
+
+| crate | 위치 | 하는 일 |
+|---|---|---|
+| 앱 crate (`todo-widget`) | `src-tauri/src/` | Tauri 명령, plugin 등록, 창, 메뉴 막대, `platform/`. Tauri를 링크하므로 Rust 테스트를 두지 않는다 |
+| `todowidget-core` | `src-tauri/crates/core/` | Tauri 없이 테스트하는 순수 로직. 안전한 쓰기와 데이터 폴더(`files`), 자동 실행 판정(`autostart`), 창 영역 값(`frame`), 창 띄우기 결정(`show_gate`) |
+| `todowidget-windows` | `src-tauri/crates/windows/` | Tauri 없는 Windows API. Windows에서만 컴파일된다 |
+
+- 창을 띄울지는 `ShowGate`가 한 번만 정한다(정하지 않음·띄움·숨긴 채 둠). `show_main`, `keep_hidden`(STORE-10 대화 상자), 3초 대비책 중 먼저 온 쪽이 정한다.
+- 다시 실행(START-01), 메뉴 막대 "열기", macOS Reopen은 모두 `reveal()`을 거친다. `keep_hidden`이 "숨긴 채 둠"으로 정했으면 `reveal()`은 아무것도 하지 않는다. 대화 상자 중에 빈 창이 뜨지 않게 하기 위해서다.
 
 ### 5.5 테스트
 
@@ -199,10 +216,12 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 |---|---|---|
 | domain, application | Vitest + 가짜 port | 공통 행동 spec 대부분 |
 | presentation | Vitest, DOM 없이 ViewModel만 | 입력 흐름(조합 중 Enter 무시, Esc, 이름 바꾸기 저장·취소), 메뉴 상태, 업데이트 안내 |
-| adapters | `cargo test`, port 계약 테스트 | 안전한 쓰기. 가짜와 진짜 구현이 같은 계약을 지키는지 |
+| adapters | `cargo test --workspace`(core, windows crate), Vitest port 계약 테스트, `pnpm privacy:check` | 안전한 쓰기, 데이터 폴더, 자동 실행 판정, Windows 레지스트리(Windows CI). 가짜와 진짜 구현이 같은 계약을 지키는지. HTTP crate를 updater plugin만 쓰는지(PRIV-01) |
 | 실제 앱 | OS별 직접 확인 체크리스트 | 창 모양, 실제 IME 입력, 메뉴 막대, Spaces, 설치·업데이트 |
 
 Tauri의 자동 E2E 도구는 macOS를 지원하지 않는다. 그래서 화면 아래 동작을 최대한 ViewModel로 끌어내려 자동 테스트 범위를 넓힌다.
+
+Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowidget-windows`뿐이다(`cargo clippy -p todowidget-core -p todowidget-windows --target x86_64-pc-windows-msvc`). 앱 crate의 Windows 빌드는 CI에서 확인한다(13장 개발 결정).
 
 ## 6. OS별 동작
 
@@ -368,7 +387,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | 항목 | 확인할 것 | 결과 |
 |---|---|---|
 | macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
-| macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5). 계획 4에서 두 OS 모두 직접 구현으로 바꿨다(13장 개발 결정) |
 | macOS 메뉴 막대·Spaces | Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces 따라다니기 | 통과. Dock·Cmd+Tab에 없고, 메뉴 막대 아이콘 클릭·메뉴·다시 열기가 되고, 모든 데스크톱에 보인다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 전체 화면 | 📌일 때 전체 화면 위 표시 (처음 계획) | PM 결정으로 바뀜. 📌를 켜도 전체 화면 앱 위에 뜨지 않았고, PM이 숨는 쪽을 골랐다. 이제 전체 화면에서는 📌와 관계없이 숨는다(MAC-07). 전체 화면 위 표시 코드는 지웠다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 | 통과 (Mac). 한글, 중국어 병음 모두 하나만 추가되고 이어서 입력된다. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
@@ -376,7 +395,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | 메모리 | 11장 기준 측정 (PERF-04) | 통과 (Mac). 관련 프로세스 4개 합 53.5~57.5MB, 기준 120MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
 | 가만히 있을 때 CPU | 11장 기준 측정 (PERF-03) | 주의 (Mac). 1분 평균이 6구간 중 5구간은 1% 미만, 1구간은 1.2%였다. 실제 화면을 만든 뒤 계획 5에서 다시 잰다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
 | 설치 파일 크기 | 11장 기준 측정 (PERF-05) | 통과 (Mac). dmg 1.55MB, 기준 15MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 1) |
-| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) | 계획 4 (Windows 코드 아직 없음) |
+| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) | 계획 4에서 구현했다(`todowidget_windows::run_key`). 실제 레지스트리 읽기·쓰기는 Windows CI의 Rust 테스트로 보고, 작업 관리자 표시는 Windows PC에서 확인한다 |
 | macOS 자동 실행 | 로그인 항목(SMAppService)을 직접 구현한다. 켜기·끄기·상태 읽기와 켤 때마다 다시 등록하기가 실제 macOS에서 되는지 (MAC-08) | 통과. 등록·해제·상태 읽기가 된다. 로그아웃 뒤 다시 로그인했을 때 실제로 켜지는지는 PERF-06 확인 때 본다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
 | macOS 자동 실행과 ad-hoc 서명 | ad-hoc 서명은 빌드마다 바뀐다. 그래서 업데이트할 때마다 로그인 항목이 "승인 필요"가 되거나 사라질 수 있고, 그러면 MAC-08이 자동 실행을 꺼짐으로 읽는다. 계획 2 초기 확인에서 두 빌드로 업데이트해 보고, 그렇다면 PM과 대응을 정한다 | 통과. 2.0.0으로 등록하고 2.0.1로 덮어써 서명(CDHash)이 바뀐 뒤에도 켜짐으로 남았다. MAC-08 방식을 그대로 간다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
 | Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 | Windows 확인 전 |
@@ -390,3 +409,42 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | OS별 네이티브 (WPF + SwiftUI) | 탈락 | 가장 네이티브하지만 기능을 추가할 때마다 두 번 구현해야 한다. |
 | Tauri (채택) | 채택 | 코드 하나로 두 OS를 지원하고, 브라우저 엔진의 IME 처리가 성숙하다. CSS로 OS별 겉모양을 다듬기 쉽고, 설치 파일이 작다(v1.4는 130MB). 자동 실행, 두 번 실행 방지, 업데이트가 공식 plugin으로 있다. |
 | Electron | 제외 | 가볍다는 기준에 맞지 않는다. |
+
+### 13.1 계획 4 개발 결정 (2026-10-04)
+
+계획 4(`docs/superpowers/plans/2026-10-04-v2-adapters-and-platform.md`) "개발 결정" 표에서 옮겼다.
+
+| 결정 | 이유 |
+|---|---|
+| **크기 조절은 두 OS 모두 직접 구현한다.** pointer로 끌고, Rust `set_frame`이 위치와 크기를 한 번에 바꾼다 | tao가 macOS 크기 조절을 지원하지 않는다(계획 2). Windows의 기본 크기 조절은 끝난 때를 알려 주지 않는다. WND-03 "놓으면 저장"을 두 OS에서 같은 코드로 지키려면 직접 하는 쪽이 단순하다 |
+| **창 옮기기는 OS 기본 끌기를 쓴다.** 저장은 마지막 이동 신호 0.5초 뒤에 한다 | 기본 끌기가 가장 매끄럽다. 어느 OS도 끌기가 끝난 때를 알려 주지 않는다 |
+| **Windows 전용 Rust 코드는 Tauri 없는 crate로 나눈다** | Mac에서 `cargo check --target x86_64-pc-windows-msvc`로 검사할 수 있다. 앱 crate는 Windows 리소스 컴파일러(llvm-rc)가 없으면 Mac에서 검사되지 않는다. Tauri를 링크한 테스트가 Windows CI에서 뜨지 않을 위험(계획 2)도 피한다 |
+| **데이터 폴더는 Rust가 정한다** (`dirs::data_dir()` + `TodoWidget`, `TODOWIDGET_DATA_DIR`) | WebView는 환경 변수를 읽지 못한다. TS `resolveDataDir`는 지운다 |
+| **업데이트 port는 나누지 않는다** | `prepareRestart`가 받기 전에 이미 설정과 할 일 저장을 마친다. 그래서 Windows 설치 프로그램이 앱을 끝내도 잃는 것이 없다 |
+| **업데이트 서명 키는 이 계획에서 개발용을 쓴다** | 개인 키는 버린다. 실제 키와 GitHub secret은 계획 6에서 PM과 만든다. 그 전에는 출시하지 않으므로 업데이트가 설치될 일이 없다 |
+| **`startApp`의 예상 못 한 오류도 STORE-10 대화 상자로 보여 주고 끝낸다** | 시작 중 오류는 거의 모두 파일 문제다. 새 문구를 만들지 않고 오류 내용을 함께 보여 준다 |
+| **메뉴 막대 "종료"와 창 닫기(Alt+F4)는 JS의 종료 흐름을 거친다.** JS가 3초 안에 끝내지 않으면 Rust가 끝낸다 | WND-14는 종료할 때 위치를 저장한다. Rust에서 바로 끝내면 저장하지 못한다 |
+| **잠자기에서 깨어남은 1분마다 시계를 보고, 2분 넘게 건너뛰었으면 깨어난 것으로 본다** | OS별 전원 알림을 쓰는 것보다 단순하다. 1분 간격이라 CPU 영향이 없다(PERF-03) |
+
+계획 4를 실행하며 더하거나 바꾼 결정이다.
+
+| 결정 | 이유 |
+|---|---|
+| **로컬 Windows 대상 검사는 `todowidget-core`와 `todowidget-windows`만 한다.** 앱 crate의 Windows 빌드는 CI에서 확인한다 | updater가 ring을 끌어오고, ring의 C 빌드에는 MSVC 헤더가 필요하다. Mac에서는 llvm이 있어도 앱 crate를 Windows 대상으로 검사할 수 없다. 그래서 앱 crate의 Windows 코드(`platform/windows.rs`)는 얇게 두고, 로직은 두 crate에 둔다 |
+| **STORE-10 대화 상자는 Rust 명령 `show_error_dialog`가 창 없이(parent 없이) 띄운다.** JS 패키지 `@tauri-apps/plugin-dialog`는 지웠다 | STORE-10에서는 위젯 창이 숨어 있다. 창에 붙인 macOS sheet는 보이지 않고 닫히지도 않는다 |
+| **창을 띄울지는 `ShowGate`가 한 번만 정한다(정하지 않음·띄움·숨긴 채 둠).** 다시 실행·메뉴 막대 "열기"·Reopen은 `reveal()`을 거치고, 숨긴 채 두기로 정했으면 아무것도 하지 않는다 | STORE-10 대화 상자 중에 다시 실행해도 빈 창이 뜨지 않게 한다 |
+| **OS 이름은 Rust `platform::OS_NAME`이 준다** (`app_info` 명령) | OS 분기를 `platform/` 안에 둔다(5.4). JS는 받은 이름으로 좌표 단위만 고른다(`coordinates.ts`) |
+| **크기 조절 pointer 추적은 듣기를 바로(동기로) 건다.** `pointerup` 말고도 `buttons === 0`이나 `lostpointercapture`가 오면 끝낸다 | 시작 값을 읽는 동안 놓은 pointer를 놓치면 창이 마우스를 계속 따라간다 |
+
+**쓴 plugin과 crate**
+
+| plugin·crate | 고른 이유 |
+|---|---|
+| `tauri-plugin-single-instance` | 공식 plugin이고, 세 OS를 지원한다 |
+| `tauri-plugin-updater`, `tauri-plugin-process` | 공식이고, 서명을 확인한다 |
+| `tauri-plugin-dialog` (Rust crate만) | 공식이고, OS 대화 상자를 띄운다 |
+| `windows-registry` (`windows-result`) | Microsoft가 만들었다. `windows-result`는 레지스트리 오류에서 "없음"을 가려내는 데 쓴다 |
+| `windows-sys` | Microsoft가 만들었다. 창 위치·크기를 한 번에 바꾼다(`SetWindowPos`) |
+| `objc2-app-kit` | 계획 2부터 쓰는 objc2 묶음이다. 필요한 feature만 켜서 창 영역을 한 번에 바꾼다(`NSWindow`) |
+| `sys-locale` | 작고, OS 언어를 BCP 47로 준다 |
+| `dirs` | Tauri가 이미 쓴다 |
