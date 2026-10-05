@@ -16,7 +16,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         // 가장 먼저 등록한다. 두 번째 프로세스는 창을 만들거나 파일을 읽기 전에 끝나고, 떠 있는 위젯이 앞으로 온다 (START-01, WIN-07, MAC-05).
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            commands::bring_to_front(app)
+            commands::reveal(app)
         }))
         // 업데이트 확인·설치 (UPD-01~08). 네트워크 요청은 이 plugin 하나뿐이다 (PRIV-01).
         .plugin(tauri_plugin_updater::Builder::new().build())

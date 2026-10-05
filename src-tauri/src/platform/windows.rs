@@ -11,6 +11,7 @@ pub fn setup(_app: &mut App) -> tauri::Result<()> {
 pub fn on_run_event(_app: &AppHandle, _event: RunEvent) {}
 
 /// 자동 실행 (WIN-03, WIN-04). 판정은 `todowidget_core::autostart::RunKeyAutoStart`가 한다.
+/// 실행 파일 위치를 알아내지 못하면 빈 경로를 넘긴다. 그러면 켜기와 경로 맞추기는 Run 값을 쓰지 않고 오류를 돌려준다.
 pub fn auto_start() -> Box<dyn AutoStart> {
     let exe = std::env::current_exe().unwrap_or_default();
     Box::new(RunKeyAutoStart::new(HkcuRunKey::new(RUN_VALUE_NAME), exe))

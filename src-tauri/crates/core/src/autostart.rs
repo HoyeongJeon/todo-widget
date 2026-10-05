@@ -46,8 +46,17 @@ pub struct RunKeyAutoStart<K> {
 }
 
 impl<K: RunKey> RunKeyAutoStart<K> {
+    /// `exe`가 비어 있으면(실행 파일 위치를 알아내지 못함) 켜기와 경로 맞추기는 Run 값을 쓰지 않고 실패한다.
     pub fn new(key: K, exe: PathBuf) -> Self {
         Self { key, exe }
+    }
+
+    /// Run 값으로 쓸 문자열. 빈 경로로 맞는 값을 덮어쓰지 않게 한다 (WIN-03).
+    fn value_to_write(&self) -> Result<String, String> {
+        if self.exe.as_os_str().is_empty() {
+            return Err("실행 파일 위치를 알 수 없어요".to_string());
+        }
+        Ok(run_value(&self.exe))
     }
 }
 
@@ -60,7 +69,8 @@ impl<K: RunKey> AutoStart for RunKeyAutoStart<K> {
     }
 
     fn enable(&self) -> Result<(), String> {
-        self.key.write(&run_value(&self.exe))?;
+        let value = self.value_to_write()?;
+        self.key.write(&value)?;
         self.key.delete_approved()
     }
 
@@ -70,7 +80,7 @@ impl<K: RunKey> AutoStart for RunKeyAutoStart<K> {
 
     fn refresh(&self) -> Result<(), String> {
         if self.key.read()?.is_some() {
-            self.key.write(&run_value(&self.exe))?;
+            self.key.write(&self.value_to_write()?)?;
         }
         Ok(())
     }
@@ -263,6 +273,26 @@ mod tests {
         none.refresh().unwrap();
         assert!(none.key.writes.lock().unwrap().is_empty());
         assert_eq!(*none.key.run.lock().unwrap(), None);
+    }
+
+    /// WIN-03 실행 파일 위치를 모르면 Run 값을 빈 경로로 쓰지 않고 오류를 돌려준다
+    #[test]
+    fn empty_exe_path_never_writes_run_value() {
+        let unknown = |key| RunKeyAutoStart::new(key, PathBuf::new());
+
+        let off = unknown(FakeRunKey::with(None, Some(&DISABLED)));
+        assert!(off.enable().is_err());
+        assert!(off.key.writes.lock().unwrap().is_empty());
+        assert_eq!(off.key.approved.lock().unwrap().as_deref(), Some(&DISABLED[..]));
+
+        let on = unknown(FakeRunKey::with(Some("\"a.exe\""), None));
+        assert!(on.refresh().is_err());
+        assert!(on.key.writes.lock().unwrap().is_empty());
+        assert_eq!(on.key.run.lock().unwrap().as_deref(), Some("\"a.exe\""));
+
+        let none = unknown(FakeRunKey::with(None, None));
+        none.refresh().unwrap();
+        assert!(none.key.writes.lock().unwrap().is_empty());
     }
 
     /// START-05 레지스트리가 거부하면 오류를 돌려준다

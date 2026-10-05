@@ -30,7 +30,8 @@ pub enum FileError {
     InvalidName(String),
     /// 덮어쓰지 않는 동작의 대상이 이미 있다.
     AlreadyExists(String),
-    /// 그 밖의 디스크 오류(권한, 잠금, 디스크 가득 참 등).
+    /// 그 밖의 디스크 오류(권한, 잠금, 디스크 가득 참 등). 문구는 `message`만이다.
+    /// 경로는 TypeScript가 `displayPath`로 따로 보여 주므로(STORE-10) 겹치지 않게 넣지 않는다. `path`는 디버깅과 테스트용이다.
     Io { path: String, message: String },
 }
 
@@ -39,7 +40,7 @@ impl fmt::Display for FileError {
         match self {
             FileError::InvalidName(name) => write!(f, "쓸 수 없는 파일 이름이에요: {name}"),
             FileError::AlreadyExists(path) => write!(f, "이미 있는 파일이에요: {path}"),
-            FileError::Io { path, message } => write!(f, "{path}: {message}"),
+            FileError::Io { message, .. } => f.write_str(message),
         }
     }
 }
@@ -216,6 +217,20 @@ mod tests {
         let (_temp, data) = dir();
         fs::create_dir_all(data.root().join("tasks.json")).unwrap();
         assert!(matches!(data.read("tasks.json"), Err(FileError::Io { .. })));
+    }
+
+    /// STORE-10 디스크 오류 문구는 OS 오류 내용만이다. 경로는 대화 상자가 따로 한 번 보여 준다
+    #[test]
+    fn io_error_text_is_os_message_only() {
+        let (_temp, data) = dir();
+        fs::create_dir_all(data.root().join("tasks.json")).unwrap();
+        let error = data.read("tasks.json").unwrap_err();
+        let FileError::Io { path, message } = &error else {
+            panic!("디스크 오류여야 해요: {error:?}");
+        };
+        assert!(path.ends_with("tasks.json"));
+        assert_eq!(error.to_string(), *message);
+        assert!(!error.to_string().contains(path.as_str()));
     }
 
     #[test]

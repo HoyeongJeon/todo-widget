@@ -31,7 +31,7 @@ fn install_tray(app: &App) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "open" => crate::commands::bring_to_front(app),
+            "open" => crate::commands::reveal(app),
             "quit" => app.exit(0),
             _ => {}
         })
@@ -42,7 +42,7 @@ fn install_tray(app: &App) -> tauri::Result<()> {
                 ..
             } = event
             {
-                crate::commands::bring_to_front(tray.app_handle());
+                crate::commands::reveal(tray.app_handle());
             }
         })
         .build(app)?;
@@ -58,7 +58,7 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
 /// Spotlight·응용 프로그램 폴더에서 다시 열면 macOS가 Reopen을 보낸다 (MAC-05).
 pub fn on_run_event(app: &AppHandle, event: RunEvent) {
     if let RunEvent::Reopen { .. } = event {
-        crate::commands::bring_to_front(app);
+        crate::commands::reveal(app);
     }
 }
 
