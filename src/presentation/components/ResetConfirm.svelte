@@ -33,33 +33,39 @@
       vm.cancelReset();
   }
 
-  /** Esc는 취소, ←·→는 취소와 모두 지우기 사이로 포커스를 옮기고, Enter는 포커스가 있는 버튼을 누른다 (INPUT-18). */
-  function onKeydown(event: KeyboardEvent): void {
+  /**
+   * 판이 열린 동안의 키는 창 전체에서(capture) 받아 판이 처리한다. 포커스가 판 밖(입력칸 등)에 있어도 같다 (INPUT-18).
+   * Esc는 취소, ←는 취소·→는 모두 지우기로 포커스를 옮기고, Enter는 포커스가 있는 버튼을 누른다. 포커스가 두 버튼 밖이면 취소를 누른다.
+   * 처리한 키는 기본 동작과 전달을 막는다. 판 뒤 입력칸의 Enter가 할 일을 더하거나, 버튼 기본 동작으로 두 번 눌리지 않는다.
+   */
+  function onWindowKeydown(event: KeyboardEvent): void {
+    if (event.isComposing || event.keyCode === 229)
+      return;
+    const focused = document.activeElement === confirmButton ? confirmButton : document.activeElement === cancelButton ? cancelButton : null;
     switch (event.key) {
       case 'Escape':
-        event.preventDefault();
         vm.cancelReset();
         break;
       case 'ArrowLeft':
-        event.preventDefault();
         cancelButton?.focus({ preventScroll: true });
         break;
       case 'ArrowRight':
-        event.preventDefault();
         confirmButton?.focus({ preventScroll: true });
         break;
       case 'Enter':
-        // OS 기본 동작에 맡기지 않고 직접 누른다. 두 번 눌리지 않게 기본 동작은 막는다.
-        if (event.target instanceof HTMLButtonElement) {
-          event.preventDefault();
-          event.target.click();
-        }
+        (focused ?? cancelButton)?.click();
         break;
+      default:
+        return;
     }
+    event.preventDefault();
+    event.stopPropagation();
   }
 </script>
 
-<div class="overlay" role="presentation" bind:this={overlay} onclick={onOverlayClick} onkeydown={onKeydown}>
+<svelte:window onkeydowncapture={onWindowKeydown} />
+
+<div class="overlay" role="presentation" bind:this={overlay} onclick={onOverlayClick}>
   <div class="confirm" role="dialog" aria-modal="true" aria-labelledby="reset-question">
     <div class="q" id="reset-question">{vm.resetQuestion}</div>
     <div class="w">{vm.t('reset.warning')}</div>
@@ -130,6 +136,15 @@
 
   .pill:hover {
     background: var(--hover);
+  }
+
+  /*
+   * 포커스가 있는 버튼을 늘 보인다(INPUT-18 ←·→). WebKit 기본 포커스 표시는 :focus-visible 규칙을 따라,
+   * 마우스로 판을 연 뒤 스크립트가 옮긴 포커스에는 고리를 그리지 않다가 키를 한 번 더 누른 뒤에야 그린다.
+   */
+  .pill:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .pill.danger {

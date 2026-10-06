@@ -296,6 +296,67 @@ describe('위젯 화면', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it('INPUT-18 ⋯ 메뉴에서 키보드로 초기화를 고르면(WebKit 포커스 규칙) 포커스는 취소에 있고, → 한 번에 모두 지우기로, ← 한 번에 취소로 간다', async () => {
+    const restore = refuseHiddenFocus();
+    try {
+      const { app, input, $, moreButton } = await setup();
+      app.session.add('보고서');
+      await flush();
+      input.focus();
+      await fireEvent.click(moreButton());
+      await flush();
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowDown' });
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowDown' });
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Enter' });
+      await flush();
+      const [cancel, confirm] = [$('.pill:not(.danger)'), $('.pill.danger')];
+      expect(document.activeElement).toBe(cancel);
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
+      expect(document.activeElement).toBe(confirm);
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowLeft' });
+      expect(document.activeElement).toBe(cancel);
+    } finally {
+      restore();
+    }
+  });
+
+  it('INPUT-18 확인 판이 열린 동안 포커스가 판 밖(입력칸)에 있어도 ←·→는 한 번에 버튼으로 가고, Enter는 할 일을 더하지 않고 취소를 누른다', async () => {
+    const { app, vm, input, $, all } = await setup();
+    app.session.add('보고서');
+    await flush();
+    vm.openReset();
+    await flush();
+    const cancelReset = vi.spyOn(vm, 'cancelReset');
+    input.focus();
+    await fireEvent.input(input, { target: { value: '장보기' } });
+    await fireEvent.keyDown(input, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe($('.pill.danger'));
+    input.focus();
+    await fireEvent.keyDown(input, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe($('.pill:not(.danger)'));
+    input.focus();
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    await flush();
+    expect([cancelReset.mock.calls.length, vm.confirmingReset, all('.overlay').length, app.session.items.map((item) => item.title)]).toEqual([1, false, 0, ['보고서']]);
+  });
+
+  it('INPUT-18 확인 판의 Esc·Enter는 한 번만 처리한다', async () => {
+    const { app, vm, $ } = await setup();
+    app.session.add('보고서');
+    await flush();
+    vm.openReset();
+    await flush();
+    const cancelReset = vi.spyOn(vm, 'cancelReset');
+    await fireEvent.keyDown($('.pill:not(.danger)'), { key: 'Escape' });
+    expect(cancelReset.mock.calls.length).toBe(1);
+    vm.openReset();
+    await flush();
+    const confirmReset = vi.spyOn(vm, 'confirmReset');
+    await fireEvent.keyDown($('.pill:not(.danger)'), { key: 'ArrowRight' });
+    await fireEvent.keyDown($('.pill.danger'), { key: 'Enter' });
+    expect(confirmReset.mock.calls.length).toBe(1);
+  });
+
   it('INPUT-13 우클릭 메뉴에서 이름 바꾸기를 고르면 포커스는 이름 바꾸기 칸에 남는다', async () => {
     const { app, input, $, menuItems } = await setup();
     app.session.add('보고서');
