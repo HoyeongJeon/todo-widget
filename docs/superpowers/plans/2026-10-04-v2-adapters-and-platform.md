@@ -5143,3 +5143,95 @@ Windows 시험 설치 파일은 필요할 때 workflow_dispatch(`windows_probe`)
   - windows-registry 0.6
   - objc2-app-kit 0.3
   - Tauri plugin JS 버전
+
+---
+
+## 실행 기록 (2026-10-04 ~ 2026-10-06)
+
+- subagent 방식으로 실행했다(구현·수정·리뷰 모두 Opus). Task마다 리뷰했고, 끝에 브랜치 전체 리뷰와 수정 한 번, PM 직접 확인을 했다. 진행 중 subagent가 세 번 멈췄다(Task 5, 7, PM 확인 수정). 모두 멈춘 지점부터 이어서 끝냈다.
+
+### 계획과 달라진 곳
+
+- **STORE-10 대화 상자 (Task 8).** JS plugin-dialog는 호출한 창을 부모로 강제한다. 그래서 macOS에서 숨긴 창의 sheet가 되어 보이지 않고, 기다림도 끝나지 않았다. parent 없는 Rust 명령 `show_error_dialog`로 바꾸고, JS `@tauri-apps/plugin-dialog` 의존성과 `dialog:allow-message` 권한을 지웠다. crate는 유지한다.
+- **ShowGate (Task 8).** bool 대신 결정 상태(미정/보임/숨김)를 쓴다. 다시 실행, 메뉴 막대 "열기", Reopen은 `reveal()`을 거치고, 숨김으로 정해졌으면 창을 띄우지 않는다. `reveal`은 메인 스레드에서 실행해 `keep_hidden`과 순서를 맞춘다. `show_main`은 결정과 관계없이 띄운다.
+- **오류 문구 (Task 8).** Rust `FileError::Io`는 OS 오류 문구만 낸다. 경로는 TS가 한 번만 보여 준다. Windows에서 실행 파일 경로를 알 수 없으면 자동 실행 값을 쓰지 않고 오류로 끝낸다.
+- **OS 이름 (Task 8).** `platform::OS_NAME`으로 옮겼다. `commands`에는 OS 분기가 없다.
+- **크기 조절 (Task 5 수정, PM 확인 수정).**
+  - pointer 듣기를 `resize()`를 부르는 즉시 붙인다. 버튼을 놓은 이동(`buttons === 0`)과 `lostpointercapture`도 끝으로 본다.
+  - `WindowPlacement.resize`는 `apply()` 때 기억한 작업 영역 높이를 쓰고, 기다리지 않고 바로 창 크기 조절을 시작한다.
+- **Windows 대상 로컬 검사 (Task 7 뒤).** updater가 끌어오는 ring의 C 빌드에 MSVC 헤더가 필요해, 앱 crate는 Mac에서 Windows 대상으로 검사하지 못한다. 로컬 검사는 `todowidget-core`와 `todowidget-windows` crate만 하고, 앱 crate는 CI에서 확인한다.
+- **Global Constraints 목록 밖 crate.**
+  - `windows-result` 0.4: windows-registry 오류 타입에 필요하다. lock에 이미 있었다.
+  - `objc2-foundation` 0.3: NSGeometry에 필요하다.
+  - 둘 다 새 crate가 늘지 않는다.
+- **CI.** Rust 테스트는 `--workspace --exclude todo-widget`로 돌린다. 앱 crate에는 테스트를 두지 않고, Windows에서 테스트 실행 파일이 뜨지 않을 위험을 피하려는 것이다.
+- **네트워크 검사.** `pnpm privacy:check`는 cargo tree 출력을 읽지 못하면 실패한다. 예전에는 그냥 통과했다.
+- **Task 10 Step 5의 기대 정정.** 처음 실행 뒤 `settings.json`의 `left`·`top`은 비어 있을 수 있다. 처음 배치 직후의 이동 신호는 듣기 전에 지나간다. spec은 위치가 없으면 매번 기본 위치를 계산하고(WND-07) 종료할 때 저장하므로(WND-14) 문제없다.
+- **PM 확인 절차.** 문서의 Step 3 대신 데이터 폴더를 `/tmp/todowidget-pm-check`로 고정한 스크립트(start, moved, kill, lock, unlock, cleanup)를 썼다. 빈 변수나 다른 실행 방법 때문에 실제 폴더를 쓰는 일을 막으려는 것이다.
+
+### PM 직접 확인 (macOS, release 빌드, 2026-10-06)
+
+| # | 항목 | 결과 |
+|---|---|---|
+| 1 | 켜기 | 통과 |
+| 2 | 두 번 실행 (START-01) | 통과. 프로세스 1개 |
+| 3 | 옮긴 위치 저장 (WND-02) | 통과 |
+| 4 | 여덟 방향 크기 조절과 저장 (WND-03) | 처음에는 위아래·모서리가 잡히지 않았고 크기도 저장되지 않았다. `51a4bc8`로 고친 뒤 통과 |
+| 5 | 📌 저장 (WND-09) | 통과 |
+| 6 | 메뉴 막대 종료 뒤 위치 (WND-14, MAC-04) | 통과 |
+| 7 | 할 일 파일을 열 수 없을 때 (STORE-10) | 통과. 대화 상자가 맨 앞에 떴고, 빈 창은 없었다 |
+| 8 | 로그인 항목 등록 (START-02, MAC-08) | 통과. "로그인 시 열기"에 있다 |
+| 9 | 앱을 옮긴 뒤 다시 등록 (MAC-08, R6) | 통과. 로그인 항목 위치가 옮긴 곳으로 바뀌었다(`sfltool dumpbtm`) |
+| 10 | 자동 실행 끄기와 정리 | 통과. 로그인 항목이 사라졌다 |
+
+**확인 중 사고.**
+- 4번을 하던 중 Mac이 재시동됐다. `/tmp`가 비워진 뒤, 로그인 항목이 데이터 폴더 지정 없이 위젯을 켰다.
+- 그래서 위젯이 실제 폴더(`~/Library/Application Support/TodoWidget/`)에 `settings.json`을 만들었다.
+- 할 일 파일은 없었고, 잃은 데이터도 없다. PM 승인을 받아 그 폴더를 지웠다.
+- 다음 확인부터는, 시험 중 로그인 항목이 켜져 있을 때 재시동하면 실제 폴더를 쓴다는 점을 처음에 분명히 알린다.
+
+### CI 결과
+
+push 뒤에 적는다.
+
+### 개발 판단 (실행 중, 모두 되돌릴 수 있음)
+
+| # | 판단 | 틀렸을 때의 비용 |
+|---|---|---|
+| R1 | plugin-dialog 설치 순서를 앞당김(뒤에 의존성 자체를 지움) | 없음 |
+| R2 | Task 11의 PM 확인과 push는 controller가 PM과 직접 함 | 없음 |
+| R3 | ShowGate 결정 상태와 `reveal()` | 드문 재실행 경우만 |
+| R4 | 오류 문구에서 경로 중복 제거 | 문구만 |
+| R5 | Windows 실행 파일 경로가 비면 자동 실행 값을 쓰지 않음 | 드문 경우만 |
+| R6 | macOS 다시 등록은 `register`만 부름(알림 반복을 피함). PM 확인으로 위치 갱신을 확인함 | — |
+| R7 | 크기 조절 pointer를 즉시 들음 | 내부 구조만 |
+| R8 | 시험 화면 호출의 오류 처리 | 콘솔 경고뿐 |
+| R9 | 앱 crate의 Windows 검사는 CI에 맡김(MSVC SDK를 받지 않음) | Windows 전용 코드 오류를 CI에서야 앎 |
+| R10 | 창 없는 Rust 오류 대화 상자 | 대화 상자 구현만 |
+| R11 | 처음 배치 위치는 저장하지 않아도 됨 | 같은 화면 위치 |
+| R12 | 창이 생기기 전 크기 배율은 지금 창 배율로 계산(spec은 저장 위치의 모니터) | Windows 혼합 배율에서 첫 크기만 어긋날 수 있음. Windows PC에서 확인 |
+| R13 | `windows-result` 직접 의존 | 없음 |
+| R14 | 시작이 3초를 넘긴 뒤의 STORE-10 빈 창은 계획 5로 | 드문 경우 대화 상자 뒤에 투명 창이 남음 |
+| R15 | PM 확인 스크립트로 데이터 폴더 고정 | 확인 절차만 |
+
+### 계획 5로 넘기는 일
+
+- 시험 화면을 실제 화면으로 바꾼다. 디자인은 v1.4 기준 시안을 PM에게 먼저 보인다.
+  - 문구를 I18N 사전으로 옮긴다: launch 대화 상자, 메뉴 막대 "열기"·"종료".
+  - 📌는 실패하면 표시를 되돌린다.
+- 창 높이를 내용에 맞춰 줄인다(WND-03). macOS에서 크기 조절 영역은 완전히 투명하면 안 되고, 보이는 카드 위에 있어야 한다. 지금 시험 화면은 카드가 창 높이를 채우는 임시 방법을 쓴다.
+- `LocaleProvider`로 화면 언어를 고른다.
+- PERF-01을 다시 잰다. mount 전에 파일 읽기, 자동 실행 갱신, 창 배치 IPC를 모두 기다린다.
+- 시작이 3초를 넘긴 뒤 STORE-10이 나면 대비책이 띄운 빈 창이 남는다(R14).
+- `quit()`에서 `exit()`가 실패하면 다시 시도할 수 없다.
+- 구독 해제 함수와 `placement.dispose()`를 쓰지 않는다.
+- Windows 레지스트리를 읽을 때도 쓰기 권한으로 연다.
+- 구조 규칙이 `invoke('plugin:updater|...')`·`invoke('plugin:http|...')` 우회를 잡게 한다.
+
+### 계획 6으로 넘기는 일
+
+- 업데이트 서명 실제 키, endpoint 저장소 이름
+- `updater:default`를 `allow-check`와 `allow-download-and-install`로 좁힌다.
+- 설치 중 확인이 업데이트 정보를 바꾸지 않게 한다(출시 전 필수).
+- 네트워크 crate 목록을 넓힌다(hyper-util, minreq, tungstenite).
+- Windows PC 확인: WIN-02·07·09, 혼합 배율 첫 크기(R12), Run 값이 문자열이 아닐 때
