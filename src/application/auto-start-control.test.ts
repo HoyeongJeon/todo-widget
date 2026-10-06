@@ -71,4 +71,19 @@ describe('⋯ 메뉴의 자동 실행', () => {
     expect(autoStart.calls).toEqual(['enable', 'disable']);
     expect(autoStart.enabled).toBe(false);
   });
+
+  it('START-03 START-04 켤 때 자동 실행 등록이 끝나기 전에 누르면 등록이 끝난 뒤에 바꾼다', async () => {
+    let release = (): void => undefined;
+    const startupDone = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    control = new AutoStartControl(autoStart, startupDone);
+    const toggled = control.toggle();
+    await flush();
+    expect(autoStart.calls).toEqual([]);
+    autoStart.enabled = true;
+    release();
+    expect(await toggled).toBe(false);
+    expect(autoStart.calls).toEqual(['disable']);
+  });
 });

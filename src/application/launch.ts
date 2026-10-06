@@ -76,5 +76,5 @@ export async function launchApp(deps: LaunchDeps): Promise<LaunchResult> {
   deps.watchWake(() => void updates.onWake());
   void updates.start();
 
-  return { kind: 'running', session, settings, placement, lifecycle, updates, autoStart: new AutoStartControl(deps.autoStart) };
+  return { kind: 'running', session, settings, placement, lifecycle, updates, autoStart: new AutoStartControl(deps.autoStart, started.autoStartDone) };
 }

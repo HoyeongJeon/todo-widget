@@ -8,10 +8,12 @@ export class AutoStartControl {
   readonly #listeners = new Set<Listener>();
   #failed = false;
   /** 바꾸기 줄의 끝. 빠르게 두 번 눌러도 앞의 바꾸기가 끝난 뒤 상태를 읽는다. */
-  #queue: Promise<unknown> = Promise.resolve();
+  #queue: Promise<unknown>;
 
-  constructor(autoStart: AutoStart) {
+  /** `after`가 끝난 뒤에 바꾼다. 켤 때 자동 실행 등록과 겹쳐 사용자가 끈 것을 다시 켜지 않게 한다(START-03). 거부되지 않아야 한다. */
+  constructor(autoStart: AutoStart, after: Promise<void> = Promise.resolve()) {
     this.#autoStart = autoStart;
+    this.#queue = after;
   }
 
   /** 자동 실행 실패 안내. 다시 바꾸는 데 성공하면 꺼진다(다시 켜면 새 객체라 꺼져 있다). */

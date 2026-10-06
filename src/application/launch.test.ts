@@ -105,6 +105,24 @@ describe('앱 시작', () => {
     expect(JSON.parse(files.files.get(SETTINGS_FILE) ?? 'null')).toMatchObject({ left: 700, top: 300 });
   });
 
+  it('START-03 START-04 켤 때 자동 실행 등록이 끝나기 전에 끄면 등록이 끝난 뒤에 꺼서 다시 켜지지 않는다', async () => {
+    let release = (): void => undefined;
+    autoStart.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const result = await launch();
+    if (result.kind !== 'running')
+      throw new Error('실행되지 않았어요');
+    expect(autoStart.calls).toEqual(['enable']);
+    const toggled = result.autoStart.toggle();
+    await flush();
+    expect(autoStart.calls).toEqual(['enable']);
+    release();
+    expect(await toggled).toBe(false);
+    expect(autoStart.calls).toEqual(['enable', 'disable']);
+    expect(autoStart.enabled).toBe(false);
+  });
+
   it('UPD-01 잠자기에서 깨어났을 때 마지막 확인에서 24시간이 지났으면 바로 다시 확인한다', async () => {
     await launch();
     expect(wakes).toHaveLength(1);
