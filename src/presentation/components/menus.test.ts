@@ -141,7 +141,7 @@ describe('초기화 확인 판', () => {
     expect([vm.confirmingReset, app.session.items.length]).toEqual([false, 0]);
   });
 
-  it('INPUT-18 판이 뜨면 포커스는 취소에 있고(스크롤 없이), ←·→로 두 버튼 사이를 옮기며 Enter는 포커스가 있는 버튼을 누른다', async () => {
+  it('INPUT-18 판이 뜨면 포커스는 취소에 있고(스크롤 없이), ←·→로 두 버튼 사이를 오가며 끝에서는 반대쪽으로 돌고, Enter는 포커스가 있는 버튼을 누른다', async () => {
     const { vm, app } = await setup();
     vm.add('보고서\n장보기');
     vm.openReset();
@@ -154,6 +154,8 @@ describe('초기화 확인 판', () => {
     expect(await fireEvent.keyDown(cancel as HTMLElement, { key: 'ArrowRight' })).toBe(false);
     expect(document.activeElement).toBe(confirm);
     await fireEvent.keyDown(confirm as HTMLElement, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(cancel);
+    await fireEvent.keyDown(cancel as HTMLElement, { key: 'ArrowLeft' });
     expect(document.activeElement).toBe(confirm);
     await fireEvent.keyDown(confirm as HTMLElement, { key: 'ArrowLeft' });
     expect(document.activeElement).toBe(cancel);

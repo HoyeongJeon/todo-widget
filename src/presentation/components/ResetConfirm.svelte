@@ -35,7 +35,8 @@
 
   /**
    * 판이 열린 동안의 키는 창 전체에서(capture) 받아 판이 처리한다. 포커스가 판 밖(입력칸 등)에 있어도 같다 (INPUT-18).
-   * Esc는 취소, ←는 취소·→는 모두 지우기로 포커스를 옮기고, Enter는 포커스가 있는 버튼을 누른다. 포커스가 두 버튼 밖이면 취소를 누른다.
+   * Esc는 취소다. ←·→는 두 버튼 사이를 오가고 끝에서는 반대쪽으로 돈다(버튼이 둘이라 어느 쪽이든 다른 버튼으로 간다).
+   * 포커스가 두 버튼 밖이면 ←는 취소, →는 모두 지우기로 간다. Enter는 포커스가 있는 버튼을 누르고, 두 버튼 밖이면 취소를 누른다.
    * 처리한 키는 기본 동작과 전달을 막는다. 판 뒤 입력칸의 Enter가 할 일을 더하거나, 버튼 기본 동작으로 두 번 눌리지 않는다.
    */
   function onWindowKeydown(event: KeyboardEvent): void {
@@ -47,11 +48,11 @@
         vm.cancelReset();
         break;
       case 'ArrowLeft':
-        cancelButton?.focus({ preventScroll: true });
+      case 'ArrowRight': {
+        const other = focused === cancelButton ? confirmButton : focused === confirmButton ? cancelButton : null;
+        (other ?? (event.key === 'ArrowLeft' ? cancelButton : confirmButton))?.focus({ preventScroll: true });
         break;
-      case 'ArrowRight':
-        confirmButton?.focus({ preventScroll: true });
-        break;
+      }
       case 'Enter':
         (focused ?? cancelButton)?.click();
         break;
