@@ -32,6 +32,8 @@ export class WindowPlacement {
   /** 메뉴로 창 위쪽을 올린 만큼. 늘리지 않았으면 null. */
   #raised: number | null = null;
   #resizing = false;
+  /** 늘린 동안 이동 저장을 건너뛰었다. 되돌린 뒤 다시 저장한다 (WND-02). */
+  #saveAfterRestore = false;
   /** 창 높이 바꾸기 줄의 끝. 실패해도 다음 것을 막지 않는다. */
   #frames: Promise<void> = Promise.resolve();
 
@@ -81,13 +83,14 @@ export class WindowPlacement {
   /**
    * 창 높이를 내용에 맞춘다. 최대 높이를 넘지 않는다 (WND-03 "내용이 짧으면 창은 내용만큼").
    * 크기를 끄는 동안 온 높이는 카드가 창을 채운 높이라 무시한다. 메뉴로 늘린 동안은 기억만 했다가 restore()에서 맞춘다.
+   * 끌기 직전에 줄을 섰다가 끄는 동안 차례가 온 맞추기도 창을 바꾸지 않는다. 놓은 뒤 화면이 다시 맞춘다.
    */
   fitToContent(height: number): Promise<void> {
     if (this.#resizing)
       return Promise.resolve();
     this.#contentHeight = height;
     return this.#frame(async () => {
-      if (this.#raised === null)
+      if (this.#raised === null && !this.#resizing)
         await this.#fit();
     });
   }
@@ -101,18 +104,23 @@ export class WindowPlacement {
     });
   }
 
-  /** 늘린 창을 내용 높이로 되돌린다. 늘리지 않았으면 아무것도 하지 않는다. */
+  /**
+   * 늘린 창을 내용 높이로 되돌린다. 늘리지 않았으면 아무것도 하지 않는다.
+   * 실패하면 올린 채로 기억해 위치 저장을 계속 막고, 다음 되돌리기(다음 팝업 닫기, 종료)가 다시 시도한다 (WND-14).
+   * 늘린 동안 건너뛴 이동 저장이 있으면 되돌린 뒤 다시 잡는다 (WND-02).
+   */
   restore(): Promise<void> {
     return this.#frame(async () => {
       const raised = this.#raised;
       if (raised === null)
         return;
       const target = this.#target() ?? this.#height;
-      try {
-        await this.#deps.window.setHeight(target, -raised);
-        this.#height = target;
-      } finally {
-        this.#raised = null;
+      await this.#deps.window.setHeight(target, -raised);
+      this.#height = target;
+      this.#raised = null;
+      if (this.#saveAfterRestore) {
+        this.#saveAfterRestore = false;
+        this.#scheduleSave();
       }
     });
   }
@@ -193,10 +201,15 @@ export class WindowPlacement {
     this.#cancelSave = null;
   }
 
-  /** 메뉴로 창 위쪽을 올린 동안은 사용자가 옮긴 위치가 아니므로 저장하지 않는다. 되돌릴 때 다시 이동 신호가 온다. */
+  /**
+   * 메뉴로 창을 늘린 동안은 사용자가 옮긴 위치가 아니므로 저장하지 않는다. 대신 되돌린 뒤 다시 저장하게 표시한다.
+   * 위로 늘렸다면 되돌릴 때 이동 신호도 오지만, 아래로만 늘렸으면(raise 0) 오지 않는다.
+   */
   async #savePosition(): Promise<void> {
-    if (this.#raised !== null)
+    if (this.#raised !== null) {
+      this.#saveAfterRestore = true;
       return;
+    }
     try {
       const bounds = await this.#deps.window.bounds();
       await this.#deps.settings.update({ left: bounds.left, top: bounds.top });

@@ -250,6 +250,61 @@ describe('창 높이', () => {
     expect(files.writes).toEqual([]);
   });
 
+  it('WND-03 끌기 직전에 줄 선 높이 맞추기는 끄는 동안 창 높이를 바꾸지 않는다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    let openHeight: () => void = () => undefined;
+    const heightGate = new Promise<void>((resolve) => {
+      openHeight = resolve;
+    });
+    const setHeight = window.setHeight.bind(window);
+    let first = true;
+    window.setHeight = async (height, raise) => {
+      if (first) {
+        first = false;
+        await heightGate;
+      }
+      return setHeight(height, raise);
+    };
+    const fitting = p.fitToContent(200);
+    await Promise.resolve();
+    await Promise.resolve();
+    const queued = p.fitToContent(250);
+    window.resizeGate = new Promise(() => undefined);
+    void p.resize('South', { screenX: 0, screenY: 0 });
+    openHeight();
+    await fitting;
+    await queued;
+    await flush();
+    expect(window.heightCalls.map((call) => call.height)).not.toContain(250);
+  });
+
+  it('WND-14 되돌리기에 실패하면 올린 창 위치를 저장하지 않는다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200);
+    await p.expand(100, 400);
+    window.setHeight = () => Promise.reject(new Error('창 높이를 바꾸지 못했어요'));
+    await expect(p.restore()).rejects.toThrow();
+    await p.captureForQuit();
+    const saved = JSON.parse(files.files.get(SETTINGS_FILE) ?? '{}') as Record<string, unknown>;
+    expect([undefined, 24]).toContain(saved.top);
+  });
+
+  it('WND-02 옮긴 직후 메뉴로 창을 늘렸다 되돌려도 옮긴 위치를 저장한다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200);
+    window.moveTo(500, 500);
+    await p.expand(0, 400);
+    timer.runAll();
+    await flush();
+    await p.restore();
+    timer.runAll();
+    await flush();
+    expect(savedSettings()).toMatchObject({ left: 500, top: 500 });
+  });
+
   it('WND-10 창 위아래로 남은 화면 공간을 알려 준다', async () => {
     const { placement: p } = await placement();
     await p.apply();
