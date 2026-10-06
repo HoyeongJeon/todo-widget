@@ -22,6 +22,7 @@
 - 2026-10-04: 계획 4 반영 — port 위치와 구현, OS 분기 위치, Rust crate 구성, 기술 선택(5.2, 5.4, 5.5, 12장, 13장)
 - 2026-10-05: 계획 4 최종 리뷰 — `show_main`은 ShowGate 결정과 관계없이 창을 띄운다고 적고(5.4), 5.5의 Rust 테스트 명령(`--exclude todo-widget`)과 로컬 Windows 검사 명령을 실제와 맞췄다
 - 2026-10-06: PM 결정 — 화면은 v1.4 겉모양을 두 OS에 그대로 쓴다(6장 겉모양). 메뉴는 ⋯ 메뉴와 우클릭 메뉴 모두 v1.4 카드 모양으로 화면 안에 그리고, 앱 아이콘과 메뉴 막대 아이콘을 새로 만든다. 승인한 시안은 `docs/design/widget-mockup.html`, v1.4 값 기록은 `docs/design/v1.4-visual-reference.md`다
+- 2026-10-06: 계획 5 반영 — ViewModel은 runes를 쓰는 `.svelte.ts` class(5.1), 화면 언어를 고르는 `screenLanguage`와 창 높이 `setHeight`(5.2), `src/presentation/theme/`(5.4), presentation 테스트 도구(5.5), I18N-02 자동 검사 예외(7장), 계획 5 개발 결정(13.2)
 
 ## 1. 목적
 
@@ -155,7 +156,8 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | adapters | 파일, 자동 실행, 업데이트, 창 제어, 언어 감지, 시계 | port, Tauri |
 
 - 의존 방향과 네트워크 제한(PRIV-01)은 Vitest 구조 테스트(`src/architecture.test.ts`, 규칙은 `tools/architecture/`)로 막는다. 어기면 `pnpm test`와 CI가 실패한다. 별도 ESLint 규칙은 두지 않는다(개발 결정: 도구 하나로 충분하고, 규칙을 테스트로 읽을 수 있다).
-- ViewModel은 Svelte에 의존하지 않는다. View 프레임워크는 바꿀 수 있는 세부 사항이다.
+- ViewModel은 Svelte 5 runes(`$state`)를 쓰는 class이고 `.svelte.ts` 파일이다(`src/presentation/*-view-model.svelte.ts`). `svelte` 패키지를 import하지 않는다. 동작 규칙은 ViewModel과 순수 TS 도우미(`src/presentation/input/`, `layout/`, `menu/`)에 두고, 컴포넌트는 그리기·DOM 이벤트 연결·크기 재기만 한다. View 프레임워크를 바꾸면 `$state` 선언을 다른 알림 방식으로 바꾸면 된다(계획 5 개발 결정 D1).
+- 화면 문구 하드코딩도 같은 구조 테스트가 막는다(I18N-02, `tools/architecture/copy.ts`). 예외는 7장에 적는다.
 - 테스트용 가짜(port 구현)는 `src/testing/`에 둔다. 테스트 파일(`*.test.ts`)만 가져오고, composition root(`src/main.ts`)를 포함한 제품 코드는 가져오지 않는다. 구조 테스트가 이것도 막는다.
 - 투명도 미리 보기(WND-12)처럼 아직 확정하지 않은 화면 값은 ViewModel이 들고 있다가, 메뉴를 닫을 때 `SettingsService.update()`로 확정한다. `SettingsService`는 확정된 설정만 들고 저장한다.
 
@@ -170,7 +172,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | `Updater` | latest.json 확인, 받아서 설치 | `src/application/ports/updater.ts` | `src/adapters/updater/tauri-updater.ts` / `FakeUpdater` |
 | `Timer` | 나중에 한 번 실행 | `src/application/ports/timer.ts` | `src/adapters/system/timer.ts` / `FakeTimer`, `ManualTimer`, `ImmediateTimer` |
 | `AppInfo` | 앱 버전, 개발 빌드 여부 | `src/application/ports/app-info.ts` | `src/adapters/tauri/app-info.ts` |
-| `WindowController` | 위치, 크기, 맨 위 고정, 보이기·숨긴 채 두기, 끌어 옮기기, 크기 조절, 모니터 영역 | `src/application/ports/window-controller.ts` | `src/adapters/tauri/window-controller.ts` / `FakeWindowController` |
+| `WindowController` | 위치, 크기, 창 높이만 바꾸기(내용 맞추기·메뉴용 늘리기), 맨 위 고정, 보이기·숨긴 채 두기, 끌어 옮기기, 크기 조절, 모니터 영역 | `src/application/ports/window-controller.ts` | `src/adapters/tauri/window-controller.ts` / `FakeWindowController` |
 | `LocaleProvider` | OS 언어 (BCP 47) | `src/application/ports/locale.ts` | `src/adapters/tauri/locale.ts` |
 | `Dialog` | OS 대화 상자 (STORE-10) | `src/application/ports/dialog.ts` | `src/adapters/tauri/dialog.ts` / `FakeDialog` |
 | `AppProcess` | 종료, OS 쪽 종료 요청 받기 (START-08, MAC-04) | `src/application/ports/app-process.ts` | `src/adapters/tauri/process.ts` / `FakeProcess` |
@@ -180,7 +182,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 - `Clock`과 `IdGenerator`는 domain 규칙(할 일 추가, 상태 바꾸기)이 직접 쓰므로 domain에 둔다. 나머지 port는 application에 둔다.
 - 따로 `AppPaths`는 두지 않는다. 데이터 폴더 위치는 Rust(`todowidget_core::files::resolve_data_dir`)가 정하고, `FileStore`는 파일 이름만 넘긴다. WebView는 환경 변수를 읽지 못하기 때문이다.
 - `Dialog`의 Tauri 구현은 Rust 명령 `show_error_dialog`를 부른다. 이 명령은 창에 붙이지 않은(parent 없는) OS 오류 대화 상자를 띄운다. STORE-10에서는 위젯 창이 숨어 있어, 창에 붙이면 macOS sheet가 보이지 않기 때문이다. 그래서 JS 패키지 `@tauri-apps/plugin-dialog`는 쓰지 않고, Rust crate `tauri-plugin-dialog`만 쓴다.
-- 테스트용 가짜는 모두 `src/testing/`에 있다. `AppInfo`는 값뿐이라 테스트에서 객체를 바로 만든다. `LocaleProvider`는 아직 application이 쓰지 않는다(화면 언어 고르기는 계획 5).
+- 테스트용 가짜는 모두 `src/testing/`에 있다. `AppInfo`는 값뿐이라 테스트에서 객체를 바로 만든다. `LocaleProvider`는 켤 때 `screenLanguage`(`src/application/language.ts`)가 한 번 읽는다(I18N-01).
 
 ### 5.3 OOP와 캡슐화
 
@@ -199,7 +201,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, Reopen 받기, 로그인 항목(SMAppService) 등록·해제·상태 읽기, 창 영역 한 번에 바꾸기(`NSWindow`), OS 이름(`OS_NAME`). 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
 | `src-tauri/src/platform/windows.rs` | `todowidget_windows`를 앱에 잇는다(자동 실행, 창 영역), OS 이름(`OS_NAME`). 작업 표시줄 숨김은 Tauri 설정 `skipTaskbar`로 한다 |
 | `src-tauri/crates/windows/` | 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기(`run_key.rs`), 창 위치·크기 한 번에 바꾸기(`frame.rs`, `SetWindowPos`) |
-| `src/presentation/theme/` | OS·언어별 글꼴과 겉모양 (CSS 변수). 계획 5에서 만든다 |
+| `src/presentation/theme/` | 겉모양 CSS 변수(`theme.css`, 시안 값)와 OS·언어별 글꼴. 글꼴 이름은 `theme.css`의 `--font-{macos,windows}-{ko,en,zh}` 변수에 있고, `fonts.ts`가 OS와 화면 언어로 변수를 고른다 |
 
 **Rust crate 구성**
 
@@ -217,7 +219,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | 층 | 도구 | 범위 |
 |---|---|---|
 | domain, application | Vitest + 가짜 port | 공통 행동 spec 대부분 |
-| presentation | Vitest, DOM 없이 ViewModel만 | 입력 흐름(조합 중 Enter 무시, Esc, 이름 바꾸기 저장·취소), 메뉴 상태, 업데이트 안내 |
+| presentation | Vitest node 환경으로 ViewModel과 순수 도우미. DOM 이벤트 연결이 핵심인 컴포넌트만 `@testing-library/svelte` + `happy-dom`(파일 첫 줄 `// @vitest-environment happy-dom`) | 목록·안내 줄·메뉴·창 높이 상태, 섹션 높이 나누기, 메뉴 자리, Enter·IME·붙여넣기·포커스 |
 | adapters | `cargo test --workspace --exclude todo-widget`(core, windows crate. 앱 crate는 테스트가 없고, Windows에서 테스트 실행 파일이 rfd·common-controls 링크 때문에 뜨지 않을 수 있어 뺀다), Vitest port 계약 테스트, `pnpm privacy:check` | 안전한 쓰기, 데이터 폴더, 자동 실행 판정, Windows 레지스트리(Windows CI). 가짜와 진짜 구현이 같은 계약을 지키는지. HTTP crate를 updater plugin만 쓰는지(PRIV-01) |
 | 실제 앱 | OS별 직접 확인 체크리스트 | 창 모양, 실제 IME 입력, 메뉴 막대, Spaces, 설치·업데이트 |
 
@@ -267,6 +269,20 @@ Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowid
 - 저장 데이터는 언어와 무관하다. 상태는 `todo`·`doing`·`done`으로 저장되고 화면에서만 번역된다.
 - 독일어 문구가 가장 길다. 최소 폭(280px)에서 넘치지 않는지 직접 확인 항목으로 둔다.
 - 번역은 개발이 한다. 독일어·중국어 원어민 검토는 가능해지면 반영한다.
+- I18N-02 자동 검사(`tools/architecture/copy.ts`)는 presentation의 `.svelte`·`.ts`에서 다음을 찾는다.
+  - 템플릿 글자 중 글자(문자)가 있는 것
+  - `title`·`placeholder`·`aria-label`·`alt`·`label` 속성과, `type`이 `button`·`submit`·`reset`인 `<input>`의 `value`에 쓴 고정 글 중 글자가 있는 것
+  - 그 밖의 `aria-*` 속성의 고정 글, 문자열 리터럴, template literal 중 문구처럼 보이는 것. template literal의 값 자리(`${…}`)는 `{n}`으로 읽고 고정 조각과 이어서 본다. 그래서 `` `${count} tasks left` ``는 `{n} tasks left`로 읽혀 문구로 걸린다
+- 위 셋째 항목에서 문구로 보지 않는 예외(계획 1이 미뤄 둔 목록, 계획 5 개발 결정 D8, PM 승인 2026-10-06):
+  - 글자가 없는 기호·숫자(⋯ · % +)
+  - 공백 없는 기술 낱말(이벤트 이름, 키 이름, 사전 키, 경로, CSS 값 하나, `{n}`)
+  - 소문자 낱말을 공백으로 이은 CSS 클래스 목록. 낱말마다 영어 소문자가 하나는 있어야 한다. 숫자만 있는 낱말이 끼면 클래스 목록이 아니다(`'3 tasks left'`는 문구다)
+  - 주석, `<style>`, `console.*(…)`·`new Error(…)`의 첫 인자(개발자용 문장)
+  - 사전 파일 `src/presentation/i18n/{ko,en,de,zh-hans}.ts`
+  - ASCII 밖의 글자(한글·한자·움라우트)가 있으면 예외에 들지 않고 늘 문구로 본다.
+- 검사가 놓치는 것: 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`), 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기로 만든 문구(조각마다 따로 보므로). 이것들은 체크리스트 I18N-07에서 본다.
+- 글꼴 이름은 `theme.css` 변수에 둔다. 다른 언어로 쓴 제목도 깨지지 않게 화면 언어 글꼴 뒤에 다른 언어 글꼴을 둔다(I18N-06).
+- 독일어 문구는 최소 폭 280에서 안내 줄이 두 줄 안에 들어가게 짧게 쓴다(계획 5 개발 결정 D18).
 
 ## 8. 업데이트와 개인정보
 
@@ -393,7 +409,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 
 | 항목 | 확인할 것 | 결과 |
 |---|---|---|
-| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 → 계획 5에서 v1.4 그림자 값으로 맞췄다(Task 15 확인 2번) ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5). 계획 4에서 두 OS 모두 직접 구현으로 바꿨다(13장 개발 결정) |
 | macOS 메뉴 막대·Spaces | Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces 따라다니기 | 통과. Dock·Cmd+Tab에 없고, 메뉴 막대 아이콘 클릭·메뉴·다시 열기가 되고, 모든 데스크톱에 보인다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 전체 화면 | 📌일 때 전체 화면 위 표시 (처음 계획) | PM 결정으로 바뀜. 📌를 켜도 전체 화면 앱 위에 뜨지 않았고, PM이 숨는 쪽을 골랐다. 이제 전체 화면에서는 📌와 관계없이 숨는다(MAC-07). 전체 화면 위 표시 코드는 지웠다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
@@ -455,3 +471,54 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | `objc2-app-kit` | 계획 2부터 쓰는 objc2 묶음이다. 필요한 feature만 켜서 창 영역을 한 번에 바꾼다(`NSWindow`) |
 | `sys-locale` | 작고, OS 언어를 BCP 47로 준다 |
 | `dirs` | Tauri가 이미 쓴다 |
+
+### 13.2 계획 5 개발 결정 (2026-10-06)
+
+계획 5(`docs/superpowers/plans/2026-10-06-v2-presentation.md`) "개발 결정" 표에서 옮겼다. 다른 곳에서 번호(D1 등)로 가리키므로 번호 칸을 남긴다.
+
+| # | 결정 | 이유 |
+|---|---|---|
+| D1 | **ViewModel은 Svelte 5 runes를 쓰는 class이고 `.svelte.ts` 파일로 `src/presentation/`에 둔다.** 동작 규칙은 ViewModel과 순수 TS 도우미에 두고 Vitest node 환경으로 테스트한다. 서비스는 `RunningApp`으로 받는다 | 서비스 변경 알림(`onChange`)을 `$state` 하나로 받아 getter가 다시 계산되게 하면, 화면 상태를 따로 복사하지 않아도 된다. 설계 문서 5.1의 "ViewModel은 Svelte에 의존하지 않는다"는 이 결정으로 바뀐다(Task 14). runes는 컴파일러 문법이라 ViewModel 코드에는 `svelte` import가 없다 |
+| D2 | **컴포넌트 테스트는 DOM 이벤트 연결이 핵심인 것만** `@testing-library/svelte` + `happy-dom`으로 한다(파일 첫 줄 `// @vitest-environment happy-dom`) | 키보드·IME·붙여넣기·포커스는 이벤트를 실제로 흘려야 확인된다. 나머지는 ViewModel 테스트가 더 빠르고 덜 깨진다 |
+| D3 | **Enter는 `isComposing`이거나 `keyCode === 229`이면 쓰지 않는다.** 확정 뒤 OS가 다시 보내는 Enter나 사용자가 다시 누른 Enter로 정확히 한 번 추가·저장한다. 판단은 순수 함수 `isCommitEnter`다. 이름 바꾸기 칸은 `beforeinput`의 줄바꿈 입력도 막는다 | INPUT-05는 어느 방식이든 바깥 결과가 같으면 된다. **이 규칙 그대로는 검증된 적이 없다.** 계획 2에서 Mac의 한글·병음으로 통과한 것은 `isComposing`만 보는 규칙이다(커밋 `9ee7d6e` 시험 화면). keyCode 229도 보는 것은 병음처럼 조합을 끝내는 Enter가 `isComposing: false, keyCode: 229`로 오는 경우에 할 일이 잘못 추가되지 않게 하려는 것이다. 반대로 한글처럼 조합을 끝내는 Enter가 그 모양으로 한 번만 오면 Enter를 두 번 눌러야 한다. 그래서 Task 15 확인 3번에서 (a) 한글 Enter 한 번 추가, (b) 병음 확정 Enter는 추가하지 않음을 따로 본다. (a)가 실패하면 `isComposing`만 보는 계획 2 규칙으로 돌리고 controller에게 알린다. (a)와 (b)가 서로 부딪히면 PM에게 묻는다 |
+| D4 | **메뉴 막대 문구는 Rust 명령 `set_tray_labels { open, quit }`로 JS가 켤 때 넘긴다.** Rust 기본값은 영어 "Open"/"Quit"이고 곧바로 덮어쓴다 | Rust에 사전을 두지 않는다(I18N-02). 기본값은 JS가 실패해도 메뉴가 비지 않게 하려는 것이다 |
+| D5 | **창 높이는 카드 `ResizeObserver` → `WindowPlacement.fitToContent(높이)`로 맞춘다.** 최대 높이로 제한하고, 크기를 끄는 동안은 무시한다. 메뉴용 임시 늘리기는 `expand(raise, height)`·`restore()`이고 저장하지 않는다 | WND-03 "내용이 짧으면 창은 내용만큼". v1.4 `SizeToContent`와 같은 동작을 창 밖에서 맞춘다 |
+| D6 | **⋯ 메뉴와 우클릭 메뉴는 같은 `Menu` 컴포넌트다.** 방향키로 고를 수 있는 항목 사이를 돌고(v1.4 T:166), Enter·Space로 고르고, Esc로 닫는다. 우클릭 메뉴는 판 왼쪽 위가 커서 자리다 | v1.4와 같은 카드 모양·같은 조작. 설계 문서 6장 |
+| D7 | **아이콘 글리프는 시안의 SVG symbol을 그대로 `Icon.svelte`로 옮긴다** | 설계 문서 6장: Segoe 글리프를 같은 모양의 SVG로 |
+| D8 | **I18N-02 자동 검사 규칙과 예외.** presentation의 `.svelte`·`.ts`에서 (1) 템플릿 글자 중 글자(문자)가 있는 것, (2) `title`·`placeholder`·`aria-label`·`alt` 속성의 고정 글, (3) 문구처럼 보이는 문자열 리터럴을 찾는다. 예외: 글자 없는 것(⋯ · % + 숫자), 공백 없는 기술 낱말(`'keydown'`, `'app.title'`, `'text/plain'`), 소문자 CSS 클래스 목록(`'row doing'`), 주석, `<style>`, `console.*(…)`·`new Error(…)`의 첫 인자(개발자용), 사전 파일 네 개 | 계획 1이 미뤄 둔 예외 목록이다. 화면에 보일 글은 놓치지 않고 기술 문자열은 통과시킨다. 글자가 ASCII가 아니면(한글·한자·움라우트) 늘 문구로 본다 |
+| D9 | **창 높이 바꾸기는 `WindowPlacement` 안에서 하나씩 차례로 한다.** 늘린 동안 생긴 이동 신호로는 위치를 저장하지 않고, 종료할 때는 먼저 되돌린 뒤 위치를 저장한다 | 맞추기·늘리기·되돌리기가 겹치면 창 높이가 뒤섞인다. 늘린 동안의 창 위쪽은 사용자의 위치가 아니다(WND-14) |
+| D10 | **늘린 투명 부분을 누르면 메뉴를 닫는다.** macOS는 alpha 0 픽셀의 클릭이 뒤 앱으로 넘어가므로 창이 포커스를 잃는 것(`window` `blur`)으로 닫는다. Windows처럼 클릭이 창에 오면 메뉴 아래에 깐 투명 막(`backdrop`)이 받아 닫는다. 확인 판도 `blur`로 닫는다(취소) | 계획 4 PM 확인에서 macOS의 alpha 0 클릭 통과를 확인했다. 두 길 모두 "바깥을 누르면 닫힘"(v1.4 ContextMenu)과 같다. 같은 까닭으로 창이 포커스를 잃으면 열린 이름 바꾸기 칸에도 blur가 와서 이름이 저장된다(INPUT-14의 "다른 곳 클릭"을 앱 전환까지 넓힌 것. 해가 없어 동작은 그대로 두고 Task 15 확인 12번에서 본다) |
+| D11 | **메뉴가 위로 열려 창 위로 나가면 창 위쪽을 올리고, 내용을 그만큼 아래로 민다(`lift`).** 카드는 화면에서 제자리다 | WND-10 "아래 공간이 모자라면 ⋯ 버튼 위로". ⋯ 버튼은 창 맨 위에 있어 위로 뜬 메뉴는 창 밖이다 |
+| D12 | **켤 때 자동 실행 등록·경로 갱신은 기다리지 않는다.** 실패는 그대로 조용히 넘어간다 | PERF-01. macOS `SMAppService` 등록은 시스템 서비스를 거친다. 결과를 화면이 쓰지 않는다(메뉴를 열 때 다시 읽는다, START-04) |
+| D13 | **메뉴 막대 아이콘은 36×36 PNG 한 장이다.** tray-icon 0.25가 높이를 늘 18pt로 맞추므로 @2x 해상도가 된다 | tray-icon은 이미지 한 장만 받는다(`platform_impl/macos/mod.rs` 281줄). @1x 화면에서는 OS가 줄여 그린다 |
+| D14 | **아이콘 PNG·icns·ico는 저장소의 SVG 원본에서 `pnpm tauri icon`으로 만든다** | 새 도구가 필요 없다. 원본이 저장소에 있어 다시 만들 수 있다 |
+| D15 | **글꼴 목록은 `theme.css`의 CSS 변수(`--font-macos-ko` 등 6개)로 두고, TS는 OS·언어로 변수 이름만 고른다** | 글꼴 이름이 한 곳에 있다. 글꼴 이름("Apple SD Gothic Neo")이 I18N-02 검사에 걸리지 않는다 |
+| D16 | **섹션 높이는 DOM으로 재고 나누기는 domain `allocateSectionHeights`가 한다.** 섹션은 flex로 쌓는다 | LIST-13~15는 v1.4 `SectionLayout`과 같은 배분이다. 최소 높이는 실제 첫 줄 높이로 잰다(긴 제목 첫 줄도 맞다). 섹션과 줄 묶음(`.rows`)을 모두 flex column으로 쌓아 margin이 겹치지 않게 한다. 그래서 `offsetHeight`가 줄의 위아래 margin까지 포함해 측정이 정확하고, 줄 사이 간격도 v1.4와 같은 2px이다(리뷰 I1). 카드에는 최대 높이를 걸고 섹션 영역은 `overflow: hidden`이라, 최소 높이 합이 넘쳐도 입력칸은 잘리지 않고 섹션이 잘린다(v1.4 DockPanel과 같다, 리뷰 I3) |
+| D17 | **이름 바꾸기 칸은 `textarea`다.** 높이는 내용에 맞추고, 줄바꿈 입력은 막는다 | 긴 제목이 칸 안에서 줄을 바꿔 전부 보인다(LIST-11, v1.4 TextBox Wrap). `input`은 한 줄로 잘린다 |
+| D18 | **독일어 `notice.newerFile`은 짧게 번역한다**("Datei aus neuerer Version. Bitte aktualisieren.") | 실패 안내와 업데이트 버튼이 함께 붙어도 최소 폭 280에서 두 줄 안에 들어가게(안내 줄 정의). 시안의 독일어 문장은 예시였다 |
+| D19 | **처음 창을 보이기 전 크기는 마운트 직후 바로 잰다.** 그 뒤의 변화는 `ResizeObserver`로 받는다 | 숨긴 창에서는 `requestAnimationFrame`처럼 `ResizeObserver`도 오지 않을 수 있다. 오지 않으면 3초 대비책이 창을 띄워 PERF-01을 놓친다 |
+| D20 | **`keep_hidden`은 대비책이 이미 창을 띄운 뒤에도 창을 숨기고 숨김으로 정한다**(`ShowGate::hide`) | R14: 시작이 3초를 넘긴 뒤 STORE-10이면 대화 상자 뒤에 빈 창이 남았다. 대화 상자 뒤에는 곧 끝나므로 숨김이 늘 맞다 |
+| D21 | **테스트용 `RunningApp`은 `src/testing/test-app.ts`의 `createTestApp()`이 가짜 port로 만든다** | ViewModel·컴포넌트 테스트가 같은 준비를 쓴다. `launchApp`을 쓰면 업데이트 확인과 읽기 다시 시도 타이머가 끼어든다 |
+| D22 | **실패 보고는 `Report(action, error)`다.** action은 짧은 영어 낱말(`'pin'`, `'quit'`), 기본 구현은 `console.error` | 누르고 잊는 호출이 처리하지 않은 거부로 남지 않게 한다. 개발자 도구에서만 본다 |
+| D23 | **투명도 슬라이더는 `input type="range"`에 시안 모양을 입힌다** | 클릭한 자리로 바로 가기(v1.4 IsMoveToPointEnabled), 끌기, 키보드가 기본으로 된다. WebKit·Chromium 모두 `::-webkit-slider-*`로 꾸민다 |
+| D24 | **PM 확인 데이터 폴더에는 `settings.json`을 미리 만든다** | 처음 실행이 아니게 되어 release 빌드가 로그인 항목을 저절로 등록하지 않는다(START-02). 계획 4 확인 중 재시동 사고(실제 폴더 사용)를 막는다. 확인 스크립트는 앱을 켜는 모든 명령(`start`, `again`, `probe`)이 먼저 이 파일을 만든다 |
+| D25 | **입력칸과 이름 바꾸기 칸에서는 OS 기본 우클릭 메뉴(잘라내기·복사·붙여넣기)를 막지 않는다.** 이름 바꾸기 중인 줄은 우클릭해도 할 일 메뉴를 열지 않는다. 그 밖의 곳은 WebView 기본 메뉴(새로 고침 등)를 막는다 | v1.4 TextBox에는 기본 잘라내기·복사·붙여넣기 메뉴가 있었다(controller 판단, 리뷰 M5) |
+| D26 | **투명도 휠은 칸을 이렇게 센다.** (1) `deltaY`가 0이면 칸이 아니다. (2) 줄·쪽 단위(`deltaMode` 1·2)는 이벤트 하나가 한 칸이다. (3) 옛 값 `wheelDeltaY`가 0이 아니고 120의 배수이면 마우스 휠의 칸이고, `wheelDeltaY` 절댓값 ÷ 120이 칸 수다. (4) 그 밖의 픽셀 단위(트랙패드, Magic Mouse)는 `deltaY`를 쌓아 절댓값 50px마다 한 칸으로 센다. 한 칸이 2%다. 방향은 실제 손가락·휠 방향이고(P6), WebKit의 `webkitDirectionInvertedFromDevice`로 되찾는다. 칸 수는 `wheelDeltaY`로, 방향은 `deltaY`로 정한다. 계산은 순수 TS `WheelSteps`(Task 7)가 한다 | 트랙패드 가로 쓸기·Shift+휠이 "덜 투명하게"로 읽히지 않고, 트랙패드 쓸기 한 번에 0→40%가 끝까지 가지 않는다(리뷰 I4). Chromium(WebView2)과 WebKit은 끊어지는 마우스 휠 한 칸에 `wheelDeltaY`를 ±120으로 준다. 그래서 Windows 마우스의 `deltaY`가 100이든 125든, 화면 배율이 얼마든 한 칸이 정확히 2%다(controller 판단) |
+| D27 | **메뉴 자리를 정하는 동안 메뉴가 닫히면 늦게 온 창 늘리기를 버린다.** `WindowViewModel`이 popup 세대 번호(`popupToken`)를 두고, `clearPopup`이 번호를 올린다. 메뉴는 자리를 정하기 시작할 때 번호를 받아 `fitPopup`에 넘긴다 | 화면 공간을 읽는 IPC를 기다리는 사이 닫히면, 되돌릴 사람이 없는 늘린 창과 `lift`가 남아 창 맞추기와 위치 저장이 멈춘다(리뷰 M1) |
+
+계획 5를 실행하며 더하거나 바꾼 결정이다. 계획 문서의 표에 없으므로 틀렸을 때 비용도 여기에 적는다.
+
+| 결정 | 이유 | 틀렸을 때 비용 |
+|---|---|---|
+| **D8 보완 (Task 13 리뷰): 자동 검사 범위를 넓히고 놓치는 것을 바로 적었다.** template literal의 값 자리는 `{n}`으로 읽고, 숫자만 있는 낱말은 CSS 클래스 이름으로 보지 않는다. `label`·`aria-*` 속성과 버튼 `<input>`의 `value`도 본다(7장) | 처음 규칙으로는 `` `${count} tasks left` ``(값 자리를 빼면 소문자 낱말만 남는다), `'3 tasks left'`(클래스 목록으로 읽혔다), `label`·`aria-*`·버튼 `value`에 쓴 문구가 빠져나갔다. D8의 "소문자 영어 한 낱말 문구만 놓친다"는 너무 좁았다. 실제로는 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`), 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기를 놓친다 | 놓친 문구가 화면에 나가면 다른 화면 언어에서도 영어로 보인다. 체크리스트 I18N-07에서 잡는다 |
+| **(Task 4) `AutoStartControl`은 켤 때 자동 실행 등록 약속(`autoStartDone`)을 처음 줄(queue)로 받는다.** 켜자마자 ⋯ 메뉴에서 자동 실행을 바꾸면 켤 때의 갱신·켜기가 끝난 뒤에 처리한다 | 켤 때 등록을 기다리지 않으므로(D12) 그 사이 사용자가 끄면 뒤늦은 갱신이 다시 등록할 수 있다. START-03(사용자가 끈 자동 실행을 다시 켜지 않는다)이 계획 글("`launchApp`은 `autoStartDone`을 쓰지 않는다")보다 앞선다 | 켜자마자 메뉴에서 자동 실행을 바꾸면 OS 호출이 끝날 때까지 기다린다 |
+| **(Task 7) Windows 정밀 터치패드에서는 휠의 실제 방향을 되찾지 못한다.** WND-12의 알려진 한계로 두고 Windows PC에서 확인한다(계획 6) | WebView2(Chromium)에는 `webkitDirectionInvertedFromDevice`가 없다. 그래서 OS 스크롤 방향 설정이 반영된 `deltaY`만 받는다(D26) | 터치패드 스크롤 방향을 뒤집어 둔 Windows 사용자는 투명도가 반대로 바뀐다 |
+| **(Task 8) 크기 조절이 끝나면 `WindowViewModel`이 끄는 동안 마지막으로 받은 내용 높이로 창을 다시 맞춘다**(WND-03) | 끄는 동안 온 내용 높이를 버리면 `WindowPlacement`가 끌기 전 내용 높이를 기억한다. 그러면 메뉴로 늘렸다 되돌릴 때 창이 끌기 전 높이로 줄어 카드 아래가 잘린다. spec WND-03이 계획 코드보다 앞선다 | 크기 조절마다 맞추기 IPC가 한 번 더 간다 |
+| **(Task 11) 투명도 슬라이더(`input`)에서 온 Enter·방향키·Space는 메뉴가 처리하지 않는다.** Esc만 메뉴를 닫는다 | 방향키와 Space는 슬라이더가 값을 바꾸는 데 쓴다(리뷰 M11). Enter를 메뉴가 받으면 전에 강조해 둔 항목(예: 종료)이 슬라이더에서 골라진다 | 슬라이더에 포커스가 있을 때 Enter는 아무 일도 하지 않는다 |
+
+**쓴 라이브러리**
+
+| 라이브러리 | 고른 이유 |
+|---|---|
+| `@testing-library/svelte` 5.4.2 (dev) | Svelte 5 공식 권장 컴포넌트 테스트 도구다. 실제 DOM 이벤트를 흘려 IME·붙여넣기·포커스를 본다 |
+| `happy-dom` 20.14.5 (dev) | jsdom보다 가볍고 빠르다. 컴포넌트 테스트 파일에서만 켠다 |

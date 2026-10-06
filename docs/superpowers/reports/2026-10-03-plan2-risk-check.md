@@ -189,16 +189,16 @@ Mac에서 잰 값은 모두 기준 안이다. 그래서 PERF 숫자는 바꾸지
 | `show_main`이 3초 안에 오지 않으면 Rust가 창을 띄운다 | 계획 4 — 완료 (계획 4 Task 2) | JS가 실패하면 창이 숨은 채로 남는다 |
 | PRIV-01: updater 요청 내용을 테스트하고, `cargo tree -i reqwest` 경로가 updater 하나뿐인지 검사한다 | 계획 4 — 완료 (계획 4 Task 7) | updater가 들어오면 네트워크 crate가 생긴다. 다른 길로 들어오지 않았는지 봐야 한다 |
 | `rust-toolchain.toml`에 components(clippy, rustfmt)를 더하고 CI에 clippy·fmt 검사를 넣는다 | 계획 4 — 완료 (계획 4 Task 2) | 지금은 `profile = "minimal"`이라 둘 다 없다 |
-| 시험 화면(`App.svelte`, `window-controls.ts` 임시 위치 포함)을 실제 화면으로 바꾼다 | 계획 5 | 계획 2 위험 확인용 화면이다 |
-| 그림자와 메뉴 막대 아이콘 디자인을 v1.4 기준으로 맞춘다 | 계획 5 | 그림자가 잘 안 보였다(Step 5). 아이콘 모양은 아직 임시다 |
-| 헤더 끌기는 왼쪽 버튼만 받는다 | 계획 5 | 지금은 오른쪽 버튼으로 눌러도 창이 끌린다 |
-| 템플릿 아이콘 정리 | 계획 5 | 지금 메뉴 막대 아이콘은 기본 앱 아이콘을 template으로 쓴다 |
-| vite `server.watch.ignored: ['**/src-tauri/**']` | 계획 5 | 지금은 개발 서버가 `src-tauri` 아래 Rust 빌드 결과까지 감시한다 |
-| PERF-01, PERF-03을 실제 화면으로 다시 잰다. 최종 확인은 체크리스트 방식으로 한다 | 계획 5 | probe는 실행 파일 로딩을 빼서 실제보다 짧다. 지금은 빈 시험 화면으로 잰 값이다 |
-| MAC-03, MAC-05, MAC-07의 전체 화면 동작을 HEAD 빌드로 눈으로 다시 본다 | 계획 5 | PM은 `3de2797` 빌드로 봤다. 그 뒤 `6ce808e`에서 `FullScreenAuxiliary`를 지웠다 |
+| 시험 화면(`App.svelte`, `window-controls.ts` 임시 위치 포함)을 실제 화면으로 바꾼다 | 계획 5 — 완료 (계획 5 Task 12) | 계획 2 위험 확인용 화면이다 |
+| 그림자와 메뉴 막대 아이콘 디자인을 v1.4 기준으로 맞춘다 | 계획 5 — 완료 (계획 5 Task 6, 12) | 그림자가 잘 안 보였다(Step 5). 아이콘 모양은 아직 임시다 |
+| 헤더 끌기는 왼쪽 버튼만 받는다 | 계획 5 — 완료 (계획 5 Task 12) | 지금은 오른쪽 버튼으로 눌러도 창이 끌린다 |
+| 템플릿 아이콘 정리 | 계획 5 — 완료 (계획 5 Task 6) | 지금 메뉴 막대 아이콘은 기본 앱 아이콘을 template으로 쓴다 |
+| vite `server.watch.ignored: ['**/src-tauri/**']` | 계획 5 — 완료 (계획 5 Task 10) | 지금은 개발 서버가 `src-tauri` 아래 Rust 빌드 결과까지 감시한다 |
+| PERF-01, PERF-03을 실제 화면으로 다시 잰다. 최종 확인은 체크리스트 방식으로 한다 | 계획 5 — 완료 (계획 5 Task 15) | probe는 실행 파일 로딩을 빼서 실제보다 짧다. 지금은 빈 시험 화면으로 잰 값이다 |
+| MAC-03, MAC-05, MAC-07의 전체 화면 동작을 HEAD 빌드로 눈으로 다시 본다 | 계획 5 — 완료 (계획 5 Task 15) | PM은 `3de2797` 빌드로 봤다. 그 뒤 `6ce808e`에서 `FullScreenAuxiliary`를 지웠다 |
 | `probe.rs`(`TODOWIDGET_PROBE`)를 지우거나 기본 꺼진 cargo feature로 막는다. 출시 전 REL 체크리스트에 넣는다 | 계획 6 | 계획 2 측정용 코드다. 출시 빌드에 남기지 않는다 |
 | 쓰지 않는 crate-type(`staticlib`, `cdylib`) 정리를 검토한다 | 계획 6 | 둘은 모바일 빌드용이다. 데스크톱 앱에는 필요 없을 수 있다 |
-| 번들 아이콘 정리 | 계획 6 | Tauri 기본 아이콘 세트가 그대로 있다 |
+| 번들 아이콘 정리 | 계획 6 — 완료 (계획 5 Task 6에서 함께) | Tauri 기본 아이콘 세트가 그대로 있다 |
 | CI에 `RUSTFLAGS=-D warnings`를 넣는다 | 첫 Windows CI 실행 뒤 — 완료 (계획 3 Task 1) | Windows에서만 나는 경고가 있는지 먼저 본다 |
 
 ## Windows 확인 절차 (PM)
