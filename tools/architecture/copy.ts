@@ -11,8 +11,10 @@ export const DICTIONARY_FILES: readonly string[] = [
   'src/presentation/i18n/zh-hans.ts',
 ];
 
-/** 값이 화면에 보이는 템플릿 속성. */
-const VISIBLE_ATTRIBUTES: ReadonlySet<string> = new Set(['title', 'placeholder', 'aria-label', 'alt']);
+/** 값이 화면에 보이는(또는 화면 읽기 프로그램이 읽는) 템플릿 속성. 고정 글에 글자가 있으면 문구다. */
+const VISIBLE_ATTRIBUTES: ReadonlySet<string> = new Set(['title', 'placeholder', 'aria-label', 'alt', 'label']);
+/** 이 type의 `<input>`은 value가 버튼 글자로 보인다. */
+const BUTTON_INPUT_TYPES: ReadonlySet<string> = new Set(['button', 'submit', 'reset']);
 
 /** 글자(문자)가 하나라도 있는지. 기호(⋯ 📌 % · +)와 숫자는 글자가 아니다. */
 const LETTER = /\p{L}/u;
@@ -20,8 +22,8 @@ const LETTER = /\p{L}/u;
 const NON_ASCII_LETTER = /(?![\u0000-\u007f])\p{L}/u;
 /** 공백 없는 기술 낱말: 이벤트·키 이름, 사전 키, 경로, CSS 값 하나, {n}. */
 const TECHNICAL_TOKEN = /^[A-Za-z0-9_.:/#@%+{}()|-]*$/;
-/** 소문자 낱말을 공백으로 이은 CSS 클래스 목록. */
-const CLASS_LIST = /^[a-z0-9_-]+(?: [a-z0-9_-]+)+$/;
+/** 소문자 낱말을 공백으로 이은 CSS 클래스 목록. 낱말마다 글자가 있어야 한다('3 tasks left'는 문구다). */
+const CLASS_LIST = /^[a-z0-9_-]*[a-z][a-z0-9_-]*(?: [a-z0-9_-]*[a-z][a-z0-9_-]*)+$/;
 /** 화면에 보이지 않는 개발자용 문장: console.*(…)와 new Error(…)의 첫 인자. */
 const DEVELOPER_MESSAGE_BEFORE = /(?:\bconsole\.(?:error|warn|info|log|debug)|\bnew\s+Error)\(\s*$/;
 
@@ -105,7 +107,7 @@ function scanCode(file: SourceFile, from: number, to: number): Violation[] {
   return found;
 }
 
-/** `…${…}…`. 고정된 글 조각을 그대로 이어(값 자리는 비운다) 검사하고, ${…} 안의 코드는 scanCode로 본다. 닫는 ` 다음 위치를 돌려준다. */
+/** `…${…}…`. 고정된 글 조각을 이어(값 자리는 `{n}`으로 둔다. `{`가 있어 CSS 클래스 목록으로 보지 않는다) 검사하고, ${…} 안의 코드는 scanCode로 본다. 닫는 ` 다음 위치를 돌려준다. */
 function scanTemplate(file: SourceFile, open: number, to: number, found: Violation[]): number {
   const text = file.text;
   let i = open + 1;
@@ -119,6 +121,7 @@ function scanTemplate(file: SourceFile, open: number, to: number, found: Violati
     if (text[i] === '$' && text[i + 1] === '{') {
       const close = braceEnd(text, i + 1, to);
       found.push(...scanCode(file, i + 2, close));
+      chunk += '{n}';
       i = close + 1;
       continue;
     }
@@ -208,12 +211,27 @@ function scanSvelte(file: SourceFile): Violation[] {
   return found;
 }
 
-/** `<태그 …>`: 보이는 속성의 고정 글과 {…} 안의 코드를 검사하고, `>` 다음 위치를 돌려준다. */
+/** 속성 이름에 따라 고정 글이 문구인지. 보이는 속성은 글자가 있으면, 그 밖의 aria-*는 문구처럼 보이면 문구다. */
+function attributeIsCopy(name: string, literal: string): boolean {
+  if (VISIBLE_ATTRIBUTES.has(name))
+    return LETTER.test(literal);
+  if (name.startsWith('aria-'))
+    return looksLikeCopy(literal);
+  return false;
+}
+
+/**
+ * `<태그 …>`: 보이는 속성의 고정 글과 {…} 안의 코드를 검사하고, `>` 다음 위치를 돌려준다.
+ * `<input>`의 value는 type이 버튼(button·submit·reset)일 때만 보이므로 태그를 다 읽은 뒤 본다.
+ */
 function scanTag(file: SourceFile, open: number, found: Violation[]): number {
   const text = file.text;
   let i = open + 1;
   while (i < text.length && !/[\s/>]/.test(text[i] ?? '>'))
     i++;
+  const tag = text.slice(open + 1, i);
+  let inputType = '';
+  let inputValue: { index: number; literal: string } | undefined;
   while (i < text.length && text[i] !== '>') {
     const c = text[i] ?? '';
     if (/[\s/]/.test(c)) {
@@ -233,27 +251,37 @@ function scanTag(file: SourceFile, open: number, found: Violation[]): number {
     if (text[i] !== '=')
       continue;
     i++;
+    const valueStart = i;
     const quote = text[i];
+    let literal: string;
     if (quote === '"' || quote === "'") {
-      i = scanAttributeValue(file, i, VISIBLE_ATTRIBUTES.has(name), found);
+      const value = scanAttributeValue(file, i, found);
+      literal = value.literal;
+      i = value.end;
     } else if (quote === '{') {
       const close = braceEnd(text, i, text.length);
       found.push(...scanCode(file, i + 1, close));
+      literal = '';
       i = close + 1;
     } else {
-      const valueStart = i;
       while (i < text.length && !/[\s>]/.test(text[i] ?? '>'))
         i++;
-      const value = text.slice(valueStart, i);
-      if (VISIBLE_ATTRIBUTES.has(name) && LETTER.test(value))
-        found.push(violation(file, valueStart, value));
+      literal = text.slice(valueStart, i);
     }
+    if (attributeIsCopy(name, literal))
+      found.push(violation(file, valueStart, literal));
+    if (tag === 'input' && name === 'type')
+      inputType = literal.trim();
+    if (tag === 'input' && name === 'value')
+      inputValue = { index: valueStart, literal };
   }
+  if (inputValue && BUTTON_INPUT_TYPES.has(inputType) && LETTER.test(inputValue.literal))
+    found.push(violation(file, inputValue.index, inputValue.literal));
   return i + 1;
 }
 
-/** 따옴표 속성 값. {…}는 코드로 보고, 보이는 속성이면 남은 고정 글에 글자가 있는지 본다. 닫는 따옴표 다음 위치를 돌려준다. */
-function scanAttributeValue(file: SourceFile, open: number, visible: boolean, found: Violation[]): number {
+/** 따옴표 속성 값. {…}는 코드로 검사하고, 남은 고정 글과 닫는 따옴표 다음 위치를 돌려준다. */
+function scanAttributeValue(file: SourceFile, open: number, found: Violation[]): { end: number; literal: string } {
   const text = file.text;
   const quote = text[open];
   let i = open + 1;
@@ -268,7 +296,5 @@ function scanAttributeValue(file: SourceFile, open: number, visible: boolean, fo
     literal += text[i];
     i++;
   }
-  if (visible && LETTER.test(literal))
-    found.push(violation(file, open, literal));
-  return i + 1;
+  return { end: i + 1, literal };
 }

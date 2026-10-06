@@ -163,13 +163,22 @@ describe('네트워크 사용 제한', () => {
     ]);
   });
 
-  it('PRIV-01 invoke로 updater·http plugin 명령을 바로 불러도 네트워크로 본다', () => {
+  it('PRIV-01 invoke로 updater·http·websocket·upload plugin 명령을 바로 불러도 네트워크로 본다', () => {
     const violations = checkArchitecture([
       file('src/adapters/tauri/x.ts', "await invoke('plugin:updater|check');"),
       file('src/presentation/y.ts', 'await invoke("plugin:http|fetch", args);'),
+      file('src/adapters/tauri/w.ts', 'await invoke(`plugin:http|fetch_send`);'),
+      file('src/adapters/tauri/v.ts', "await invoke('plugin:websocket|connect');"),
+      file('src/adapters/tauri/u.ts', "await invoke('plugin:upload|upload');"),
       file('src/adapters/updater/z.ts', "await invoke('plugin:updater|check');"),
     ]);
-    expect(violations.map((v) => v.path)).toEqual(['src/adapters/tauri/x.ts', 'src/presentation/y.ts']);
+    expect(violations.map((v) => v.path)).toEqual([
+      'src/adapters/tauri/x.ts',
+      'src/presentation/y.ts',
+      'src/adapters/tauri/w.ts',
+      'src/adapters/tauri/v.ts',
+      'src/adapters/tauri/u.ts',
+    ]);
     expect(violations[0]?.message).toBe("네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): 'plugin:updater|");
   });
 
@@ -208,6 +217,35 @@ describe('하드코딩 문구 검사', () => {
       'src/presentation/b.ts:2',
     ]);
     expect(violations[0]?.message).toBe('화면 문구는 사전에서 꺼내요 (I18N-02): 할 일');
+  });
+
+  it('I18N-02 값 자리가 있는 영어 문구와 숫자가 섞인 영어 문구도 찾는다', () => {
+    expect(['3 tasks left', '{n} tasks left'].map(looksLikeCopy)).toEqual([true, true]);
+    const violations = checkCopy([
+      file('src/presentation/e.ts', "export const left = `${n} tasks left`;\nexport const fixed = '3 tasks left';"),
+      file('src/presentation/E.svelte', '<span>{`${n} tasks left`}</span>'),
+    ]);
+    expect(violations.map((v) => `${v.path}:${v.line} ${v.message}`)).toEqual([
+      'src/presentation/e.ts:1 화면 문구는 사전에서 꺼내요 (I18N-02): {n} tasks left',
+      'src/presentation/e.ts:2 화면 문구는 사전에서 꺼내요 (I18N-02): 3 tasks left',
+      'src/presentation/E.svelte:1 화면 문구는 사전에서 꺼내요 (I18N-02): {n} tasks left',
+    ]);
+  });
+
+  it('I18N-02 label·aria-* 속성과 버튼 input의 value도 보이는 글로 본다', () => {
+    const svelte = [
+      '<X label="Delete all" />',
+      '<div aria-description="Drag to move" aria-hidden="true" aria-haspopup="menu" aria-labelledby="reset-question"></div>',
+      '<input type="submit" value="Save" />',
+      '<input value="Go" type="button" />',
+      '<input type="range" value="50" /><input type="text" value={draft} />',
+    ].join('\n');
+    expect(checkCopy([file('src/presentation/F.svelte', svelte)]).map((v) => `${v.line} ${v.message}`)).toEqual([
+      '1 화면 문구는 사전에서 꺼내요 (I18N-02): Delete all',
+      '2 화면 문구는 사전에서 꺼내요 (I18N-02): Drag to move',
+      '3 화면 문구는 사전에서 꺼내요 (I18N-02): Save',
+      '4 화면 문구는 사전에서 꺼내요 (I18N-02): Go',
+    ]);
   });
 
   it('I18N-02 기호, 기술 문자열, CSS 클래스, 주석, 스타일, 개발자용 문장, 사전 파일, presentation 밖은 통과한다', () => {
