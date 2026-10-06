@@ -21,7 +21,7 @@
 | 3 | domain + application | 할 일 규칙, 섹션 높이 배분, 붙여넣기 해석, 저장 형식과 v1.4 변환, 시작 흐름, 업데이트 확인 흐름. 모두 가짜 port로 TDD |
 | 4 | adapters + platform | Rust 안전한 쓰기, 자동 실행, 두 번 실행 방지, 창 제어, macOS 메뉴 막대와 Spaces, 언어 감지, updater adapter |
 | 5 | presentation | ViewModel, Svelte 화면, OS별 테마, 4개 언어 사전 |
-| 6 | 출시 | 릴리스 workflow, 업데이트 서명 키, README, 저장소 이름 변경, 체크리스트 진행, v2.0.0 |
+| 6 | 출시 | 릴리스 workflow, 업데이트 서명 키, README, 저장소 이름 변경, 체크리스트 진행, v2.0.0 (docs/superpowers/plans/2026-10-07-v2-release.md) |
 
 ## Global Constraints
 

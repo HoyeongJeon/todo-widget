@@ -1,115 +1,105 @@
-# windows-todo-widget
+# TodoWidget
 
-> **v2.0 개발 중.** Windows·macOS용 v2.0을 `feat/cross-platform` 브랜치에서 다시 만들고 있다. 아래 설명은 v1.4(Windows, WPF) 기준이고, v1.4 코드는 태그 `v1.4.0`에 있다.
+A small, always-on to-do widget for Windows and macOS. It floats on your desktop and shows at a glance how much is left to do.
 
-A small, always-on desktop to-do widget for Windows. It sits on your desktop and shows at a glance how much is left to do.
+The widget follows your system language: Korean, English, German, or Simplified Chinese.
 
-The UI is in Korean.
+## Install
+
+### Windows 10/11 (x64)
+1. Download `TodoWidget_<version>_x64-setup.exe` from the [latest release](https://github.com/HoyeongJeon/todo-widget/releases/latest).
+2. Run it. If Windows shows "Windows protected your PC" (SmartScreen), click **More info** → **Run anyway**. The installer is not code-signed.
+3. It installs for your user only. No administrator rights are needed.
+
+If the WebView2 runtime is missing (some Windows 10 PCs), the installer adds it for you.
+
+To uninstall, go to **Settings → Apps → Installed apps** (on Windows 10, **Settings → Apps → Apps & features**). This also removes the auto start entry. Your data folder is kept.
+
+### macOS 13 or later (Apple Silicon and Intel)
+1. Download `TodoWidget_<version>_universal.dmg` from the [latest release](https://github.com/HoyeongJeon/todo-widget/releases/latest).
+2. Open it and drag **TodoWidget** into **Applications**.
+3. Open it from Applications. macOS blocks the first launch because the app is not notarized. Go to **System Settings → Privacy & Security** and click **Open Anyway**. After that it opens normally.
+
+Do not run the app from inside the dmg. Move it to Applications first.
+
+To uninstall, move TodoWidget from Applications to the Trash. Your data folder is kept.
+
+## Upgrading from v1.4 (Windows)
+
+v1.4 was a zip with a single `TodoWidget.exe`. v2.0 comes with an installer.
+
+1. Quit v1.4 first: open the ⋯ menu and click **종료** (Quit). If both widgets run at the same time, they can overwrite each other's saves.
+2. Install v2.0 as described above and open it.
+
+Your tasks, window position, size, pin state, and transparency carry over. v2.0 stores tasks in a new file format. Before it converts your file, it keeps a copy of the old one as `tasks.v1-backup-<date>-<time>.json` in `%APPDATA%\TodoWidget\`.
+
+If auto start was on in v1.4, it now starts v2.0 instead. If you had turned it off, it stays off.
+
+After that, you can delete the folder where you unzipped v1.4.
+
+If you forgot to quit v1.4 and both widgets are open, quit v1.4 with ⋯ → **종료**. Even if you leave it, only v2.0 starts at your next login.
+
+### Going back to v1.4
+
+v1.4 cannot read the v2 file format. If you run v1.4 after v2.0, it treats the file as broken, renames it to `tasks.broken-….json`, and starts with an empty list. Nothing is deleted.
+
+To go back:
+1. Quit v2.0 (⋯ → **Quit**) and uninstall it. Otherwise it starts at your next login and converts the file again.
+2. In `%APPDATA%\TodoWidget\`, rename `tasks.v1-backup-….json` to `tasks.json`. Move or rename the current `tasks.json` out of the way first.
+3. Run v1.4.
+
+Changes you made in v2.0 are not included. v1.4 reads `settings.json` as it is. To have v1.4 start at login again, turn auto start back on from its ⋯ menu.
 
 ## Features
 
-- **Three states, two sections.** Click the circle to move a task from *할 일* (to do) to *하는 중* (in progress) to *끝낸 일* (done). In-progress tasks stay in the to-do list, highlighted in orange at the top.
-- **Always-visible input.** Type a task at the bottom and press Enter. The box stays open, so you can add several in a row.
-- **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and leading `-` / `•` bullets are removed.
-- **Right-click menu.** Jump straight to any state (for example, finish a task in one step), rename, or delete. You can also double-click a title to rename it.
-- **Done on top, folded.** Finished tasks sit at the top in a "끝낸 일 N" row that stays folded until you open it. The newest finished task is listed first.
-- **Fold the list.** Click the *할 일* title to fold it down to one line. The count stays visible.
+- **Three states, two sections.** Click the circle to move a task from *To do* to *In progress* to *Done*. In-progress tasks stay in the to-do list, highlighted in orange at the top.
+- **Always-visible input.** Type a task at the bottom and press Enter. The box stays open, so you can add several in a row. Esc clears what you typed.
+- **Paste a list.** Paste multiple lines and each line becomes its own task. Blank lines are skipped, and a leading `-` or `•` bullet is removed.
+- **Right-click menu.** Jump straight to any state (for example, finish a task in one step), rename, or delete. On macOS, Control-click works too. You can also double-click a title to rename it.
+- **Done on top, folded.** Finished tasks sit at the top in a *Done* row that stays folded until you open it. The most recently finished task is listed first.
+- **Fold the list.** Click the *To do* title to fold it down to one line. The count stays visible.
 - **Resizable.** Drag any edge or corner. The height you drag to becomes a limit: with few tasks the widget stays small, and with many it stops there and scrolls.
-- **Separate scrolling.** With the done list open, *끝낸 일* and *할 일* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
-- **Background transparency.** Drag the slider in the ⋯ menu (or scroll over it) to make the card 0–40% see-through. The change shows as you drag. Only the card background fades, so text stays crisp.
-- **Clear all.** ⋯ → 초기화 deletes every task after you confirm in the widget. Your settings stay as they are.
+- **Separate scrolling.** With the done list open, *Done* and *To do* scroll on their own. A short section stays fully visible, and long sections share the remaining space.
+- **Background transparency.** Drag the slider in the ⋯ menu (or scroll over it) to make the card 0–40% see-through. The change shows as you drag. Only the background fades, so text stays crisp.
+- **Clear all.** ⋯ → **Clear all** deletes every task after you confirm in the widget. Your settings stay as they are.
 - **Pin on top.** Toggle always-on-top with the pin button.
-- **Remembers its place.** Position, size, opacity, pin state, and fold state are restored on the next launch.
-- **Starts with Windows.** Auto start is enabled on the first run and can be turned off from the ⋯ menu.
-- **Single instance.** Launching it again brings the existing widget to the front.
+- **Remembers its place.** Position, size, transparency, pin state, and fold state are restored on the next launch.
+- **Starts at login.** Auto start is turned on at the first run. Turn it off or on with ⋯ → **Open at login**. Windows uses the Run key in the registry. macOS uses a login item.
+- **Single instance.** Opening it again brings the existing widget to the front.
+- **Out of the way.** On Windows there is no taskbar button and no tray icon. On macOS there is no Dock icon. A menu bar icon brings the widget to the front, and right-clicking it shows **Open** and **Quit**.
+- **Follows you on macOS.** The widget shows on every desktop (Space). It hides while another app is in full screen.
 
-## Download
+## Updates
 
-1. Download `TodoWidget-win-x64.zip` from the [latest release](https://github.com/HoyeongJeon/windows-todo-widget/releases/latest).
-2. Unzip it anywhere you like, for example `C:\Tools\TodoWidget\`.
-3. Run `TodoWidget.exe`.
+The widget checks for a new version when it starts and once a day. When one is available, a line at the bottom says so; click **Update** to install it and restart. Nothing is downloaded until you click.
 
-There is nothing to install, and the .NET runtime is bundled. On the first run, the widget registers itself to start with Windows. Move the exe to its final folder before you run it.
+If the check fails, for example when you are offline, nothing is shown and the widget keeps working. Updates are signed, and the widget refuses to install one whose signature does not match.
 
-> **Windows protected your PC?** The exe is not code-signed, so SmartScreen may warn you the first time. Click **More info → Run anyway**.
+## Privacy
 
-To update, quit the widget (⋯ → 종료), replace `TodoWidget.exe` with the one from the newest release, and run it. There is no auto update. Your tasks and settings live in `%APPDATA%\TodoWidget\`, so they are kept.
+Your tasks and settings never leave your computer. The only network request is reading the public `latest.json` file of this repository's latest release, and downloading the update when you click **Update**.
 
-To uninstall, turn off auto start from the ⋯ menu, quit the widget, and delete the exe and `%APPDATA%\TodoWidget\`.
+## Where your data lives
 
-## Requirements
+- Windows: `%APPDATA%\TodoWidget\`
+- macOS: `~/Library/Application Support/TodoWidget/`
 
-- Windows 10 or 11 (x64)
-- To build: the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+Tasks are in `tasks.json` and settings are in `settings.json`, both plain JSON. Uninstalling the app does not delete this folder.
 
-## Build and run
+## Build from source
 
-```powershell
-dotnet publish src/TodoWidget.App/TodoWidget.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o dist
-.\dist\TodoWidget.exe
+You need:
+- Node.js 22.18 or later
+- pnpm 10.33.2 through corepack: `corepack enable`
+- Rust. `rustup` picks the version in `rust-toolchain.toml`.
+- The [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
+
+```sh
+pnpm install
+pnpm tauri dev
+pnpm test
 ```
 
-The result is a single `TodoWidget.exe` of about 300 KB. It needs the .NET 10 Desktop Runtime to be installed.
+Set `TODOWIDGET_DATA_DIR` to a test folder while developing, so your real tasks are not touched.
 
-To build the self-contained release (runtime bundled, about 130 MB):
-
-```powershell
-dotnet publish src/TodoWidget.App/TodoWidget.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o release
-```
-
-Single-file compression is left off on purpose. The release is zipped for download instead, because a compressed exe decompresses into memory and roughly doubles its RAM use.
-
-## Data
-
-Everything is stored as plain JSON in `%APPDATA%\TodoWidget\`:
-
-| File | Contents |
-|---|---|
-| `tasks.json` | Your tasks |
-| `settings.json` | Window position and size, background opacity, pin state, and which sections are folded |
-
-```json
-[
-  {
-    "id": "3f2a9c1e-…",
-    "title": "보고서 초안 쓰기",
-    "status": "todo",
-    "createdAt": "2026-09-30 09:12:40",
-    "completedAt": null
-  }
-]
-```
-
-- **Time format.** Times are always Korea Standard Time in `yyyy-MM-dd HH:mm:ss`, regardless of the PC's time zone setting.
-- **Safe saves.** Each change is written to a temp file, flushed to disk, and then swapped in, so a power cut cannot leave a half-written file.
-- **Broken files.** If `tasks.json` cannot be parsed, it is renamed to `tasks.broken-<timestamp>.json` and the widget starts empty with a notice.
-- **Unreadable files.** If the file is locked by another program, the widget shows a message and exits rather than overwriting it.
-
-Auto start is registered under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` as `TodoWidget`.
-
-## Development
-
-```powershell
-dotnet build
-dotnet test
-```
-
-Set `TODOWIDGET_DATA_DIR` to keep test data away from your real tasks while developing:
-
-```powershell
-$env:TODOWIDGET_DATA_DIR = "C:\dev\todo\.devdata"
-dotnet run --project src/TodoWidget.App
-```
-
-Debug builds never touch the auto-start registry entry on launch.
-
-### Project layout
-
-```
-src/TodoWidget.Core/         UI-free logic: task rules, KST clock, JSON stores, window placement, auto start
-src/TodoWidget.App/          WPF widget (builds TodoWidget.exe)
-tests/TodoWidget.Core.Tests/ xUnit tests for Core
-docs/superpowers/            Design spec and implementation plan (Korean)
-```
-
-The widget renders in software mode on purpose. It needs no GPU features, and this roughly halves its memory use.
+The behavior spec lives in `spec/` (in Korean). Start at `spec/README.md`. Design notes and plans are in `docs/superpowers/` (also in Korean).

@@ -31,6 +31,7 @@
 - 2026-10-06: PM 결정 — 할 일 섹션 제목 줄을 10px 안으로 넣어 끝낸 일 줄·할 일 동그라미와 맞춘다고 6장 겉모양에 적고, 시안(`docs/design/widget-mockup.html`)도 같이 고쳤다
 - 2026-10-06: 계획 5 Task 15 결과 — 12장 `macOS 창`·시작 시간·메모리·가만히 있을 때 CPU 줄에 실제 화면으로 다시 잰 값(중앙값 470ms, 약 61MB, 약 0%)과 PM 눈 확인 결과를 적었다
 - 2026-10-07: PM 결정 (계획 6 준비) — 두 OS의 직접 확인을 모두 PM이 하고, README와 릴리스 안내는 영어로 쓴다(10장). 업데이트 서명 키는 개발이 만든다. PERF-06은 공개 뒤 PM이 설치한 위젯으로 본다
+- 2026-10-07: 계획 6 반영 — 13.3 출시 개발 결정
 
 ## 1. 목적
 
@@ -535,3 +536,28 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 |---|---|
 | `@testing-library/svelte` 5.4.2 (dev) | Svelte 5 공식 권장 컴포넌트 테스트 도구다. 실제 DOM 이벤트를 흘려 IME·붙여넣기·포커스를 본다 |
 | `happy-dom` 20.14.5 (dev) | jsdom보다 가볍고 빠르다. 컴포넌트 테스트 파일에서만 켠다 |
+
+### 13.3 계획 6 개발 결정 (2026-10-07)
+
+계획 6(`docs/superpowers/plans/2026-10-07-v2-release.md`) "개발 결정" 표에서 옮겼다. 다른 곳(코드 주석 등)에서 번호(D7 등)로 가리키므로 번호 칸을 남긴다.
+
+| # | 결정 | 이유 |
+|---|---|---|
+| D1 | 출시 판단은 `tools/release/*.ts` 순수 함수 + `cli.ts`. workflow는 CLI만 부른다 | REL-03·05·10, PERF-05를 Vitest로 검사할 수 있다. workflow YAML은 글자 검사만 한다 |
+| D2 | `tauri-apps/tauri-action`을 쓰지 않고 `pnpm tauri build` + `gh release create --draft`로 만든다 | `latest.json` 모양과 파일 이름을 우리가 정하고 테스트한다. 바깥 action 하나를 덜 믿는다 |
+| D3 | 업데이트 파일 서명(`createUpdaterArtifacts`)은 `src-tauri/tauri.release.conf.json`에서만 켠다 | 켜 두면 서명 키 없는 빌드(CI 시험 설치 파일, PM 확인 빌드)가 실패한다 |
+| D4 | 시험용 업데이트 주소(REL-10)는 빌드 때 `--config`로 겹쳐 쓴다. `node tools/release/cli.ts endpoint-config`가 `TODOWIDGET_UPDATE_ENDPOINT`로 그 JSON을 만든다. 출시 workflow는 이 변수가 비었는지 먼저 보고, `endpoint-config`를 부르지 않는다 | 앱 코드는 바뀌지 않고 설정 파일만 다르다 |
+| D5 | `latest.json`의 `darwin-aarch64`·`darwin-x86_64`는 같은 universal `TodoWidget.app.tar.gz`를 가리킨다. Windows는 `windows-x86_64` 하나(NSIS 설치 파일 자체가 업데이트 파일) | universal 하나로 두 CPU를 덮는다(REL-03) |
+| D6 | 업데이트 설치 중(`installing`)에는 확인하지 않고 1시간 뒤로 미룬다. adapter도 설치 중에는 받아 둔 업데이트를 바꾸지 않는다 | 하루 한 번 확인이 설치 중인 업데이트를 닫거나 바꾸면 설치가 실패하거나 다른 파일을 설치한다(계획 4 넘김, 출시 전 필수) |
+| D7 | ⋯ → 종료는 저장을 3초까지만 기다리고 끝낸다(`QUIT_SAVE_LIMIT_MS`). 할 일은 바꿀 때마다 이미 저장된다 | OS 쪽 종료 요청은 Rust가 3초 뒤 끝낸다(`QUIT_FALLBACK_DELAY`). ⋯ → 종료만 대비책이 없었다(계획 5 R10) |
+| D8 | 측정 코드는 `probe` cargo feature(기본 꺼짐) 안에서만 동작한다. 측정할 빌드는 `--features probe`로 만든다. crate-type은 `rlib`만 남긴다 | 출시 빌드에 측정 코드를 남기지 않는다(계획 2 넘김). staticlib·cdylib는 모바일용이다 |
+| D9 | universal dmg를 만들지만 Intel Mac에서 실제로 띄워 보지는 않는다 | 확인할 기기가 없다. Rust·WebKit 공통 코드라 위험은 낮다. PM에게 보고한다 |
+| D10 | Release 초안은 태그가 main 위에 있을 때만 만든다(`git merge-base --is-ancestor`) | 기능 브랜치에서 실수로 출시하지 않는다 |
+| D11 | 개인 키와 비밀번호는 파일로만 다루고 화면에 출력하지 않는다. 비밀번호는 `openssl rand`로 만든다 | 대화 기록에 비밀이 남지 않는다(Q2) |
+
+계획 6을 실행하며 더하거나 바꾼 결정이다. 계획 문서의 표에 없으므로 틀렸을 때 비용도 여기에 적는다.
+
+| 결정 | 이유 | 틀렸을 때 비용 |
+|---|---|---|
+| **(Task 4) `pnpm spec:check`가 `tools/release` 테스트를 요구사항 참조로 센다.** `tools/spec-check/config.ts`의 `TEST_GLOBS`에 `tools/release/**/*.test.ts`를 더했다(`spec/README.md`의 테스트 위치 목록도 같이). `tools/` 전체로 넓히지 않는다 | REL-03·05·10, PERF-05의 자동 테스트는 `tools/release/`에 있다(D1). 세지 않으면 이 항목들이 테스트 없는 자동 테스트 항목이 되어 `pnpm spec:check:strict`가 통과할 수 없다(REL-02). `tools/spec-check/` 테스트에는 검사기를 시험하는 예시 ID가 섞여 있어, `tools/` 전체를 세면 실제로 테스트하지 않는 요구사항까지 참조로 잡힌다 | 출시 도구 테스트를 `tools/release/` 밖에 두면 참조로 세지 않는다. 그때 `TEST_GLOBS`에 그 위치를 더한다. 되돌리려면 설정 한 줄과 문서 한 줄을 고친다 |
+| **(Task 2) ⋯ → 종료의 3초 상한(D7)은 spec START-08 문구에는 아직 없다.** PM에게 보고한 뒤 spec에 적을지 정한다 | 3초는 OS 쪽 종료 요청에 이미 있는 Rust 대비책(`QUIT_FALLBACK_DELAY`)과 같아, 저장이 멈춘 경우만 달라진다. 보통은 저장이 바로 끝나 사용자에게 보이는 차이가 없다. 다만 종료 동작의 규칙이므로 spec에 넣을지는 PM이 정한다 | spec만 보면 3초 상한을 알 수 없다. START-08의 "할 일은 따로 저장하지 않는다"와 달리 종료는 진행 중인 할 일 저장도 기다린다. 저장이 3초를 넘기면 그 저장이 끝나기 전에 앱이 끝날 수 있다. PM이 spec에 적기로 하면 START-08 한 줄을 고친다 |
