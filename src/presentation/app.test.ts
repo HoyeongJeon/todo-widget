@@ -86,6 +86,21 @@ function sizeMenus(width: number, height: number): () => void {
   };
 }
 
+/** WebKit·Chromium처럼 visibility: hidden인 요소(그 조상 포함)에는 포커스를 주지 않는다. happy-dom은 준다. 돌려준 함수로 되돌린다. */
+function refuseHiddenFocus(): () => void {
+  const original = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function (this: HTMLElement, options?: FocusOptions): void {
+    for (let el: HTMLElement | null = this; el; el = el.parentElement) {
+      if (el.style.visibility === 'hidden')
+        return;
+    }
+    original.call(this, options);
+  };
+  return () => {
+    HTMLElement.prototype.focus = original;
+  };
+}
+
 /** 넘친 부분을 잘라 내는 overflow 값인지. visible만 잘라 내지 않는다. */
 function clips(style: CSSStyleDeclaration): boolean {
   return [style.overflow, style.overflowX, style.overflowY].some((value) => value !== '' && value !== 'visible');
@@ -206,6 +221,29 @@ describe('위젯 화면', () => {
     expect([window.drags, window.resizeCalls.length]).toEqual([0, 0]);
     await fireEvent.pointerDown($('.header'), { button: 0 });
     expect(window.drags).toBe(1);
+  });
+
+  it('WND-10 D6 ⋯ 메뉴와 우클릭 메뉴는 판이 보인 뒤 포커스를 받아, 방향키가 메뉴 항목 강조를 옮긴다', async () => {
+    const restore = refuseHiddenFocus();
+    try {
+      const { app, $, all, moreButton } = await setup();
+      app.session.add('보고서');
+      await flush();
+      await fireEvent.click(moreButton());
+      await flush();
+      expect(document.activeElement).toBe($('.menu'));
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowDown' });
+      expect(all('.mi.hl')).toEqual([all('.mi')[0]]);
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
+      await flush();
+      await fireEvent.contextMenu($('.row'), { clientX: 50, clientY: 80 });
+      await flush();
+      expect(document.activeElement).toBe($('.menu'));
+      await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowDown' });
+      expect(all('.mi.hl')).toEqual([all('.mi')[0]]);
+    } finally {
+      restore();
+    }
   });
 
   it('WND-10 메뉴를 닫으면 키보드 포커스가 메뉴를 열기 전 자리(입력칸)로 돌아간다', async () => {

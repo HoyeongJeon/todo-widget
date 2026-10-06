@@ -25,7 +25,7 @@
 </script>
 
 <script lang="ts">
-  import { onDestroy, untrack } from 'svelte';
+  import { flushSync, onDestroy, untrack } from 'svelte';
   import { rememberFocus } from '../menu/focus-return.ts';
   import type { Position, Size } from '../menu/menu-placement.ts';
   import { moveHighlight } from '../menu/menu-navigation.ts';
@@ -52,7 +52,10 @@
     void untrack(() => place({ width: el.offsetWidth, height: el.offsetHeight })).then((next) => {
       if (cancelled)
         return;
-      position = next;
+      // visibility: hidden인 판에는 WebKit이 포커스를 주지 않는다(방향키가 메뉴로 가지 않는다). 보이게 DOM에 먼저 반영한다 (D6).
+      flushSync(() => {
+        position = next;
+      });
       // 늘린 창이 아직 화면에 반영되지 않았으면 판이 viewport 밖이다. 그때 포커스가 문서를 스크롤해 카드를 밀지 않게 한다 (WND-10).
       el.focus({ preventScroll: true });
     });
