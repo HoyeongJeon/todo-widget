@@ -51,6 +51,8 @@ jobs:
         run: cargo fmt --check --manifest-path src-tauri/Cargo.toml --all
       - name: Rust lint
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+      - name: Rust lint (측정 빌드)
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml -p todo-widget --features probe -- -D warnings
       - name: Rust 테스트
         run: cargo test --manifest-path src-tauri/Cargo.toml --workspace --exclude todo-widget
       - name: PRIV-01 Rust 네트워크 crate 검사
@@ -76,7 +78,7 @@ jobs:
         with:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
-      - run: pnpm tauri build --bundles nsis
+      - run: pnpm tauri build --bundles nsis --features probe
       - uses: actions/upload-artifact@v7
         with:
           name: todowidget-windows-probe

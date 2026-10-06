@@ -6,7 +6,11 @@ edition = "2021"
 
 [lib]
 name = "todo_widget_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
+
+[features]
+# PERF-01 측정(TODOWIDGET_PROBE=1). 출시 빌드에는 넣지 않는다. 측정 빌드: pnpm tauri build --features probe
+probe = []
 
 [build-dependencies]
 tauri-build = { version = "=2.7.1", features = [] }

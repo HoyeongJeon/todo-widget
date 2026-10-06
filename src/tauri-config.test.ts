@@ -138,4 +138,10 @@ describe('Tauri 설정', () => {
   it('INPUT-11 다른 앱을 쓰다가 위젯을 처음 눌러도 바로 동작한다 (macOS acceptFirstMouse, PM 결정 2026-10-06)', () => {
     expect(mainWindow.acceptFirstMouse).toBe(true);
   });
+
+  it('PERF-01 측정 코드는 기본으로 꺼진 probe feature에만 있고, 앱은 데스크톱용 rlib만 만든다', () => {
+    expect(cargoToml).toMatch(/^\[features\][\s\S]*^probe = \[\]$/m);
+    expect(cargoToml).not.toMatch(/^default = \[[^\]]*"probe"/m);
+    expect(cargoToml).toMatch(/^crate-type = \["rlib"\]$/m);
+  });
 });
