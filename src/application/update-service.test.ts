@@ -253,6 +253,30 @@ describe('겹침과 오류', () => {
     expect(updater.fetches).toBe(3);
   });
 
+  it('UPD-04 확인을 기다리는 동안 설치가 시작되면, 확인이 새 버전을 찾아도 설치 중 안내를 그대로 둔다', async () => {
+    const service = await makeService();
+    await service.start();
+    expect(service.state).toBe('available');
+    const openFetch = gateFetch();
+    const checking = service.check();
+    await flush();
+    let openInstall = (): void => undefined;
+    updater.installGate = new Promise<void>((resolve) => {
+      openInstall = resolve;
+    });
+    const installing = service.install();
+    await flush();
+    expect(service.state).toBe('installing');
+
+    openFetch();
+    await checking;
+    expect(updater.fetches).toBe(2);
+    expect(service.state).toBe('installing');
+
+    openInstall();
+    await installing;
+  });
+
   it('확인 뒤 처리에서 예상 못 한 오류가 나도 확인 일정은 이어진다', async () => {
     const service = await makeService();
     settings.update = async () => {

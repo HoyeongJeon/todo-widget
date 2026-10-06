@@ -8,7 +8,7 @@ use todowidget_core::show_gate::ShowGate;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
+    // PERF-01 측정. probe feature가 없으면 아무것도 하지 않는다 (probe.rs).
     probe::mark_process_start();
 
     let data_dir =

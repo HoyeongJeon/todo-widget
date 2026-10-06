@@ -42,7 +42,7 @@ pub fn reveal(app: &AppHandle) {
 /// `keep_hidden` 뒤에 불러도 창을 띄운다. 두 명령 모두 JS가 부르므로 JS가 순서를 책임진다.
 #[tauri::command]
 pub fn show_main(app: AppHandle, gate: State<'_, ShowGate>, painted_at_ms: f64) {
-    // 계획 2 시험 측정. 계획 6 출시 전에 지우거나 기본 꺼진 feature로 막는다.
+    // PERF-01 측정. probe feature가 없으면 아무것도 하지 않는다 (probe.rs).
     probe::report_shown(painted_at_ms);
     let _ = gate.claim(Decision::Shown);
     bring_to_front(&app);

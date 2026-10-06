@@ -72,6 +72,7 @@ export async function launchApp(deps: LaunchDeps): Promise<LaunchResult> {
 
   await placement.apply().catch(() => undefined);
   // ⋯ → 종료는 저장을 3초까지만 기다린다(QUIT_SAVE_LIMIT_MS). OS 쪽 종료 요청은 Rust 대비책(QUIT_FALLBACK_DELAY, 3초)도 있다.
+  // 그래도 quit()가 실패하면 그 대비책이 끝낸다. 거부를 처리하지 않은 채 두지 않는다.
   deps.process.onQuitRequested(() => void lifecycle.quit().catch(() => undefined));
   deps.watchWake(() => void updates.onWake());
   void updates.start();
