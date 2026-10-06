@@ -37,6 +37,7 @@ describe('Tauri 창 제어 adapter', () => {
     const { controller } = setup('windows', 1.25);
     expect(await controller.screen()).toEqual({
       monitors: [{ left: 0, top: 0, width: 1920, height: 1080 }],
+      workAreas: [{ left: 0, top: 0, width: 1920, height: 1040 }],
       primaryWorkArea: { left: 0, top: 0, width: 1920, height: 1040 },
     });
     expect(await controller.bounds()).toEqual({ left: 1576, top: 24, width: 320, height: 520 });
@@ -49,6 +50,15 @@ describe('Tauri 창 제어 adapter', () => {
     const mac = setup('macos', 2);
     await mac.controller.setBounds({ left: 100, top: 50, width: 320, height: 520 });
     expect(mac.invoke).toHaveBeenCalledWith('set_frame', { left: 100, top: 50, width: 320, height: 520 });
+  });
+
+  it('WND-03 setHeight는 지금 위치에서 높이와 위쪽 끝만 native 단위로 바꾼다', async () => {
+    const win = setup('windows', 2);
+    await win.controller.setHeight(300, 50);
+    expect(win.invoke).toHaveBeenCalledWith('set_frame', { left: 3152, top: -52, width: 640, height: 600 });
+    const mac = setup('macos', 2);
+    await mac.controller.setHeight(300, 0);
+    expect(mac.invoke).toHaveBeenCalledWith('set_frame', { left: 1576, top: 24, width: 320, height: 300 });
   });
 
   it('WND-09 맨 위 고정, 창 보이기, 숨긴 채 두기, 끌기를 넘긴다', async () => {

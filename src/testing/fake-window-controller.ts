@@ -6,6 +6,7 @@ import type { Rect } from '../domain/window-geometry.ts';
 export class FakeWindowController implements WindowController {
   layout: ScreenLayout = {
     monitors: [{ left: 0, top: 0, width: 1920, height: 1080 }],
+    workAreas: [{ left: 0, top: 0, width: 1920, height: 1040 }],
     primaryWorkArea: { left: 0, top: 0, width: 1920, height: 1040 },
   };
   current: Rect = { left: 0, top: 0, width: 320, height: 520 };
@@ -17,6 +18,11 @@ export class FakeWindowController implements WindowController {
   resizeResult: Rect | null = null;
   resizeCalls: Array<{ edge: ResizeEdge; start: PointerStart; limits: SizeLimits }> = [];
   failBounds = false;
+  /** setPinned가 실패한다. */
+  failPinned = false;
+  /** 주면 resize가 이 약속이 끝날 때까지 놓지 않은 채 멈춰 있다. */
+  resizeGate: Promise<void> | null = null;
+  heightCalls: Array<{ height: number; raise: number }> = [];
   readonly #moved = new Set<() => void>();
 
   async screen(): Promise<ScreenLayout> {
@@ -33,7 +39,14 @@ export class FakeWindowController implements WindowController {
     this.current = { ...rect };
   }
 
+  async setHeight(height: number, raise: number): Promise<void> {
+    this.heightCalls.push({ height, raise });
+    this.current = { ...this.current, top: this.current.top - raise, height };
+  }
+
   async setPinned(pinned: boolean): Promise<void> {
+    if (this.failPinned)
+      throw new Error('맨 위 고정을 바꾸지 못했어요');
     this.pinned = pinned;
   }
 
@@ -51,6 +64,8 @@ export class FakeWindowController implements WindowController {
 
   async resize(edge: ResizeEdge, start: PointerStart, limits: SizeLimits): Promise<Rect> {
     this.resizeCalls.push({ edge, start, limits });
+    if (this.resizeGate)
+      await this.resizeGate;
     if (this.resizeResult)
       this.current = { ...this.resizeResult };
     return { ...this.current };

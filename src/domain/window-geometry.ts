@@ -6,6 +6,9 @@ export const PLACEMENT_MARGIN = 24;
 /** 헤더를 잡아 끌 수 있으려면 이만큼은 모니터 안에 있어야 한다 (WND-08). */
 export const HEADER_GRAB = 40;
 
+/** 카드 둘레의 투명한 그림자 여백. 창 크기는 이 여백을 포함한다 (window.md 용어 "크기와 좌표"). */
+export const SHADOW_MARGIN = 10;
+
 export interface Rect {
   left: number;
   top: number;
@@ -44,6 +47,31 @@ export function resolveWidgetPosition(
     left: primaryWorkArea.left + primaryWorkArea.width - windowWidth - PLACEMENT_MARGIN,
     top: primaryWorkArea.top + PLACEMENT_MARGIN,
   };
+}
+
+/**
+ * 창이 있는 모니터에서 창 위아래로 남은 공간. 그 모니터의 작업 영역(메뉴 막대·Dock·작업 표시줄을 뺀 영역) 기준이다.
+ * 창과 가장 많이 겹치는 모니터를 창이 있는 모니터로 본다. 어느 모니터와도 겹치지 않으면 주 모니터 작업 영역 기준이다 (WND-10).
+ * workAreas는 monitors와 같은 순서다. 작업 영역을 모르는 모니터는 모니터 영역 전체를 쓴다.
+ */
+export function spaceAround(bounds: Rect, monitors: readonly Rect[], workAreas: readonly Rect[], primaryWorkArea: Rect): { above: number; below: number } {
+  let home = -1;
+  let best = 0;
+  monitors.forEach((monitor, index) => {
+    const area = overlapArea(bounds, monitor);
+    if (area > best) {
+      best = area;
+      home = index;
+    }
+  });
+  const area = home < 0 ? primaryWorkArea : (workAreas[home] ?? monitors[home] ?? primaryWorkArea);
+  return { above: bounds.top - area.top, below: area.top + area.height - (bounds.top + bounds.height) };
+}
+
+function overlapArea(a: Rect, b: Rect): number {
+  const width = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
+  const height = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
+  return width > 0 && height > 0 ? width * height : 0;
 }
 
 function headerReachable(left: number, top: number, width: number, monitor: Rect): boolean {

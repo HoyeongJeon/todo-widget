@@ -172,3 +172,96 @@ describe('창 배치', () => {
     expect(timer.pending).toBe(0);
   });
 });
+
+describe('창 높이', () => {
+  it('WND-03 내용이 짧으면 창은 내용만큼, 길면 최대 높이에서 멈춘다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    expect(p.maxHeight).toBe(520);
+    await p.fitToContent(200.4);
+    expect(window.current).toEqual({ left: 1576, top: 24, width: 320, height: 201 });
+    expect(p.height).toBe(201);
+    await p.fitToContent(900);
+    expect(window.current.height).toBe(520);
+  });
+
+  it('WND-03 높이가 같으면 창을 다시 바꾸지 않는다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200);
+    await p.fitToContent(200);
+    expect(window.heightCalls).toEqual([{ height: 200, raise: 0 }]);
+  });
+
+  it('WND-03 크기를 끄는 동안의 내용 높이는 무시하고, 놓은 높이가 새 최대 높이가 된다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    let release: () => void = () => undefined;
+    window.resizeGate = new Promise((resolve) => {
+      release = resolve;
+    });
+    window.resizeResult = { left: 1576, top: 24, width: 320, height: 600 };
+    const resizing = p.resize('South', { screenX: 0, screenY: 0 });
+    await p.fitToContent(200);
+    expect(window.heightCalls).toEqual([]);
+    release();
+    await resizing;
+    expect([p.maxHeight, p.height]).toEqual([600, 600]);
+    await p.fitToContent(200);
+    expect(window.current.height).toBe(200);
+  });
+
+  it('WND-10 메뉴가 창보다 크면 늘리고, 늘린 동안 바뀐 내용 높이로 되돌린다. 위로 늘리면 창 위쪽을 올린다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200);
+    await p.expand(0, 300);
+    expect(window.current).toMatchObject({ top: 24, height: 300 });
+    await p.fitToContent(250);
+    expect(window.current.height).toBe(300);
+    await p.expand(100, 400);
+    expect(window.current).toMatchObject({ top: -76, height: 400 });
+    expect(p.height).toBe(200);
+    await p.restore();
+    expect(window.current).toMatchObject({ top: 24, height: 250 });
+    expect(p.height).toBe(250);
+    await p.restore();
+    expect(window.heightCalls).toHaveLength(4);
+  });
+
+  it('WND-14 메뉴로 늘린 채 끝내도 늘리기 전 위치를 저장한다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200);
+    await p.expand(100, 400);
+    await p.captureForQuit();
+    expect(window.current).toMatchObject({ top: 24, height: 200 });
+    expect(savedSettings()).toMatchObject({ left: 1576, top: 24 });
+  });
+
+  it('WND-02 메뉴로 창을 올린 동안 온 이동 신호로는 위치를 저장하지 않는다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.expand(100, 400);
+    files.writes.length = 0;
+    window.moveTo(window.current.left, window.current.top);
+    timer.runAll();
+    await flush();
+    expect(files.writes).toEqual([]);
+  });
+
+  it('WND-10 창 위아래로 남은 화면 공간을 알려 준다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(300);
+    expect(await p.roomAround()).toEqual({ above: 24, below: 716 });
+  });
+
+  it('WND-02 창 보이기와 끌어 옮기기를 창에 넘긴다', async () => {
+    const { placement: p } = await placement();
+    await p.show(5);
+    await p.startMove();
+    expect(window.shown).toEqual([5]);
+    expect(window.drags).toBe(1);
+  });
+});

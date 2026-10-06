@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Rect, resolveWidgetPosition, resolveWidgetSize } from './window-geometry.ts';
+import { type Rect, resolveWidgetPosition, resolveWidgetSize, spaceAround } from './window-geometry.ts';
 
 const screen: Rect = { left: 0, top: 0, width: 1920, height: 1080 };
 const workArea: Rect = { left: 0, top: 0, width: 1920, height: 1040 };
@@ -46,5 +46,25 @@ describe('창 위치', () => {
   it('WND-08 헤더를 잡을 수 없으면 기본 위치를 쓴다', () => {
     for (const [left, top] of [[2500, 100], [-2000, 100], [300, -500], [300, 1070]] as const)
       expect(position(left, top), `${left},${top}`).toEqual({ left: 1576, top: 24 });
+  });
+});
+
+describe('창 위아래 화면 공간', () => {
+  const primary = { left: 0, top: 0, width: 1920, height: 1080 };
+  const workArea = { left: 0, top: 0, width: 1920, height: 1040 };
+  /** 주 모니터 왼쪽의 보조 모니터. macOS 기본 설정처럼 위에 메뉴 막대(25)가 있다. */
+  const left = { left: -1920, top: 0, width: 1920, height: 1080 };
+  const leftWork = { left: -1920, top: 25, width: 1920, height: 1055 };
+
+  it('WND-10 주 모니터에서는 작업 영역 기준으로 창 위아래에 남은 공간을 잰다', () => {
+    expect(spaceAround({ left: 1576, top: 24, width: 320, height: 300 }, [primary], [workArea], workArea)).toEqual({ above: 24, below: 716 });
+  });
+
+  it('WND-10 다른 모니터에 있으면 그 모니터의 작업 영역 기준이다(메뉴 막대·Dock을 뺀다)', () => {
+    expect(spaceAround({ left: -1500, top: 100, width: 320, height: 300 }, [primary, left], [workArea, leftWork], workArea)).toEqual({ above: 75, below: 680 });
+  });
+
+  it('WND-10 어느 모니터와도 겹치지 않으면 주 모니터 작업 영역 기준이다', () => {
+    expect(spaceAround({ left: 5000, top: 100, width: 320, height: 300 }, [primary], [workArea], workArea)).toEqual({ above: 100, below: 640 });
   });
 });

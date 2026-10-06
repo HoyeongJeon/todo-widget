@@ -88,6 +88,7 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
       const toSpec = (rect: PhysicalRect, scale: number): Rect => coords.monitorToSpec(rect, scale);
       return {
         monitors: monitors.map((m) => toSpec({ ...m.position, ...m.size }, m.scaleFactor)),
+        workAreas: monitors.map((m) => toSpec({ ...m.workArea.position, ...m.workArea.size }, m.scaleFactor)),
         primaryWorkArea: toSpec({ ...main.workArea.position, ...main.workArea.size }, main.scaleFactor),
       };
     },
@@ -100,6 +101,13 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
     async setBounds(rect: Rect): Promise<void> {
       const { coords, scale } = await context();
       await setFrame(coords.specToNative(rect, scale));
+    },
+
+    async setHeight(height: number, raise: number): Promise<void> {
+      const { coords, scale } = await context();
+      const native = await nativeBounds(coords, scale);
+      const perCss = coords.nativePerCss(scale);
+      await setFrame({ left: native.left, top: native.top - raise * perCss, width: native.width, height: height * perCss });
     },
 
     async setPinned(pinned: boolean): Promise<void> {
