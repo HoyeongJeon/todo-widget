@@ -61,6 +61,36 @@ describe('⋯ 메뉴', () => {
     expect(vm.menu.open).toBe(false);
   });
 
+  it('WND-10 WND-12 슬라이더 안의 방향키·Space는 메뉴가 가로채지 않고, Esc는 메뉴를 닫는다', async () => {
+    const { vm } = await setup();
+    await vm.openMoreMenu();
+    const { container } = render(MoreMenu, { props: { vm, anchor: { top: 26, bottom: 54, right: 292 } } });
+    await flush();
+    const slider = container.querySelector('input[type="range"]') as HTMLInputElement;
+    const notPrevented = [
+      await fireEvent.keyDown(slider, { key: 'ArrowDown' }),
+      await fireEvent.keyDown(slider, { key: 'ArrowUp' }),
+      await fireEvent.keyDown(slider, { key: ' ' }),
+    ];
+    expect(notPrevented).toEqual([true, true, true]);
+    expect(container.querySelector('.mi.hl')).toBeNull();
+    await fireEvent.keyDown(slider, { key: 'Escape' });
+    expect(vm.menu.open).toBe(false);
+  });
+
+  it('WND-10 WND-12 슬라이더에 포커스가 있을 때 Enter는 강조된 항목을 고르지 않는다', async () => {
+    const { vm, process } = await setup();
+    await vm.openMoreMenu();
+    const { container } = render(MoreMenu, { props: { vm, anchor: { top: 26, bottom: 54, right: 292 } } });
+    await flush();
+    await fireEvent.keyDown(container.querySelector('.menu') as HTMLElement, { key: 'ArrowUp' });
+    expect(items(container)[2]?.classList.contains('hl')).toBe(true);
+    const slider = container.querySelector('input[type="range"]') as HTMLInputElement;
+    expect(await fireEvent.keyDown(slider, { key: 'Enter' })).toBe(true);
+    await flush();
+    expect([vm.menu.open, process.exits]).toEqual([true, 0]);
+  });
+
   it('WND-12 슬라이더를 움직이면 % 값과 카드 불투명도에 바로 보인다', async () => {
     const { vm } = await setup();
     await vm.openMoreMenu();

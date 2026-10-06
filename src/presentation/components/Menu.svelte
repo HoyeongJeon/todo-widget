@@ -63,7 +63,8 @@
 
   function onKeydown(event: KeyboardEvent): void {
     // 투명도 슬라이더에 포커스가 있으면 방향키와 Space는 슬라이더가 쓴다. Esc는 그대로 메뉴를 닫는다 (리뷰 M11).
-    if (event.target instanceof HTMLInputElement && event.key !== 'Escape' && event.key !== 'Enter')
+    // Enter도 메뉴가 받지 않는다. 받으면 전에 강조해 둔 항목(예: 종료)이 슬라이더에서 골라진다.
+    if (event.target instanceof HTMLInputElement && event.key !== 'Escape')
       return;
     switch (event.key) {
       case 'ArrowDown':
