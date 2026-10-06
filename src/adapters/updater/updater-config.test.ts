@@ -19,4 +19,9 @@ describe('업데이트 설정', () => {
     expect(typeof updater.pubkey).toBe('string');
     expect(updater.pubkey.length).toBeGreaterThan(40);
   });
+
+  it('UPD-08 REL-06 계획 4의 개발용 임시 키가 아니라 출시용 키다', () => {
+    const DEV_KEY_ID = '2167B06B9D2D9222';
+    expect(Buffer.from(updater.pubkey, 'base64').toString('utf8')).not.toContain(DEV_KEY_ID);
+  });
 });
