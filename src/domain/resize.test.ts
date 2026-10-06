@@ -25,17 +25,26 @@ describe('크기 조절 계산', () => {
     expect(resizeRect(start, 'West', 500, 0, limits)).toEqual({ left: 1040, top: 100, width: 280, height: 520 });
   });
 
-  it('WND-03 WND-05 끄는 동안 높이는 300보다 작아질 수 있고 창 최소 높이 120에서 멈추며, 작업 영역 높이를 넘지 않는다', () => {
-    expect(resizeRect(start, 'South', 0, -500, limits).height).toBe(120);
-    expect(resizeRect(start, 'South', 0, 5000, limits).height).toBe(1040);
-    expect(resizeRect(start, 'North', 0, 450, limits)).toEqual({ left: 1000, top: 500, width: 320, height: 120 });
-    expect(resizeLimits(150)).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 300 });
+  it('WND-03 WND-05 끄는 동안 높이 하한은 놓은 뒤 창이 될 수 있는 가장 작은 높이 min(내용에 맞춘 높이, 300)이다(120 아래로는 가지 않는다)', () => {
+    expect(resizeLimits(1040, 200).minHeight).toBe(200);
+    expect(resizeLimits(1040, 700).minHeight).toBe(300);
+    expect(resizeLimits(1040, 80).minHeight).toBe(120);
+    expect(resizeLimits(1040)).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
+    expect(resizeLimits(150, 200)).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 200, maxHeight: 300 });
   });
 
-  it('WND-03 내용에 맞춰 300보다 짧은 창(200)에서 끌기 시작하면 튀지 않고 마우스를 따라간다', () => {
+  it('WND-03 WND-05 내용이 긴 창은 300까지 줄이고, 작업 영역 높이를 넘지 않는다', () => {
+    const long = resizeLimits(1040, 700);
+    expect(resizeRect(start, 'South', 0, -500, long).height).toBe(300);
+    expect(resizeRect(start, 'South', 0, 5000, long).height).toBe(1040);
+    expect(resizeRect(start, 'North', 0, 450, long)).toEqual({ left: 1000, top: 320, width: 320, height: 300 });
+  });
+
+  it('WND-03 내용이 짧은 창(200)은 튀지 않고, 내용보다 짧게 끌 수 없으며, 길게는 마우스를 따라간다', () => {
     const short = { left: 1000, top: 100, width: 280, height: 200 };
-    expect(resizeRect(short, 'South', 0, 1, limits)).toEqual({ left: 1000, top: 100, width: 280, height: 201 });
-    expect(resizeRect(short, 'South', 0, -30, limits)).toEqual({ left: 1000, top: 100, width: 280, height: 170 });
-    expect(resizeRect(short, 'North', 0, 30, limits)).toEqual({ left: 1000, top: 130, width: 280, height: 170 });
+    const fit = resizeLimits(1040, 200);
+    expect(resizeRect(short, 'South', 0, 1, fit)).toEqual({ left: 1000, top: 100, width: 280, height: 201 });
+    expect(resizeRect(short, 'South', 0, -30, fit)).toEqual({ left: 1000, top: 100, width: 280, height: 200 });
+    expect(resizeRect(short, 'North', 0, 30, fit)).toEqual({ left: 1000, top: 100, width: 280, height: 200 });
   });
 });

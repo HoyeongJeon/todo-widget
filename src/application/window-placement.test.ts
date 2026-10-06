@@ -90,9 +90,20 @@ describe('창 배치', () => {
     window.resizeResult = { left: 1400, top: 24, width: 496, height: 700 };
     await p.resize('West', { screenX: 1576, screenY: 300 });
     expect(window.resizeCalls).toEqual([
-      { edge: 'West', start: { screenX: 1576, screenY: 300 }, limits: { minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 1040 } },
+      { edge: 'West', start: { screenX: 1576, screenY: 300 }, limits: { minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 } },
     ]);
     expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 496, maxHeight: 700 });
+  });
+
+  it('WND-03 끄는 동안 높이 하한은 내용에 맞춘 높이와 300 중 작은 쪽이다 (PM 결정 2026-10-06)', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    await p.fitToContent(200.4);
+    await p.resize('South', { screenX: 1700, screenY: 300 });
+    expect(window.resizeCalls[0]?.limits.minHeight).toBe(201);
+    await p.fitToContent(700);
+    await p.resize('South', { screenX: 1700, screenY: 300 });
+    expect(window.resizeCalls[1]?.limits.minHeight).toBe(300);
   });
 
   it('WND-03 WND-05 300보다 짧게 놓으면 최대 높이는 300으로 맞춰 저장한다', async () => {
@@ -113,7 +124,7 @@ describe('창 배치', () => {
     window.resizeResult = { left: 1400, top: 24, width: 496, height: 700 };
     const done = p.resize('West', { screenX: 1576, screenY: 300 });
     expect(window.resizeCalls).toHaveLength(1);
-    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 1040 });
+    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
     release();
     await done;
     expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 496, maxHeight: 700 });
@@ -127,7 +138,7 @@ describe('창 배치', () => {
     await p.resize('South', { screenX: 1700, screenY: 544 });
     expect(savedSettings()).toMatchObject({ width: 496, maxHeight: 800 });
     await p.resize('South', { screenX: 1700, screenY: 544 });
-    expect(window.resizeCalls[1]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 800 });
+    expect(window.resizeCalls[1]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 800 });
   });
 
   it('WND-03 크기 조절 중 화면을 읽지 못하면 기억한 높이로 맞춰 저장한다', async () => {
@@ -151,7 +162,7 @@ describe('창 배치', () => {
     window.resizeResult = { left: 1400, top: 24, width: 2000, height: 3000 };
     await p.resize('SouthWest', { screenX: 1576, screenY: 300 });
     expect(screenCalls).toBeGreaterThan(0);
-    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 800 });
+    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 800 });
     expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 620, maxHeight: 800 });
   });
 

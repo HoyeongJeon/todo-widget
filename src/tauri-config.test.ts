@@ -77,7 +77,7 @@ describe('Tauri 설정', () => {
     });
   });
 
-  it('WND-03 WND-04 창 최소 크기는 끄는 동안의 하한(폭 280, 높이 120)과 같다', () => {
+  it('WND-03 WND-04 창 최소 크기는 폭 하한 280, 높이 절대 하한 120과 같다', () => {
     expect([mainWindow.minWidth, mainWindow.minHeight]).toEqual([WINDOW_LIMITS.minWidth, WINDOW_LIMITS.minDragHeight]);
   });
 

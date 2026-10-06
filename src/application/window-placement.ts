@@ -145,7 +145,9 @@ export class WindowPlacement {
       const known = this.#workAreaHeight ?? (await window.screen()).primaryWorkArea.height;
       // 거부를 바로 받아 두어, window.resize가 먼저 실패해도 처리하지 않은 거부로 남지 않게 한다.
       const fresh = window.screen().then((screen) => screen.primaryWorkArea.height, () => known);
-      const rect = await window.resize(edge, start, resizeLimits(known));
+      // 끄는 동안 높이 하한은 놓은 뒤 될 수 있는 가장 작은 창 높이다. 내용에 맞춘 높이를 모르면 지금 창 높이로, 그것도 모르면(apply 전) 300으로 본다 (WND-03).
+      const fit = this.#target() ?? (this.#height > 0 ? this.#height : undefined);
+      const rect = await window.resize(edge, start, resizeLimits(known, fit));
       this.#cancelPending();
       const workAreaHeight = await fresh;
       this.#workAreaHeight = workAreaHeight;
