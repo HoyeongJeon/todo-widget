@@ -7,12 +7,15 @@ export class AutoStartControl {
   readonly #autoStart: AutoStart;
   readonly #listeners = new Set<Listener>();
   #failed = false;
+  /** 켤 때 자동 실행 등록. 메뉴 체크도 이것이 끝난 뒤의 상태를 읽는다(START-04). 거부되지 않는다. */
+  readonly #startup: Promise<void>;
   /** 바꾸기 줄의 끝. 빠르게 두 번 눌러도 앞의 바꾸기가 끝난 뒤 상태를 읽는다. */
   #queue: Promise<unknown>;
 
   /** `after`가 끝난 뒤에 바꾼다. 켤 때 자동 실행 등록과 겹쳐 사용자가 끈 것을 다시 켜지 않게 한다(START-03). 거부되지 않아야 한다. */
   constructor(autoStart: AutoStart, after: Promise<void> = Promise.resolve()) {
     this.#autoStart = autoStart;
+    this.#startup = after;
     this.#queue = after;
   }
 
@@ -26,8 +29,16 @@ export class AutoStartControl {
     return () => this.#listeners.delete(listener);
   }
 
-  /** 메뉴를 열 때마다 읽는다. 읽지 못하면 꺼짐으로 보인다. */
+  /**
+   * 메뉴를 열 때마다 읽는다. 읽지 못하면 꺼짐으로 보인다.
+   * 켤 때 등록이 끝나기 전에 열어도 끝난 뒤의 상태를 보인다. 그래야 누를 때 toggle()이 읽는 상태와 같다(START-03·04).
+   */
   async isEnabled(): Promise<boolean> {
+    await this.#startup;
+    return this.#read();
+  }
+
+  async #read(): Promise<boolean> {
     try {
       return await this.#autoStart.isEnabled();
     } catch {
@@ -43,7 +54,7 @@ export class AutoStartControl {
   }
 
   async #toggleOnce(): Promise<boolean> {
-    const wasEnabled = await this.isEnabled();
+    const wasEnabled = await this.#read();
     try {
       if (wasEnabled)
         await this.#autoStart.disable();
@@ -53,7 +64,7 @@ export class AutoStartControl {
     } catch {
       this.#setFailed(true);
     }
-    return this.isEnabled();
+    return this.#read();
   }
 
   /** 화면 쪽 오류가 다른 알림이나 toggle()을 막지 않게 한다. */

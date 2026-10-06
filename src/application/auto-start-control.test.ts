@@ -86,4 +86,22 @@ describe('⋯ 메뉴의 자동 실행', () => {
     expect(await toggled).toBe(false);
     expect(autoStart.calls).toEqual(['disable']);
   });
+
+  it('START-04 켤 때 등록이 끝나기 전에 메뉴를 열면 등록이 끝난 뒤의 상태를 보인다', async () => {
+    let release = (): void => undefined;
+    const startupDone = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    control = new AutoStartControl(autoStart, startupDone);
+    let shown: boolean | null = null;
+    void control.isEnabled().then((enabled) => {
+      shown = enabled;
+    });
+    await flush();
+    expect(shown).toBeNull();
+    autoStart.enabled = true;
+    release();
+    await flush();
+    expect(shown).toBe(true);
+  });
 });
