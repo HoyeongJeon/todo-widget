@@ -5192,7 +5192,9 @@ Windows 시험 설치 파일은 필요할 때 workflow_dispatch(`windows_probe`)
 
 ### CI 결과
 
-push 뒤에 적는다.
+- 2026-10-06 push(`bd768e8..879a8a0`), run 37436655969: macOS·Windows job 모두 통과.
+- Windows job에서 확인한 것: 실제 레지스트리 테스트(`real_registry_round_trip`, WIN-03), `%APPDATA%` 데이터 폴더(WIN-01), 앱 crate Windows 빌드와 clippy, PRIV-01 네트워크 crate 검사.
+- push 뒤 PM 확인 수정 커밋(`51a4bc8`, `879a8a0`)과 이 실행 기록까지 포함한다.
 
 ### 개발 판단 (실행 중, 모두 되돌릴 수 있음)
 
