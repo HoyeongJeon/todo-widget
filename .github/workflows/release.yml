@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: 출시 전 검사 (REL-02, REL-05, REL-10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 태그가 main 위에 있다
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - name: 시험용 업데이트 주소가 없다 (REL-10)
+        run: test -z "${TODOWIDGET_UPDATE_ENDPOINT:-}"
+      - name: 버전과 태그가 같다 (REL-05)
+        run: node tools/release/cli.ts versions "$GITHUB_REF_NAME"
+      - name: strict 검사 (REL-02)
+        run: pnpm spec:check:strict
+      - name: 테스트
+        run: pnpm test
+
+  build:
+    name: 설치 파일 (${{ matrix.os }})
+    needs: verify
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target universal-apple-darwin --bundles app,dmg
+            out: src-tauri/target/universal-apple-darwin/release/bundle
+          - os: windows-latest
+            args: --bundles nsis
+            out: src-tauri/target/release/bundle
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: '-D warnings'
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Rust 도구 설치 (rust-toolchain.toml)
+        run: rustup toolchain install
+      - name: macOS 두 CPU 대상 (universal)
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - name: 출시 빌드 (REL-03)
+        shell: bash
+        run: pnpm tauri build --config src-tauri/tauri.release.conf.json ${{ matrix.args }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bundle-${{ runner.os }}
+          path: |
+            ${{ matrix.out }}/dmg/*.dmg
+            ${{ matrix.out }}/macos/*.app.tar.gz
+            ${{ matrix.out }}/macos/*.app.tar.gz.sig
+            ${{ matrix.out }}/nsis/*-setup.exe
+            ${{ matrix.out }}/nsis/*-setup.exe.sig
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Release 초안 (REL-03)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          path: bundles
+          merge-multiple: true
+      - name: 올릴 파일 모으기
+        run: mkdir upload && find bundles -type f -exec cp {} upload/ \; && ls -l upload
+      - name: 설치 파일 크기 (PERF-05)
+        run: node tools/release/cli.ts sizes upload
+      - name: latest.json (REL-03)
+        run: node tools/release/cli.ts latest-json upload "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME"
+      - name: 초안 만들기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+            --title "TodoWidget $GITHUB_REF_NAME" \
+            --notes-file "docs/release-notes/$GITHUB_REF_NAME.md" \
+            upload/*.dmg upload/*.app.tar.gz upload/*.app.tar.gz.sig upload/*-setup.exe upload/*-setup.exe.sig upload/latest.json
