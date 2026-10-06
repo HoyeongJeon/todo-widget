@@ -94,6 +94,15 @@ describe('입력칸', () => {
     expect(input.value).toBe('');
   });
 
+  it('INPUT-04 조합 중 포커스를 잃어 compositionend가 오지 않았어도, 다시 돌아와 누른 Esc는 입력칸을 비운다', async () => {
+    const { input } = await setup();
+    await fireEvent.compositionStart(input);
+    await fireEvent.input(input, { target: { value: '보고서' } });
+    await fireEvent.blur(input);
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('');
+  });
+
   it('INPUT-07 여러 줄을 붙여 넣으면 줄마다 바로 추가하고, 쓰던 글자는 그대로 남는다', async () => {
     const { input, titles } = await setup();
     await fireEvent.input(input, { target: { value: '쓰던 글' } });

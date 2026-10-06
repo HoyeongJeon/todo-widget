@@ -50,6 +50,7 @@
     onkeydown={onKeydown}
     oncompositionstart={() => composition.start()}
     oncompositionend={(event) => composition.end(event.timeStamp)}
+    onblur={() => composition.reset()}
     onpaste={onPaste}
   />
 </div>
