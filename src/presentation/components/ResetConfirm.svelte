@@ -8,11 +8,12 @@
 
   let overlay: HTMLDivElement | null = $state(null);
   let cancelButton: HTMLButtonElement | null = $state(null);
+  let confirmButton: HTMLButtonElement | null = $state(null);
 
   // 열리면 취소 버튼이 포커스를 받는다. 판 뒤 입력칸의 Enter가 할 일을 더하지 않게 한다. 닫히면 열기 전 포커스로 돌아간다 (리뷰 M9).
   const restoreFocus = rememberFocus();
   onMount(() => {
-    cancelButton?.focus();
+    cancelButton?.focus({ preventScroll: true });
     return () => restoreFocus(overlay);
   });
 
@@ -32,12 +33,29 @@
       vm.cancelReset();
   }
 
-  /** 판에서 Esc를 누르면 취소다. */
+  /** Esc는 취소, ←·→는 취소와 모두 지우기 사이로 포커스를 옮기고, Enter는 포커스가 있는 버튼을 누른다 (INPUT-18). */
   function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape')
-      return;
-    event.preventDefault();
-    vm.cancelReset();
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        vm.cancelReset();
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        cancelButton?.focus({ preventScroll: true });
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        confirmButton?.focus({ preventScroll: true });
+        break;
+      case 'Enter':
+        // OS 기본 동작에 맡기지 않고 직접 누른다. 두 번 눌리지 않게 기본 동작은 막는다.
+        if (event.target instanceof HTMLButtonElement) {
+          event.preventDefault();
+          event.target.click();
+        }
+        break;
+    }
   }
 </script>
 
@@ -47,7 +65,7 @@
     <div class="w">{vm.t('reset.warning')}</div>
     <div class="btns">
       <button type="button" class="pill" bind:this={cancelButton} onclick={() => vm.cancelReset()}>{vm.t('reset.cancel')}</button>
-      <button type="button" class="pill danger" onclick={() => vm.confirmReset()}>{vm.t('reset.confirm')}</button>
+      <button type="button" class="pill danger" bind:this={confirmButton} onclick={() => vm.confirmReset()}>{vm.t('reset.confirm')}</button>
     </div>
   </div>
 </div>

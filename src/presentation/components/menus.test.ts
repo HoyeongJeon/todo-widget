@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flush } from '../../testing/fake-timer.ts';
 import { createTestApp } from '../../testing/test-app.ts';
 import { createTranslator } from '../i18n/translator.ts';
@@ -138,6 +138,30 @@ describe('초기화 확인 판', () => {
     expect([vm.confirmingReset, app.session.items.length]).toEqual([false, 2]);
     vm.openReset();
     await fireEvent.click(container.querySelector('.danger') as HTMLElement);
+    expect([vm.confirmingReset, app.session.items.length]).toEqual([false, 0]);
+  });
+
+  it('INPUT-18 판이 뜨면 포커스는 취소에 있고(스크롤 없이), ←·→로 두 버튼 사이를 옮기며 Enter는 포커스가 있는 버튼을 누른다', async () => {
+    const { vm, app } = await setup();
+    vm.add('보고서\n장보기');
+    vm.openReset();
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    const { container } = render(ResetConfirm, { props: { vm, stage: document.body } });
+    const [cancel, confirm] = [...container.querySelectorAll<HTMLButtonElement>('button')];
+    expect(document.activeElement).toBe(cancel);
+    expect(focus.mock.calls[focus.mock.contexts.indexOf(cancel)]).toEqual([{ preventScroll: true }]);
+    focus.mockRestore();
+    expect(await fireEvent.keyDown(cancel as HTMLElement, { key: 'ArrowRight' })).toBe(false);
+    expect(document.activeElement).toBe(confirm);
+    await fireEvent.keyDown(confirm as HTMLElement, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(confirm);
+    await fireEvent.keyDown(confirm as HTMLElement, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(cancel);
+    await fireEvent.keyDown(cancel as HTMLElement, { key: 'Enter' });
+    expect([vm.confirmingReset, app.session.items.length]).toEqual([false, 2]);
+    vm.openReset();
+    await fireEvent.keyDown(cancel as HTMLElement, { key: 'ArrowRight' });
+    expect(await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Enter' })).toBe(false);
     expect([vm.confirmingReset, app.session.items.length]).toEqual([false, 0]);
   });
 });
