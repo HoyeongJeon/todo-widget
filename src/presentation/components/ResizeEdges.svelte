@@ -3,10 +3,10 @@
 
   let { onresize }: { onresize: (edge: ResizeEdge, event: PointerEvent) => void } = $props();
 
-  /** 왼쪽 버튼으로 누르면 창 밖에서도 pointer를 받게 잡고 바로 크기 조절을 시작한다 (WND-03). */
+  /** 왼쪽 버튼으로 누르면 창 밖에서도 pointer를 받게 잡고 바로 크기 조절을 시작한다 (WND-03). macOS Control+클릭은 우클릭이라 시작하지 않는다 (INPUT-12). */
   function start(edge: ResizeEdge) {
     return (event: PointerEvent & { currentTarget: HTMLElement }): void => {
-      if (event.button !== 0)
+      if (event.button !== 0 || event.ctrlKey)
         return;
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);

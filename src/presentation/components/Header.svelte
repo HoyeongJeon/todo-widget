@@ -4,9 +4,12 @@
 
   let { vm, onmore }: { vm: WidgetViewModel; onmore: (button: HTMLElement) => void } = $props();
 
-  /** 버튼이 아닌 헤더를 왼쪽 버튼으로 누르면 OS 기본 끌기로 창을 옮긴다 (WND-02, 계획 2에서 넘긴 일). */
+  /**
+   * 버튼이 아닌 헤더를 왼쪽 버튼으로 누르면 OS 기본 끌기로 창을 옮긴다 (WND-02, 계획 2에서 넘긴 일).
+   * macOS Control+클릭은 우클릭이므로 끌지 않는다 (INPUT-12).
+   */
   function onPointerDown(event: PointerEvent): void {
-    if (event.button === 0)
+    if (event.button === 0 && !event.ctrlKey)
       vm.window.startMove();
   }
 

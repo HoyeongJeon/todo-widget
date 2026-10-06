@@ -23,7 +23,8 @@
   }
 
   function onKeydown(event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }): void {
-    if (event.isComposing)
+    // 조합을 끝내는 키는 isComposing이 false여도 keyCode 229로 올 수 있다(WebKit). Esc로 쓰던 글을 잃지 않게 거른다 (INPUT-05, D3).
+    if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -188,6 +189,12 @@
     line-height: 20px;
     color: var(--ink);
     caret-color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* 끝낸 일의 칸도 v1.4처럼 진한 글자에 취소선이 없다. `.row.done .text`보다 세게 쓴다. */
+  .row.done .text.editing {
+    color: var(--ink);
     text-decoration: none;
   }
 </style>

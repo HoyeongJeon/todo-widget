@@ -8,7 +8,8 @@
   let text = $state('');
 
   function onKeydown(event: KeyboardEvent & { currentTarget: HTMLInputElement }): void {
-    if (event.isComposing)
+    // 조합을 끝내는 키는 isComposing이 false여도 keyCode 229로 올 수 있다(WebKit). Esc로 쓰던 글을 잃지 않게 거른다 (INPUT-05, D3).
+    if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
       text = ''; // INPUT-04

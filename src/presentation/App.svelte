@@ -9,6 +9,7 @@
   import ResetConfirm from './components/ResetConfirm.svelte';
   import ResizeEdges from './components/ResizeEdges.svelte';
   import TaskSections from './components/TaskSections.svelte';
+  import { allowsNativeContextMenu } from './input/native-context-menu.ts';
   import type { Anchor } from './menu/menu-placement.ts';
   import type { WidgetViewModel } from './widget-view-model.svelte.ts';
 
@@ -58,9 +59,9 @@
       untrack(() => void vm.window.clearPopup());
   });
 
-  /** WebView 기본 메뉴(새로 고침 등)는 막는다. 입력칸·이름 바꾸기 칸에서는 OS 기본 메뉴(잘라내기·복사·붙여넣기)를 그대로 둔다 (D25). */
+  /** WebView 기본 메뉴(새로 고침 등)는 막는다. 글을 쓰는 칸(입력칸·이름 바꾸기 칸)에서만 OS 기본 메뉴(잘라내기·복사·붙여넣기)를 그대로 둔다 (D25). */
   function onWindowContextMenu(event: MouseEvent): void {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+    if (allowsNativeContextMenu(event.target))
       return;
     event.preventDefault();
   }

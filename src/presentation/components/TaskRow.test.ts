@@ -103,6 +103,14 @@ describe('할 일 줄', () => {
     expect([current()?.title, field(), taskWrites()]).toEqual(['초안', null, before]);
   });
 
+  it('INPUT-15 INPUT-05 조합을 끝내는 Esc(keyCode 229)는 이름 바꾸기를 취소하지 않는다', async () => {
+    const { startRename, field, vm } = await setup();
+    const opened = await startRename();
+    await fireEvent.input(opened, { target: { value: '보고서' } });
+    await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 229 });
+    expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
+  });
+
   it('INPUT-16 여러 줄을 붙여 넣으면 한 줄로 합쳐 커서 자리에 넣고, 커서를 그 뒤에 두며, 바로 추가하지 않는다', async () => {
     const { startRename, app, field } = await setup();
     const opened = await startRename();

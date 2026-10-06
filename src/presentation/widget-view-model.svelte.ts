@@ -281,8 +281,16 @@ export class WidgetViewModel {
     this.#app.updates.install().catch((error: unknown) => this.#report('update', error));
   }
 
-  /** 가장자리를 끌기 시작했다. 메뉴를 닫고 이름 바꾸기를 저장한 뒤 바로 크기 조절을 시작한다 (WND-03). */
+  /**
+   * 가장자리를 끌기 시작했다. 메뉴를 닫고 이름 바꾸기를 저장한 뒤 바로 크기 조절을 시작한다 (WND-03).
+   * 초기화 확인 판이 열려 있으면 판만 닫고(취소) 크기 조절은 하지 않는다. 판 때문에 늘린 창을 되돌리는 일이
+   * 끄는 도중에 끼어들면 창이 튀고 저장되는 크기·위치가 틀린다(메뉴는 backdrop이 가장자리를 덮어 여기에 오지 않는다).
+   */
   startResize(edge: ResizeEdge, start: PointerStart): Promise<void> {
+    if (this.confirmingReset) {
+      this.cancelReset();
+      return Promise.resolve();
+    }
     this.closePopups();
     this.commitRename();
     return this.window.resize(edge, start);
@@ -300,6 +308,7 @@ export class WidgetViewModel {
   }
 
   #find(id: string): TodoItem | undefined {
+    this.#track();
     return this.#app.session.items.find((item) => item.id === id);
   }
 }

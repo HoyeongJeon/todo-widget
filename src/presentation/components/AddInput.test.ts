@@ -62,6 +62,13 @@ describe('입력칸', () => {
     expect(input.value).toBe('');
   });
 
+  it('INPUT-04 INPUT-05 조합을 끝내는 Esc(keyCode 229)는 입력칸을 비우지 않는다', async () => {
+    const { input } = await setup();
+    await fireEvent.input(input, { target: { value: '보고서 쓰기' } });
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 229 });
+    expect(input.value).toBe('보고서 쓰기');
+  });
+
   it('INPUT-07 여러 줄을 붙여 넣으면 줄마다 바로 추가하고, 쓰던 글자는 그대로 남는다', async () => {
     const { input, titles } = await setup();
     await fireEvent.input(input, { target: { value: '쓰던 글' } });

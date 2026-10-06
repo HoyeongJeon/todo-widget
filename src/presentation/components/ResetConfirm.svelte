@@ -1,11 +1,20 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { SHADOW_MARGIN } from '../../domain/window-geometry.ts';
+  import { rememberFocus } from '../menu/focus-return.ts';
   import type { WidgetViewModel } from '../widget-view-model.svelte.ts';
 
   let { vm, stage }: { vm: WidgetViewModel; stage: HTMLElement } = $props();
 
   let overlay: HTMLDivElement | null = $state(null);
+  let cancelButton: HTMLButtonElement | null = $state(null);
+
+  // 열리면 취소 버튼이 포커스를 받는다. 판 뒤 입력칸의 Enter가 할 일을 더하지 않게 한다. 닫히면 열기 전 포커스로 돌아간다 (리뷰 M9).
+  const restoreFocus = rememberFocus();
+  onMount(() => {
+    cancelButton?.focus();
+    return () => restoreFocus(overlay);
+  });
 
   // 판이 카드보다 크면 덮개가 판만큼 커진다. 그때는 창을 늘려 판이 잘리지 않게 한다 (WND-10).
   $effect(() => {
@@ -22,14 +31,22 @@
     if (event.target === event.currentTarget)
       vm.cancelReset();
   }
+
+  /** 판에서 Esc를 누르면 취소다. */
+  function onKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape')
+      return;
+    event.preventDefault();
+    vm.cancelReset();
+  }
 </script>
 
-<div class="overlay" role="presentation" bind:this={overlay} onclick={onOverlayClick}>
+<div class="overlay" role="presentation" bind:this={overlay} onclick={onOverlayClick} onkeydown={onKeydown}>
   <div class="confirm" role="dialog" aria-modal="true" aria-labelledby="reset-question">
     <div class="q" id="reset-question">{vm.resetQuestion}</div>
     <div class="w">{vm.t('reset.warning')}</div>
     <div class="btns">
-      <button type="button" class="pill" onclick={() => vm.cancelReset()}>{vm.t('reset.cancel')}</button>
+      <button type="button" class="pill" bind:this={cancelButton} onclick={() => vm.cancelReset()}>{vm.t('reset.cancel')}</button>
       <button type="button" class="pill danger" onclick={() => vm.confirmReset()}>{vm.t('reset.confirm')}</button>
     </div>
   </div>

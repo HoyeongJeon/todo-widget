@@ -25,7 +25,8 @@
 </script>
 
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
+  import { rememberFocus } from '../menu/focus-return.ts';
   import type { Position, Size } from '../menu/menu-placement.ts';
   import { moveHighlight } from '../menu/menu-navigation.ts';
   import Icon from './Icon.svelte';
@@ -37,6 +38,10 @@
   let highlighted = $state<number | null>(null);
 
   const selectable = $derived(entries.map((entry) => entry.kind === 'item' && entry.disabled !== true));
+
+  // 닫히면 열기 전 포커스(보통 입력칸)로 돌아간다 (리뷰 M8).
+  const restoreFocus = rememberFocus();
+  onDestroy(() => restoreFocus(element));
 
   // 숨긴 채 그려 크기를 잰 뒤, 자리를 정해 보이고 키보드를 받게 포커스를 둔다 (WND-10, D6).
   $effect(() => {

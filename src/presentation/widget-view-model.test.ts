@@ -313,6 +313,14 @@ describe('창과 메뉴', () => {
     expect([vm.menu.open, vm.renaming, titles(vm.todoItems)]).toEqual([false, null, ['보고서']]);
   });
 
+  it('INPUT-18 WND-03 초기화 확인 판이 열려 있으면 가장자리를 눌러도 크기 조절을 시작하지 않고 판만 닫는다', async () => {
+    const { vm, window } = await widget();
+    vm.add('보고서');
+    vm.openReset();
+    await vm.startResize('South', { screenX: 0, screenY: 0 });
+    expect([window.resizeCalls.length, vm.confirmingReset, vm.window.resizing]).toEqual([0, false, false]);
+  });
+
   it('WND-02 정리하면 창 이동 신호와 서비스 알림을 그만 받는다', async () => {
     const { vm, window } = await widget();
     expect(window.movedListeners).toBe(1);
