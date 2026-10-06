@@ -88,11 +88,18 @@ pub fn set_frame(app: AppHandle, left: f64, top: f64, width: f64, height: f64) -
 }
 
 /// `SHOW_FALLBACK_DELAY` 안에 화면이 창을 띄우지 않으면 Rust가 띄운다.
+/// 띄우기는 `reveal`처럼 메인 스레드에서 숨김 결정을 다시 확인한 뒤에 한다. `claim`과 띄우기 사이에
+/// `keep_hidden`(STORE-10, 메인 스레드)이 끼어 숨긴 뒤에 빈 창을 다시 띄우지 않게 하기 위해서다.
 pub fn spawn_show_fallback(app: AppHandle) {
     std::thread::spawn(move || {
         std::thread::sleep(SHOW_FALLBACK_DELAY);
         if app.state::<ShowGate>().claim(Decision::Shown) {
-            bring_to_front(&app);
+            let handle = app.clone();
+            let _ = app.run_on_main_thread(move || {
+                if !handle.state::<ShowGate>().is_hidden() {
+                    bring_to_front(&handle);
+                }
+            });
         }
     });
 }

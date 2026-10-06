@@ -28,7 +28,8 @@ impl Decision {
     }
 }
 
-/// 창을 띄울지 숨긴 채 둘지는 한 번만 정한다. `show_main`, `keep_hidden`(STORE-10 대화 상자), 대비책 중 먼저 온 쪽이 정한다.
+/// 창을 띄울지 숨긴 채 둘지. `show_main`과 대비책은 `claim`으로 정하고 먼저 온 쪽이 정한다.
+/// 보통 먼저 온 쪽이 정하지만 `hide()`(`keep_hidden`, STORE-10 대화 상자)는 이미 정한 것도 숨김으로 바꾼다.
 #[derive(Debug, Default)]
 pub struct ShowGate {
     state: AtomicU8,
@@ -124,6 +125,15 @@ mod tests {
         gate.hide();
         assert_eq!(gate.decision(), Some(Decision::Hidden));
         assert!(gate.is_hidden());
+        assert!(!gate.claim(Decision::Shown));
+    }
+
+    /// STORE-10 정하기 전에 숨기면 숨긴 상태다
+    #[test]
+    fn hide_from_undecided() {
+        let gate = ShowGate::default();
+        gate.hide();
+        assert_eq!(gate.decision(), Some(Decision::Hidden));
         assert!(!gate.claim(Decision::Shown));
     }
 
