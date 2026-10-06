@@ -60,7 +60,7 @@ export async function launchApp(deps: LaunchDeps): Promise<LaunchResult> {
 
   const { session, settings } = started;
   const placement = new WindowPlacement({ window: deps.window, settings, timer: deps.timer });
-  const lifecycle = new AppLifecycle({ session, placement, process: deps.process });
+  const lifecycle = new AppLifecycle({ session, placement, process: deps.process, timer: deps.timer });
   const updates = new UpdateService({
     updater: deps.updater,
     clock: deps.clock,
@@ -71,7 +71,7 @@ export async function launchApp(deps: LaunchDeps): Promise<LaunchResult> {
   });
 
   await placement.apply().catch(() => undefined);
-  // 끝내기에 실패하면 Rust 대비책(QUIT_FALLBACK_DELAY, 3초)이 끝낸다. 거부를 처리하지 않은 채 두지 않는다.
+  // ⋯ → 종료는 저장을 3초까지만 기다린다(QUIT_SAVE_LIMIT_MS). OS 쪽 종료 요청은 Rust 대비책(QUIT_FALLBACK_DELAY, 3초)도 있다.
   deps.process.onQuitRequested(() => void lifecycle.quit().catch(() => undefined));
   deps.watchWake(() => void updates.onWake());
   void updates.start();

@@ -5,7 +5,7 @@ import { FakeWindowController } from '../testing/fake-window-controller.ts';
 import { ManualTimer } from '../testing/manual-timer.ts';
 import { MemoryFileStore } from '../testing/memory-file-store.ts';
 import { sequenceIds } from '../testing/sequence-ids.ts';
-import { AppLifecycle } from './lifecycle.ts';
+import { AppLifecycle, QUIT_SAVE_LIMIT_MS } from './lifecycle.ts';
 import { SETTINGS_FILE, SettingsRepository } from './settings/settings-repository.ts';
 import { SettingsService } from './settings/settings-service.ts';
 import { TASKS_FILE, TaskRepository } from './storage/task-repository.ts';
@@ -15,11 +15,13 @@ import { WindowPlacement } from './window-placement.ts';
 let files: MemoryFileStore;
 let window: FakeWindowController;
 let process: FakeProcess;
+let timer: ManualTimer;
 
 beforeEach(() => {
   files = new MemoryFileStore();
   window = new FakeWindowController();
   process = new FakeProcess();
+  timer = new ManualTimer();
 });
 
 async function lifecycle(): Promise<{ lifecycle: AppLifecycle; session: TodoSession }> {
@@ -27,7 +29,7 @@ async function lifecycle(): Promise<{ lifecycle: AppLifecycle; session: TodoSess
   const session = await TodoSession.open(new TaskRepository(files, clock), clock, sequenceIds());
   const settings = await SettingsService.open(new SettingsRepository(files));
   const placement = new WindowPlacement({ window, settings, timer: new ManualTimer() });
-  return { lifecycle: new AppLifecycle({ session, placement, process }), session };
+  return { lifecycle: new AppLifecycle({ session, placement, process, timer }), session };
 }
 
 describe('앱 수명', () => {
@@ -47,6 +49,19 @@ describe('앱 수명', () => {
     expect(process.exits).toBe(1);
     expect(JSON.parse(files.files.get(SETTINGS_FILE) ?? 'null')).toMatchObject({ left: 640, top: 480 });
     expect(files.files.get(TASKS_FILE)).toContain('보고서');
+  });
+
+  it('START-08 저장이 3초 안에 끝나지 않아도 기다리지 않고 프로세스를 끝낸다', async () => {
+    const { lifecycle: app, session } = await lifecycle();
+    files.writeGate = new Promise(() => undefined);
+    session.add('보고서');
+    const quitting = app.quit();
+    await Promise.resolve();
+    expect(process.exits).toBe(0);
+    expect(timer.delays).toContain(QUIT_SAVE_LIMIT_MS);
+    timer.runAll();
+    await quitting;
+    expect(process.exits).toBe(1);
   });
 
   it('WND-14 설정이나 할 일 저장에 실패해도 그대로 끝낸다', async () => {

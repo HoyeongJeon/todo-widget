@@ -42,7 +42,7 @@ export async function createTestApp(files = new MemoryFileStore()): Promise<Test
   const settings = await SettingsService.open(new SettingsRepository(files));
   const placement = new WindowPlacement({ window, settings, timer });
   await placement.apply();
-  const lifecycle = new AppLifecycle({ session, placement, process });
+  const lifecycle = new AppLifecycle({ session, placement, process, timer });
   const updates = new UpdateService({
     updater,
     clock,
