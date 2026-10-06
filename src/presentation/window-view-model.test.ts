@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { flush } from '../testing/fake-timer.ts';
 import { createTestApp } from '../testing/test-app.ts';
 import { MENU_SHADOW } from './menu/menu-placement.ts';
 import { WindowViewModel } from './window-view-model.svelte.ts';
@@ -35,11 +36,36 @@ describe('창 화면 상태', () => {
     const resizing = vm.resize('South', { screenX: 0, screenY: 0 });
     expect(vm.resizing).toBe(true);
     vm.contentResized(580);
+    await flush();
+    expect(window.heightCalls).toEqual([{ height: 200, raise: 0 }]);
     release();
     await resizing;
     expect(vm.resizing).toBe(false);
     expect(vm.maxCardHeight).toBe(580);
-    expect(vm.baseHeight).toBe(600);
+    // 끄는 동안 받은 내용 높이로 놓은 뒤 한 번 맞춘다.
+    expect(window.heightCalls).toEqual([{ height: 200, raise: 0 }, { height: 580, raise: 0 }]);
+    expect(vm.baseHeight).toBe(580);
+  });
+
+  it('WND-03 끌어 키운 뒤 메뉴를 열고 닫아도 놓은 높이로 돌아간다', async () => {
+    const { vm, window } = await setup();
+    await vm.showFirst(520, 0);
+    let release: () => void = () => undefined;
+    window.resizeGate = new Promise((resolve) => {
+      release = resolve;
+    });
+    window.resizeResult = { left: 1576, top: 24, width: 320, height: 700 };
+    const resizing = vm.resize('South', { screenX: 0, screenY: 0 });
+    // 끄는 동안 카드는 창을 채우고, 놓은 뒤에도 카드 높이가 그대로라 ResizeObserver가 다시 알리지 않는다.
+    vm.contentResized(700);
+    release();
+    await resizing;
+    expect(window.heightCalls).toEqual([]);
+    await vm.fitPopup(vm.popupToken, { top: 58, bottom: 760 }, MENU_SHADOW);
+    expect(window.current.height).toBe(776);
+    await vm.clearPopup();
+    expect([window.current.top, window.current.height, vm.baseHeight]).toEqual([24, 700, 700]);
+    expect(window.heightCalls.map((call) => call.height)).toEqual([776, 700]);
   });
 
   it('WND-10 메뉴가 창보다 크면 늘리고, 닫으면 내용 높이로 되돌린다', async () => {

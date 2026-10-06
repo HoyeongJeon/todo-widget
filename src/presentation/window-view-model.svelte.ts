@@ -21,6 +21,8 @@ export class WindowViewModel {
   readonly #placement: WindowPlacement;
   readonly #report: Report;
   #shown = false;
+  /** 끄는 동안 마지막으로 받은 내용 높이. 놓은 뒤 이 높이로 한 번 맞춘다. 받지 않았으면 null. */
+  #heldContentHeight: number | null = null;
   /** 메뉴·확인 판 세대 번호. 화면을 다시 그리게 할 값이 아니라 $state가 아니다. */
   #popupToken = 0;
 
@@ -51,10 +53,17 @@ export class WindowViewModel {
     await this.#placement.show(paintedAtMs).catch((error: unknown) => this.#report('show', error));
   }
 
-  /** 카드 높이가 바뀌었다. height는 카드 + 위아래 그림자 여백이다 (WND-03). 처음 보이기 전과 끄는 동안은 무시한다. */
+  /**
+   * 카드 높이가 바뀌었다. height는 카드 + 위아래 그림자 여백이다 (WND-03). 처음 보이기 전에는 무시한다.
+   * 끄는 동안은 맞추지 않고 기억만 한다. 놓은 뒤 카드 높이가 그대로면 다시 알려 오지 않기 때문이다.
+   */
   contentResized(height: number): void {
-    if (!this.#shown || this.resizing)
+    if (!this.#shown)
       return;
+    if (this.resizing) {
+      this.#heldContentHeight = height;
+      return;
+    }
     this.#placement.fitToContent(height).then(
       () => {
         this.#baseHeight = this.#placement.height;
@@ -63,9 +72,13 @@ export class WindowViewModel {
     );
   }
 
-  /** 가장자리를 끌어 크기를 바꾼다. 놓을 때까지 resizing이다 (WND-03). placement.resize는 기다림 없이 바로 부른다. */
+  /**
+   * 가장자리를 끌어 크기를 바꾼다. 놓을 때까지 resizing이다 (WND-03). placement.resize는 기다림 없이 바로 부른다.
+   * 놓은 뒤 끄는 동안 받은 내용 높이로 한 번 맞춘다. 그래야 메뉴로 늘렸다 되돌릴 때 끌기 전 높이로 돌아가지 않는다.
+   */
   async resize(edge: ResizeEdge, start: PointerStart): Promise<void> {
     this.resizing = true;
+    this.#heldContentHeight = null;
     try {
       await this.#placement.resize(edge, start);
     } catch (error) {
@@ -75,6 +88,12 @@ export class WindowViewModel {
       this.#maxHeight = this.#placement.maxHeight;
       this.#baseHeight = this.#placement.height;
     }
+    const held = this.#heldContentHeight;
+    this.#heldContentHeight = null;
+    if (held === null)
+      return;
+    await this.#placement.fitToContent(held).catch((error: unknown) => this.#report('fit', error));
+    this.#baseHeight = this.#placement.height;
   }
 
   /** 헤더를 끌어 창을 옮긴다 (WND-02). */
