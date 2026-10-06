@@ -25,10 +25,17 @@ describe('크기 조절 계산', () => {
     expect(resizeRect(start, 'West', 500, 0, limits)).toEqual({ left: 1040, top: 100, width: 280, height: 520 });
   });
 
-  it('WND-05 높이는 300 이상, 작업 영역 높이 이하에서만 바뀐다', () => {
-    expect(resizeRect(start, 'South', 0, -500, limits).height).toBe(300);
+  it('WND-03 WND-05 끄는 동안 높이는 300보다 작아질 수 있고 창 최소 높이 120에서 멈추며, 작업 영역 높이를 넘지 않는다', () => {
+    expect(resizeRect(start, 'South', 0, -500, limits).height).toBe(120);
     expect(resizeRect(start, 'South', 0, 5000, limits).height).toBe(1040);
-    expect(resizeRect(start, 'North', 0, 400, limits)).toEqual({ left: 1000, top: 320, width: 320, height: 300 });
-    expect(resizeLimits(150)).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 300 });
+    expect(resizeRect(start, 'North', 0, 450, limits)).toEqual({ left: 1000, top: 500, width: 320, height: 120 });
+    expect(resizeLimits(150)).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 120, maxHeight: 300 });
+  });
+
+  it('WND-03 내용에 맞춰 300보다 짧은 창(200)에서 끌기 시작하면 튀지 않고 마우스를 따라간다', () => {
+    const short = { left: 1000, top: 100, width: 280, height: 200 };
+    expect(resizeRect(short, 'South', 0, 1, limits)).toEqual({ left: 1000, top: 100, width: 280, height: 201 });
+    expect(resizeRect(short, 'South', 0, -30, limits)).toEqual({ left: 1000, top: 100, width: 280, height: 170 });
+    expect(resizeRect(short, 'North', 0, 30, limits)).toEqual({ left: 1000, top: 130, width: 280, height: 170 });
   });
 });

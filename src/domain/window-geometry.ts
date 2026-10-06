@@ -1,4 +1,9 @@
-export const WINDOW_LIMITS = { minWidth: 280, maxWidth: 620, defaultWidth: 320, minMaxHeight: 300, defaultMaxHeightRatio: 0.5 } as const;
+/**
+ * 창 크기 범위. 폭 280~620(WND-04), 최대 높이 300 이상(WND-05).
+ * minDragHeight: 끄는 동안 창 높이의 하한. 카드 위아래 여백과 헤더·입력칸이 들어가는 높이이고 `tauri.conf.json`의 창 minHeight와 같다.
+ * 끄는 동안에는 300보다 작아질 수 있고, 놓으면 최대 높이를 300 이상으로 맞춘다 (WND-03, v1.4도 끄는 동안 높이 하한이 없었다).
+ */
+export const WINDOW_LIMITS = { minWidth: 280, maxWidth: 620, defaultWidth: 320, minMaxHeight: 300, minDragHeight: 120, defaultMaxHeightRatio: 0.5 } as const;
 
 /** 저장된 위치가 없을 때 작업 영역 오른쪽 위에서 띄우는 여백 (WND-07). */
 export const PLACEMENT_MARGIN = 24;

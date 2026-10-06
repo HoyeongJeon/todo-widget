@@ -10,12 +10,16 @@ export interface SizeLimits {
   maxHeight: number;
 }
 
-/** 끄는 동안과 놓은 뒤 저장할 때 같은 범위를 쓴다. 폭 280~620(WND-04), 높이 300~작업 영역 높이(WND-05). */
+/**
+ * 끄는 동안의 범위. 폭은 280~620(WND-04)으로 바로 맞춘다. 높이는 창 최소 높이(120)~작업 영역 높이다.
+ * 높이 하한을 최대 높이 하한(300, WND-05)으로 두면, 내용에 맞춰 300보다 짧은 창을 끌기 시작하는 순간 창이 300으로 튄다.
+ * 놓은 뒤 저장하는 최대 높이는 WindowPlacement가 WND-05대로 300 이상으로 맞춘다 (WND-03).
+ */
 export function resizeLimits(workAreaHeight: number): SizeLimits {
   return {
     minWidth: WINDOW_LIMITS.minWidth,
     maxWidth: WINDOW_LIMITS.maxWidth,
-    minHeight: WINDOW_LIMITS.minMaxHeight,
+    minHeight: WINDOW_LIMITS.minDragHeight,
     maxHeight: Math.max(WINDOW_LIMITS.minMaxHeight, workAreaHeight),
   };
 }

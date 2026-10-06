@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { WINDOW_LIMITS } from './domain/window-geometry.ts';
 
 const config = JSON.parse(readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
 const mainWindow = config.app.windows.find((w: { label: string }) => w.label === 'main');
@@ -74,6 +75,10 @@ describe('Tauri 설정', () => {
       visibleOnAllWorkspaces: true,
       shadow: false,
     });
+  });
+
+  it('WND-03 WND-04 창 최소 크기는 끄는 동안의 하한(폭 280, 높이 120)과 같다', () => {
+    expect([mainWindow.minWidth, mainWindow.minHeight]).toEqual([WINDOW_LIMITS.minWidth, WINDOW_LIMITS.minDragHeight]);
   });
 
   it('식별자와 제품 이름이 정해진 값이다', () => {
