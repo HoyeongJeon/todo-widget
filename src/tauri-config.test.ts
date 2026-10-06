@@ -123,4 +123,8 @@ describe('Tauri 설정', () => {
     expect(items).toHaveLength(2);
     expect(items.join('\n')).not.toMatch(/\p{Script=Hangul}/u);
   });
+
+  it('INPUT-11 다른 앱을 쓰다가 위젯을 처음 눌러도 바로 동작한다 (macOS acceptFirstMouse, PM 결정 2026-10-06)', () => {
+    expect(mainWindow.acceptFirstMouse).toBe(true);
+  });
 });

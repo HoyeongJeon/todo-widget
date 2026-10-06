@@ -11,7 +11,7 @@ import type { TodoSession } from './todo-session.ts';
 import { UpdateService } from './update-service.ts';
 import { WindowPlacement } from './window-placement.ts';
 
-/** 대화 상자 문구. 계획 5에서 I18N 사전(`app.title`, `error.cannotOpen`)으로 채운다. */
+/** STORE-10 대화 상자 문구. composition root가 화면 언어 사전(`app.title`, `error.cannotOpen`)에서 꺼내 넘긴다 (I18N-02). */
 export interface LaunchTexts {
   appTitle: string;
   cannotOpen: string;

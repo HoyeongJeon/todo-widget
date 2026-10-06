@@ -1,237 +1,167 @@
 <script lang="ts">
-  // 시험 화면이다. 실제 위젯 화면(ViewModel, 4개 언어 사전)은 계획 5에서 만든다. 이 화면의 문구는 그때 사전으로 옮긴다.
-  import type { RunningApp } from '../application/launch.ts';
-  import { pickNotice } from '../application/notices.ts';
-  import type { WindowController } from '../application/ports/window-controller.ts';
-  import type { ResizeEdge } from '../domain/resize.ts';
+  import { onMount, untrack } from 'svelte';
+  import { SHADOW_MARGIN } from '../domain/window-geometry.ts';
+  import AddInput from './components/AddInput.svelte';
+  import ContextMenu from './components/ContextMenu.svelte';
+  import Header from './components/Header.svelte';
+  import MoreMenu from './components/MoreMenu.svelte';
+  import NoticeLine from './components/NoticeLine.svelte';
+  import ResetConfirm from './components/ResetConfirm.svelte';
+  import ResizeEdges from './components/ResizeEdges.svelte';
+  import TaskSections from './components/TaskSections.svelte';
+  import type { Anchor } from './menu/menu-placement.ts';
+  import type { WidgetViewModel } from './widget-view-model.svelte.ts';
 
-  let { app, windowController, startedAt }: { app: RunningApp; windowController: WindowController; startedAt: number } = $props();
+  let { vm, startedAt }: { vm: WidgetViewModel; startedAt: number } = $props();
 
-  /** 서비스가 바뀌었다고 알릴 때마다 올려서 다시 그린다. */
-  let revision = $state(0);
-  let text = $state('');
-  /** 저장된 값에서 시작하고, 📌을 누르면 그 자리에서 덮어쓴다(쓸 수 있는 $derived). */
-  let pinned = $derived(app.settings.current.pinned);
-  let autoStartOn = $state(false);
-  let transparency = $state(0);
+  let stage: HTMLElement | null = $state(null);
+  let card: HTMLElement | null = $state(null);
+  let body: HTMLElement | null = $state(null);
+  /** 섹션들이 쓸 수 있는 높이. 카드 최대 높이에서 헤더·안내 줄·입력칸·안쪽 여백을 뺀다. */
+  let available = $state(Number.POSITIVE_INFINITY);
+  let moreAnchor = $state<Anchor | null>(null);
 
-  /** 누르고 잊는 호출이 거부되어도 처리하지 않은 거부로 남기지 않는다. 원인은 개발자 도구에서 본다. */
-  function logFailure(what: string) {
-    return (error: unknown): void => {
-      console.error(what, error);
-    };
+  /** 카드를 재서 섹션이 쓸 높이를 정하고(LIST-13~15), 창 높이로 쓸 값(카드 + 위아래 그림자 여백)을 돌려준다(WND-03). */
+  function measureCard(): number {
+    if (!card || !body)
+      return 0;
+    const cardHeight = card.getBoundingClientRect().height;
+    const cap = vm.window.resizing ? window.innerHeight - 2 * SHADOW_MARGIN : vm.window.maxCardHeight;
+    const next = cap - (cardHeight - body.getBoundingClientRect().height);
+    if (!(Math.abs(next - available) <= 0.5))
+      available = next;
+    return Math.ceil(cardHeight) + 2 * SHADOW_MARGIN;
   }
 
+  onMount(() => {
+    // 숨긴 창에서는 ResizeObserver가 오지 않을 수 있다. 처음 크기는 바로 재서 창을 맞추고 보인다 (D19).
+    void vm.window.showFirst(measureCard(), performance.now() - startedAt);
+    const observer = new ResizeObserver(() => vm.window.contentResized(measureCard()));
+    if (card)
+      observer.observe(card);
+    return () => {
+      observer.disconnect();
+      vm.dispose();
+    };
+  });
+
+  // 끄기를 시작하거나 놓아 최대 높이가 바뀌면 다시 잰다 (WND-03).
   $effect(() => {
-    const bump = () => revision++;
-    const stops = [app.session.onChange(bump), app.updates.onChange(bump), app.autoStart.onChange(bump)];
-    windowController.show(performance.now() - startedAt).catch(logFailure('창을 보이지 못했어요'));
-    void app.autoStart.isEnabled().then((on) => (autoStartOn = on));
-    return () => stops.forEach((stop) => stop());
+    void vm.window.resizing;
+    void vm.window.maxCardHeight;
+    untrack(() => vm.window.contentResized(measureCard()));
   });
 
-  // 서비스는 Svelte 상태가 아니므로 revision을 읽어 다시 계산하게 한다.
-  const items = $derived.by(() => {
-    void revision;
-    return app.session.items;
-  });
-  const notice = $derived.by(() => {
-    void revision;
-    return pickNotice({
-      saveFailed: app.session.saveFailed,
-      fileProblem: app.session.fileProblem,
-      autoStartFailed: app.autoStart.failed,
-      update: app.updates.state,
-    });
+  // 메뉴와 확인 판이 모두 닫히면 늘린 창을 되돌린다 (WND-10).
+  $effect(() => {
+    if (!vm.anyPopupOpen)
+      untrack(() => void vm.window.clearPopup());
   });
 
-  function onKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Enter' || event.isComposing)
+  /** WebView 기본 메뉴(새로 고침 등)는 막는다. 입력칸·이름 바꾸기 칸에서는 OS 기본 메뉴(잘라내기·복사·붙여넣기)를 그대로 둔다 (D25). */
+  function onWindowContextMenu(event: MouseEvent): void {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
       return;
-    if (app.session.add(text))
-      text = '';
+    event.preventDefault();
   }
 
-  function onHeaderPointerDown(event: PointerEvent): void {
-    if (event.button === 0)
-      windowController.startDragging().catch(logFailure('창을 옮기지 못했어요'));
-  }
-
-  function togglePin(): void {
-    pinned = !pinned;
-    app.placement.setPinned(pinned).catch(logFailure('맨 위 고정을 바꾸지 못했어요'));
-  }
-
-  async function toggleAutoStart(): Promise<void> {
-    try {
-      autoStartOn = await app.autoStart.toggle();
-    } catch (error) {
-      logFailure('자동 실행을 바꾸지 못했어요')(error);
-    }
-  }
-
-  function installUpdate(): void {
-    app.updates.install().catch(logFailure('업데이트를 설치하지 못했어요'));
-  }
-
-  function quit(): void {
-    app.lifecycle.quit().catch(logFailure('종료하지 못했어요'));
-  }
-
-  function resize(edge: ResizeEdge) {
-    return (event: PointerEvent): void => {
-      event.preventDefault();
-      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-      app.placement.resize(edge, event).catch(logFailure('크기를 바꾸지 못했어요'));
-    };
+  function openMore(button: HTMLElement): void {
+    if (!stage)
+      return;
+    const box = stage.getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    moreAnchor = { top: rect.top - box.top, bottom: rect.bottom - box.top, right: rect.right - box.left };
+    void vm.openMoreMenu();
   }
 </script>
 
-<main class="card" style:--card-alpha={1 - transparency / 100}>
-  <header role="presentation" onpointerdown={onHeaderPointerDown}>
-    <h1>할 일 (시험 화면)</h1>
-    <button onpointerdown={(e) => e.stopPropagation()} onclick={togglePin}>{pinned ? '📌 켬' : '📌 끔'}</button>
-  </header>
-  <ul>
-    {#each items as item (item.id)}
-      <li><button class="item" onclick={() => app.session.cycle(item.id)}>[{item.status}] {item.title}</button></li>
-    {/each}
-  </ul>
-  {#if notice}
-    <p class="notice">
-      {notice.messages.join(' · ')}
-      {#if notice.action}<button onclick={installUpdate}>update.action</button>{/if}
-    </p>
-  {/if}
-  <input bind:value={text} onkeydown={onKeydown} placeholder="할 일 추가" />
-  <label>투명도 {transparency}% <input type="range" min="0" max="40" bind:value={transparency} /></label>
-  <footer>
-    <button onclick={() => void toggleAutoStart()}>자동 실행: {autoStartOn ? '켬' : '끔'}</button>
-    <button onclick={quit}>종료</button>
-  </footer>
-</main>
-<div class="edge east" role="presentation" onpointerdown={resize('East')}></div>
-<div class="edge south" role="presentation" onpointerdown={resize('South')}></div>
-<div class="edge south-east" role="presentation" onpointerdown={resize('SouthEast')}></div>
-<div class="edge north" role="presentation" onpointerdown={resize('North')}></div>
-<div class="edge west" role="presentation" onpointerdown={resize('West')}></div>
-<div class="edge north-east" role="presentation" onpointerdown={resize('NorthEast')}></div>
-<div class="edge north-west" role="presentation" onpointerdown={resize('NorthWest')}></div>
-<div class="edge south-west" role="presentation" onpointerdown={resize('SouthWest')}></div>
+<!-- 창이 포커스를 잃으면(macOS에서 늘린 투명 부분을 누르면 클릭이 뒤 앱으로 가서 이렇게 된다) 메뉴와 확인 판을 닫는다 (D10). -->
+<svelte:window onblur={() => vm.closePopups()} oncontextmenu={onWindowContextMenu} />
+
+<div class="frame" style:padding-top="{vm.window.lift}px">
+  <div class="stage" bind:this={stage}>
+    <div class="shell">
+      <main
+        class="card"
+        class:fill={vm.window.resizing}
+        style:--a={vm.menu.cardOpacity}
+        style:max-height={vm.window.resizing ? null : `${vm.window.maxCardHeight}px`}
+        bind:this={card}
+      >
+        <Header {vm} onmore={openMore} />
+        <div class="body" bind:this={body}>
+          <TaskSections {vm} {available} />
+        </div>
+        <NoticeLine {vm} />
+        <AddInput {vm} />
+        {#if vm.confirmingReset && stage}
+          <ResetConfirm {vm} {stage} />
+        {/if}
+      </main>
+      <ResizeEdges onresize={(edge, event) => void vm.startResize(edge, event)} />
+    </div>
+    {#if vm.menu.open || vm.contextMenu}
+      <!-- 메뉴 바깥 클릭을 받아 닫는다(Windows처럼 투명 부분의 클릭이 창에 오는 경우, D10). -->
+      <div class="backdrop" role="presentation" onpointerdown={() => vm.closePopups()}></div>
+    {/if}
+    {#if vm.menu.open && moreAnchor}
+      <MoreMenu {vm} anchor={moreAnchor} />
+    {/if}
+    {#if vm.contextMenu && stage}
+      <ContextMenu {vm} target={vm.contextMenu} {stage} />
+    {/if}
+  </div>
+</div>
 
 <style>
-  :global(html),
-  :global(body) {
-    margin: 0;
-    background: transparent;
+  .stage {
+    position: relative;
+  }
+
+  /* 카드 둘레 투명 여백: 그림자와 크기 조절 가장자리 자리 (window.md 용어 "크기와 좌표"). */
+  .shell {
+    position: relative;
+    padding: 10px;
+  }
+
+  /* 둥근 카드, 테두리 없음, 옅은 그림자 (WND-01). 배경과 그림자만 불투명도(--a)를 따른다 (WND-13). */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 18px 12px;
+    border-radius: 18px;
+    background: rgba(var(--card), var(--a));
+    box-shadow: 0 3px 12px rgba(var(--shadow), calc(0.16 * var(--a)));
+  }
+
+  /* 끄는 동안 카드가 창을 채우고 입력칸은 아래에 붙는다 (WND-03, v1.4 MC:64-91). 그 밖에는 최대 높이 - 20이 상한이다(v1.4 MC:89). */
+  .card.fill {
+    height: calc(100vh - 20px);
+  }
+
+  /* 섹션을 flex로 쌓는다. margin이 겹치지 않아 v1.4 간격 그대로이고 높이를 정확히 잰다 (D16). */
+  /*
+   * 카드가 최대 높이에 닿으면 섹션 영역이 줄고 넘친 부분은 잘린다. 헤더·안내 줄·입력칸은 줄지 않아 늘 보인다(v1.4 DockPanel, 리뷰 I3).
+   * 좌우 -6 margin과 6 padding: 할 일 제목 줄 hover 배경(좌우 6 넓게 칠함)이 잘리지 않게 한다.
+   */
+  .body {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    margin: 0 -6px;
+    padding: 0 6px;
     overflow: hidden;
   }
 
-  .card {
-    /* 계획 5에서 내용에 맞춘 높이를 넣기 전까지는 카드가 창 높이를 채워 가장자리가 카드 위에 오게 한다. */
-    box-sizing: border-box;
-    min-height: calc(100vh - 20px);
-    margin: 10px;
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(250, 248, 245, var(--card-alpha, 1));
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-    font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  .card.fill .body {
+    flex: 1 1 auto;
   }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: grab;
-  }
-
-  h1 {
-    font-size: 15px;
-    margin: 0 0 8px;
-  }
-
-  .item {
-    all: unset;
-    cursor: pointer;
-  }
-
-  .notice {
-    font-size: 12px;
-  }
-
-  input:not([type]) {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .edge {
+  .backdrop {
     position: fixed;
-    /* 투명한 창은 alpha가 0인 픽셀의 클릭을 뒤로 넘긴다(macOS). 눈에 거의 안 보이지만 0이 아닌 배경을 둔다. */
-    background: rgba(0, 0, 0, 0.01);
-  }
-
-  .east {
-    top: 0;
-    right: 0;
-    width: 8px;
-    height: 100%;
-    cursor: ew-resize;
-  }
-
-  .south {
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 8px;
-    cursor: ns-resize;
-  }
-
-  .south-east {
-    right: 0;
-    bottom: 0;
-    width: 14px;
-    height: 14px;
-    cursor: nwse-resize;
-  }
-
-  .north {
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 8px;
-    cursor: ns-resize;
-  }
-
-  .west {
-    top: 0;
-    left: 0;
-    width: 8px;
-    height: 100%;
-    cursor: ew-resize;
-  }
-
-  .north-east {
-    top: 0;
-    right: 0;
-    width: 14px;
-    height: 14px;
-    cursor: nesw-resize;
-  }
-
-  .north-west {
-    top: 0;
-    left: 0;
-    width: 14px;
-    height: 14px;
-    cursor: nwse-resize;
-  }
-
-  .south-west {
-    bottom: 0;
-    left: 0;
-    width: 14px;
-    height: 14px;
-    cursor: nesw-resize;
+    inset: 0;
+    z-index: 4;
   }
 </style>
