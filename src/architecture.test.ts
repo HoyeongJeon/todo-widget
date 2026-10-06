@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { checkCopy, looksLikeCopy } from '../tools/architecture/copy.ts';
 import { checkArchitecture, layerOf } from '../tools/architecture/rules.ts';
 import { collectSources } from '../tools/architecture/sources.ts';
 
@@ -162,8 +163,81 @@ describe('네트워크 사용 제한', () => {
     ]);
   });
 
+  it('PRIV-01 invoke로 updater·http plugin 명령을 바로 불러도 네트워크로 본다', () => {
+    const violations = checkArchitecture([
+      file('src/adapters/tauri/x.ts', "await invoke('plugin:updater|check');"),
+      file('src/presentation/y.ts', 'await invoke("plugin:http|fetch", args);'),
+      file('src/adapters/updater/z.ts', "await invoke('plugin:updater|check');"),
+    ]);
+    expect(violations.map((v) => v.path)).toEqual(['src/adapters/tauri/x.ts', 'src/presentation/y.ts']);
+    expect(violations[0]?.message).toBe("네트워크는 src/adapters/updater/에서만 써요 (PRIV-01): 'plugin:updater|");
+  });
+
   it('PRIV-01 실제 소스가 층 규칙과 네트워크 제한을 지킨다', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     expect(checkArchitecture(collectSources(root))).toEqual([]);
+  });
+});
+
+describe('하드코딩 문구 검사', () => {
+  it('I18N-02 문구로 보이는 문자열을 가려낸다', () => {
+    expect(['할 일', 'Add a task', "Can't save", 'Löschen', '{n}개 남음'].map(looksLikeCopy)).toEqual([true, true, true, true, true]);
+    expect(['', '⋯', '·', '%', '+', 'keydown', 'app.title', 'text/plain', 'row doing', '0px', '{n}', 'plugin:x'].map(looksLikeCopy)).toEqual(
+      new Array(12).fill(false),
+    );
+  });
+
+  it('I18N-02 템플릿 글자, 보이는 속성의 고정 글, 문구 같은 문자열 리터럴을 찾는다', () => {
+    const svelte = [
+      '<script lang="ts">',
+      "  const label = '할 일';",
+      '</script>',
+      '<button title="Menu">Add</button>',
+      '<input placeholder="{x} tasks" />',
+    ].join('\n');
+    const violations = checkCopy([
+      file('src/presentation/A.svelte', svelte),
+      file('src/presentation/b.ts', "export const hint = 'Add a task';\nexport const left = `${n}개 남음`;"),
+    ]);
+    expect(violations.map((v) => `${v.path}:${v.line}`)).toEqual([
+      'src/presentation/A.svelte:2',
+      'src/presentation/A.svelte:4',
+      'src/presentation/A.svelte:4',
+      'src/presentation/A.svelte:5',
+      'src/presentation/b.ts:1',
+      'src/presentation/b.ts:2',
+    ]);
+    expect(violations[0]?.message).toBe('화면 문구는 사전에서 꺼내요 (I18N-02): 할 일');
+  });
+
+  it('I18N-02 기호, 기술 문자열, CSS 클래스, 주석, 스타일, 개발자용 문장, 사전 파일, presentation 밖은 통과한다', () => {
+    const svelte = [
+      '<script lang="ts">',
+      '  // 한국어 주석은 괜찮다',
+      "  import Icon from './Icon.svelte';",
+      "  const key = 'app.title';",
+      "  const classes = 'row doing';",
+      "  console.error('창을 보이지 못했어요', error);",
+      "  window.addEventListener('wheel', onWheel);",
+      '  /* 할 일 */',
+      '</script>',
+      '<!-- 할 일 -->',
+      '<span class="sep">·</span><span class="plus">+</span>{vm.t(\'app.title\')}<span>{n}%</span>',
+      '<div style:padding-top="{lift}px" class="row {status}" onclick={() => a > b}></div>',
+      '<style>.a::after { content: "할 일"; }</style>',
+    ].join('\n');
+    expect(
+      checkCopy([
+        file('src/presentation/B.svelte', svelte),
+        file('src/presentation/i18n/ko.ts', "export const ko = { 'app.title': '할 일' };"),
+        file('src/presentation/c.ts', "throw new Error('ViewModel이 없어요');\nconst url = `${base}/x`;"),
+        file('src/application/d.ts', "const label = '할 일';"),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('I18N-02 실제 화면 코드에는 사전 밖의 화면 문구가 없다', () => {
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    expect(checkCopy(collectSources(root))).toEqual([]);
   });
 });

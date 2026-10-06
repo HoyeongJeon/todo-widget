@@ -36,7 +36,8 @@ const ALLOWED_IMPORTS: Readonly<Record<Layer, readonly Layer[]>> = {
 
 const IMPORT_PATTERN =
   /\b(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|\bimport\s+['"]([^'"]+)['"]/g;
-const NETWORK_PATTERN = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|@tauri-apps\/plugin-(?:http|websocket|upload|updater)/g;
+const NETWORK_PATTERN =
+  /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|@tauri-apps\/plugin-(?:http|websocket|upload|updater)|['"`]plugin:(?:http|updater|websocket|upload)\|/g;
 
 export function layerOf(path: string): Layer {
   const match = /^src\/(domain|application|presentation|adapters|testing)\//.exec(path);
@@ -97,6 +98,6 @@ function networkViolations(file: SourceFile): Violation[] {
   }));
 }
 
-function lineAt(text: string, index: number): number {
+export function lineAt(text: string, index: number): number {
   return text.slice(0, index).split('\n').length;
 }
