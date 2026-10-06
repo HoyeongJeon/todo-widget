@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>위젯 화면 시안</title>
+<style>
+  :root {
+    --card: 255,255,255;
+    --ink: #2B2A28;
+    --muted: #8C8983;
+    --line: #EBE8E3;
+    --todo: #A29D95;
+    --accent: #E8935A;
+    --doingbg: 253,241,232;
+    --done: #7FAE8A;
+    --foldbg: 246,245,242;
+    --hint: #B3AFA8;
+    --hover: #F4F2EE;
+    --danger: #D9624B;
+    --danger-hover: #C4523C;
+    --thumb: #D9D5CE;
+    --thumb-hover: #B9B5AD;
+    --shadow: 60,50,40;
+    --font-ko: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --font-en: -apple-system, "SF Pro Text", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 24px 64px;
+    font-family: -apple-system, "Apple SD Gothic Neo", sans-serif;
+    background: #E9E6E1; color: #2B2A28;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .lead { color: #5E5B56; font-size: 14px; line-height: 1.6; margin: 0 0 24px; max-width: 900px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: #5E5B56; margin-top: 8px; max-width: 320px; line-height: 1.5; }
+  figcaption b { color: #2B2A28; }
+  .desk {
+    padding: 18px; border-radius: 12px;
+    background: linear-gradient(135deg, #8FB3D9 0%, #C7A6D9 45%, #F2C28C 100%);
+  }
+  .desk.busy {
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 10px, transparent 10px 20px),
+      linear-gradient(135deg, #3E7CB1 0%, #8E5DB3 50%, #E08A3C 100%);
+  }
+
+  /* 창: 카드 둘레 10px 투명 여백 (그림자·크기 조절 자리). 실제 창처럼 여백 밖은 잘린다. */
+  .win { width: 320px; padding: 10px; overflow: hidden; position: relative; }
+  .win.w280 { width: 280px; }
+  .card {
+    --a: 1;
+    position: relative;
+    background: rgba(var(--card), var(--a));
+    border-radius: 18px;
+    padding: 16px 18px 12px;
+    box-shadow: 0 3px 12px rgba(var(--shadow), calc(.16 * var(--a)));
+    font-family: var(--font-ko);
+    color: var(--ink);
+  }
+  .card.en { font-family: var(--font-en); }
+
+  /* 헤더 */
+  .header { display: flex; align-items: flex-start; margin-bottom: 4px; }
+  .header .titles { flex: 1; min-width: 0; }
+  .title { font-size: 16px; font-weight: 700; line-height: 21px; }
+  .remaining { font-size: 12.5px; color: var(--muted); line-height: 17px; margin-top: 2px; }
+  .iconbtn {
+    width: 28px; height: 28px; border-radius: 8px; border: 0; background: transparent;
+    display: grid; place-items: center; color: var(--muted); cursor: pointer; padding: 0;
+  }
+  .iconbtn:hover, .iconbtn.active { background: var(--hover); }
+  .iconbtn svg { width: 15px; height: 15px; }
+  .iconbtn.pin-on { color: var(--ink); }
+  .iconbtn.pin-off { color: var(--hint); }
+
+  /* 끝낸 일 섹션 */
+  .done-sec { margin-top: 8px; }
+  .fold {
+    display: flex; align-items: center; padding: 8px 10px; border-radius: 10px;
+    background: rgba(var(--foldbg), var(--a)); cursor: pointer; line-height: 18px; font-size: 13px; color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.green { background: var(--done); }
+  .dot.orange { background: var(--accent); }
+  .label { font-weight: 600; margin-left: 7px; }
+  .count { margin-left: 5px; }
+  .fold .right, .sechead .right { margin-left: auto; padding-left: 8px; white-space: nowrap; }
+  .done-list { margin-top: 4px; }
+
+  /* 할 일 섹션 */
+  .todo-sec { margin-top: 12px; }
+  .sechead {
+    display: flex; align-items: center; margin: -3px -6px 3px; padding: 3px 6px; border-radius: 8px;
+    font-size: 13px; line-height: 18px; color: var(--muted); cursor: pointer;
+  }
+  .sechead:hover { background: var(--hover); }
+  .sechead .chev { width: 10px; height: 10px; }
+
+  /* 항목 */
+  .row {
+    display: flex; align-items: flex-start; padding: 8px 10px; margin: 1px 0; border-radius: 10px;
+  }
+  .row.doing { background: rgba(var(--doingbg), var(--a)); }
+  .row.selected-rc { box-shadow: inset 0 0 0 1px var(--line); }
+  .mark { width: 18px; height: 18px; margin: 1px 10px 0 0; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .ring { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--todo); grid-area: 1/1; }
+  .mark:hover .ring { opacity: .7; }
+  .core { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); grid-area: 1/1; display: none; }
+  .row.doing .ring { border-color: var(--accent); }
+  .row.doing .core { display: block; }
+  .row.done .ring { border-color: var(--done); background: var(--done); }
+  .text { font-size: 14.5px; line-height: 20px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .row.done .text { color: var(--muted); text-decoration: line-through; }
+  .text.editing { outline: none; caret-color: var(--ink); }
+  .text.editing .sel { background: #B4D5FE; }
+  .caret { display: inline-block; width: 1px; height: 17px; background: var(--ink); vertical-align: -3px; }
+
+  .scroll { overflow-y: auto; padding-right: 0; }
+  .scroll.cap { max-height: 120px; }
+  .scroll::-webkit-scrollbar { width: 10px; }
+  .scroll::-webkit-scrollbar-track { background: transparent; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 3px; border-left: 4px solid transparent; background-clip: padding-box; }
+  .scroll::-webkit-scrollbar-thumb:hover { background-color: var(--thumb-hover); }
+
+  .empty { text-align: center; font-size: 13.5px; color: var(--muted); margin: 14px 0 6px; line-height: 18px; }
+
+  /* 아래: 안내 줄 + 입력칸 */
+  .notice { font-size: 12.5px; line-height: 17px; color: var(--accent); margin-top: 8px; }
+  .notice .action { font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .notice .action:hover { color: #C9733C; }
+  .notice .sep { color: var(--hint); margin: 0 3px; }
+  .adder { display: flex; align-items: center; border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
+  .plus { font-size: 16px; color: var(--hint); margin: 0 10px 0 2px; line-height: 20px; }
+  .ph { font-size: 14.5px; color: var(--hint); line-height: 20px; }
+
+  /* 메뉴 판 (v1.4 카드 모양) */
+  .menu {
+    position: absolute; z-index: 5; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 5px;
+    min-width: 150px; box-shadow: 0 3px 12px rgba(var(--shadow), .14);
+    font-size: 13.5px; line-height: 18px; color: var(--ink);
+  }
+  .mi { display: flex; align-items: center; padding: 7px 10px 7px 8px; border-radius: 8px; white-space: nowrap; cursor: default; }
+  .mi:hover, .mi.hl { background: var(--hover); }
+  .mi .chk { width: 22px; flex: none; color: var(--accent); display: grid; align-items: center; }
+  .mi .chk svg { width: 12px; height: 12px; }
+  .mi.disabled { opacity: .45; }
+  .msep { height: 1px; background: var(--line); margin: 5px 8px; }
+  .mctl { padding: 7px 10px 6px 8px; }
+  .mctl .inner { margin-left: 22px; width: 170px; }
+  .mctl .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .mctl .pct { font-size: 12.5px; color: var(--muted); }
+  .slider { position: relative; height: 20px; margin-top: 6px; cursor: pointer; }
+  .slider .track { position: absolute; left: 0; right: 0; top: 8px; height: 4px; border-radius: 2px; background: var(--line); }
+  .slider .fill { position: absolute; left: 0; top: 8px; height: 4px; border-radius: 2px; background: var(--accent); }
+  .slider .thumb { position: absolute; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); margin-left: -7px; }
+  .slider:hover .thumb { background: rgb(var(--doingbg)); }
+
+  /* 초기화 확인 판 */
+  .overlay { position: absolute; inset: 0; border-radius: 18px; background: rgba(255,255,255,.7); display: flex; align-items: center; padding: 0 16px; z-index: 6; }
+  .confirm { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 14px 16px; width: 100%; box-shadow: 0 3px 14px rgba(var(--shadow), .16); }
+  .confirm .q { font-size: 14px; font-weight: 600; line-height: 19px; }
+  .confirm .w { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 17px; }
+  .confirm .btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+  .pill { font: inherit; font-size: 13px; line-height: 18px; padding: 7px 14px; border-radius: 9px; border: 0; background: rgb(var(--foldbg)); color: var(--ink); cursor: pointer; }
+  .pill:hover { background: var(--hover); }
+  .pill.danger { background: var(--danger); color: #fff; font-weight: 600; }
+  .pill.danger:hover { background: var(--danger-hover); }
+
+  /* 아이콘 시안 */
+  .icons { display: flex; gap: 28px; align-items: flex-end; flex-wrap: wrap; }
+  .icons .box { text-align: center; font-size: 12px; color: #5E5B56; }
+  .menubar { background: rgba(246,246,246,.9); border-radius: 8px; padding: 6px 12px; display: flex; gap: 14px; align-items: center; font-size: 13px; color: #222; }
+  .menubar.dark { background: rgba(40,40,40,.9); color: #eee; }
+  .section-title { font-size: 16px; margin: 40px 0 6px; }
+  .note { font-size: 13px; color: #5E5B56; margin: 0 0 16px; max-width: 900px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- 고정: 압정 (켜짐) -->
+    <symbol id="i-pin" viewBox="0 0 16 16">
+      <path d="M9.6 1.6l4.8 4.8-1.3.5-2.6 2.6-.3 2.8-1.1 1.1L6.4 10.7 2.6 14.5 1.5 14.5 1.5 13.4 5.3 9.6 2.6 6.9l1.1-1.1 2.8-.3 2.6-2.6z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+    </symbol>
+    <!-- 고정 해제: 압정 + 사선 -->
+    <symbol id="i-unpin" viewBox="0 0 16 16">
+      <path d="M9.6 1.6l4.8 4.8-1.3.5-2.6 2.6-.3 2.8-1.1 1.1L6.4 10.7 2.6 14.5 1.5 14.5 1.5 13.4 5.3 9.6 2.6 6.9l1.1-1.1 2.8-.3 2.6-2.6z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+      <path d="M1.5 1.5l13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-more" viewBox="0 0 16 16">
+      <circle cx="3" cy="8" r="1.25" fill="currentColor"/><circle cx="8" cy="8" r="1.25" fill="currentColor"/><circle cx="13" cy="8" r="1.25" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-down" viewBox="0 0 10 10"><path d="M1.5 3.5L5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-right" viewBox="0 0 10 10"><path d="M3.5 1.5L7 5 3.5 8.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 12 12"><path d="M2 6.3l2.6 2.6L10 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<h1>위젯 화면 시안 (v1.4 기준)</h1>
+<p class="lead">
+  색, 크기, 간격, 글자 크기는 v1.4 코드(Theme.xaml, MainWindow.xaml) 값을 그대로 옮겼어요. 바뀐 것은 세 가지예요.
+  ① Windows 전용 아이콘 글꼴(Segoe) 대신 같은 모양의 그림으로 그려요. ② macOS 글꼴(Apple SD Gothic Neo, SF Pro)을 써요. Windows는 v1.4처럼 맑은 고딕이에요.
+  ③ v1.4에 없던 것(업데이트 안내 버튼, 앱 아이콘, 메뉴 막대 아이콘)을 새로 그렸어요.
+  이 시안은 Mac 브라우저에서 macOS 글꼴로 보이고, 실제 위젯도 거의 같게 보여요. 동그라미 누르기, 섹션 접기, 투명도 슬라이더는 눌러 볼 수 있어요.
+</p>
+
+<div class="grid">
+
+  <!-- 1. 기본 -->
+  <figure>
+    <div class="desk"><div class="win"><div class="card" id="c1">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining" data-remaining>4개 남음</div></div>
+        <button class="iconbtn pin-on" title="맨 위 고정 끄기"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn" title="메뉴"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold" data-fold><span class="dot green"></span><span class="label">끝낸 일</span><span class="count">2</span><span class="right" data-foldtext>펼치기</span></div>
+        <div class="done-list" data-donelist hidden>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">회의록 정리</span></div>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">택배 반품 신청</span></div>
+        </div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead" data-sechead><span class="dot orange"></span><span class="label">할 일</span><span class="count">4</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div data-todolist>
+          <div class="row doing"><span class="mark" title="상태 바꾸기"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+          <div class="row"><span class="mark" title="상태 바꾸기"><span class="ring"></span><span class="core"></span></span><span class="text">은행 방문</span></div>
+          <div class="row"><span class="mark" title="상태 바꾸기"><span class="ring"></span><span class="core"></span></span><span class="text">다음 주 출장 숙소 예약하고 일정표를 팀 채널에 올리기</span></div>
+          <div class="row"><span class="mark" title="상태 바꾸기"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+        </div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+    </div></div></div>
+    <figcaption><b>1. 기본 모습.</b> 하는 중은 주황 배경 줄, 할 일은 회색 빈 원이에요. 끝낸 일은 처음에 접혀 있어요. 긴 제목은 줄을 바꿔 전부 보여요. 동그라미를 눌러 보세요.</figcaption>
+  </figure>
+
+  <!-- 2. 끝낸 일 펼침 + 고정 꺼짐 + 업데이트 안내 -->
+  <figure>
+    <div class="desk"><div class="win"><div class="card">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">2개 남음</div></div>
+        <button class="iconbtn pin-off" title="맨 위에 고정"><svg><use href="#i-unpin"/></svg></button>
+        <button class="iconbtn" title="메뉴"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold"><span class="dot green"></span><span class="label">끝낸 일</span><span class="count">5</span><span class="right">접기</span></div>
+        <div class="done-list scroll cap">
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">회의록 정리</span></div>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">택배 반품 신청</span></div>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">세금 계산서 발행</span></div>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">노트북 업데이트</span></div>
+          <div class="row done"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">점심 예약</span></div>
+        </div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">할 일</span><span class="count">2</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+      </div>
+      <div class="notice">새 버전이 있어요<span class="sep">·</span><span class="action">업데이트</span></div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+    </div></div></div>
+    <figcaption><b>2. 끝낸 일 펼침, 📌 꺼짐, 안내 줄.</b> 끝낸 일이 많으면 그 섹션만 따로 스크롤해요(얇은 스크롤바). 📌가 꺼지면 사선 그은 흐린 압정이에요. <b>새로 그린 것:</b> 안내 줄 끝의 "업데이트" 누름 글자.</figcaption>
+  </figure>
+
+  <!-- 3. ⋯ 메뉴 -->
+  <figure>
+    <div class="desk"><div class="win" style="height:330px"><div class="card" id="c3">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">2개 남음</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn active"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">할 일</span><span class="count">2</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+      <div class="menu" style="top:48px; right:18px">
+        <div class="mi"><span class="chk"><svg><use href="#i-check"/></svg></span>컴퓨터 켤 때 자동 실행</div>
+        <div class="mctl"><div class="inner">
+          <div class="top"><span>투명도</span><span class="pct" data-pct>15%</span></div>
+          <div class="slider" data-slider><div class="track"></div><div class="fill" data-fill></div><div class="thumb" data-thumb></div></div>
+        </div></div>
+        <div class="msep"></div>
+        <div class="mi"><span class="chk"></span>초기화</div>
+        <div class="mi"><span class="chk"></span>종료</div>
+      </div>
+    </div></div></div>
+    <figcaption><b>3. ⋯ 메뉴.</b> v1.4와 같은 카드 모양 메뉴예요. ⋯ 버튼 바로 아래, 오른쪽 끝을 맞춰 떠요. 투명도 슬라이더를 끌면 카드 배경이 바로 바뀌어요. 위젯이 메뉴보다 짧으면 메뉴가 들어가도록 창을 잠깐 늘려요(늘어난 부분은 투명해서 보이지 않아요).</figcaption>
+  </figure>
+
+  <!-- 4. 우클릭 메뉴 + 이름 바꾸기 -->
+  <figure>
+    <div class="desk"><div class="win" style="height:330px"><div class="card">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">3개 남음</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">할 일</span><span class="count">3</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text editing"><span class="sel">은행 방문</span><span class="caret"></span></span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+      <div class="menu" style="top:150px; left:96px">
+        <div class="mi"><span class="chk"><svg><use href="#i-check"/></svg></span>할 일</div>
+        <div class="mi"><span class="chk"></span>하는 중</div>
+        <div class="mi"><span class="chk"></span>끝낸 일</div>
+        <div class="msep"></div>
+        <div class="mi hl"><span class="chk"></span>이름 바꾸기</div>
+        <div class="mi"><span class="chk"></span>삭제</div>
+      </div>
+    </div></div></div>
+    <figcaption><b>4. 우클릭 메뉴와 이름 바꾸기.</b> "장보기"를 우클릭한 모습이에요. 지금 상태에 주황 체크가 있어요. 이름 바꾸기 중인 "은행 방문"은 v1.4처럼 테두리 없이 글자가 선택되고 커서만 보여요.</figcaption>
+  </figure>
+
+  <!-- 5. 초기화 확인 -->
+  <figure>
+    <div class="desk"><div class="win"><div class="card">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">3개 남음</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold"><span class="dot green"></span><span class="label">끝낸 일</span><span class="count">2</span><span class="right">펼치기</span></div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">할 일</span><span class="count">3</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">은행 방문</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+      <div class="overlay"><div class="confirm">
+        <div class="q">할 일 5개를 모두 지울까요?</div>
+        <div class="w">지운 뒤에는 되돌릴 수 없어요.</div>
+        <div class="btns"><button class="pill">취소</button><button class="pill danger">모두 지우기</button></div>
+      </div></div>
+    </div></div></div>
+    <figcaption><b>5. 초기화 확인.</b> 위젯 위에 옅은 흰 막을 덮고 가운데에 확인 판을 띄워요. 바깥을 누르면 취소예요.</figcaption>
+  </figure>
+
+  <!-- 6. 빈 목록 -->
+  <figure>
+    <div class="desk"><div class="win"><div class="card">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">모두 끝냈어요</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="empty">할 일을 추가해 보세요</div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+    </div></div></div>
+    <figcaption><b>6. 할 일이 없을 때.</b> 창은 내용만큼 줄어들어요.</figcaption>
+  </figure>
+
+  <!-- 7. 투명도 40% -->
+  <figure>
+    <div class="desk busy"><div class="win"><div class="card" style="--a:.6">
+      <div class="header">
+        <div class="titles"><div class="title">할 일</div><div class="remaining">2개 남음</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold"><span class="dot green"></span><span class="label">끝낸 일</span><span class="count">1</span><span class="right">펼치기</span></div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">할 일</span><span class="count">2</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">분기 보고서 초안 쓰기</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">장보기</span></div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">할 일 추가</span></div>
+    </div></div></div>
+    <figcaption><b>7. 투명도 40%.</b> 배경만 비치고 글자와 동그라미는 그대로 선명해요. 그림자도 함께 옅어져요.</figcaption>
+  </figure>
+
+  <!-- 8. 독일어, 최소 폭 280, 두 줄 안내 -->
+  <figure>
+    <div class="desk"><div class="win w280"><div class="card en">
+      <div class="header">
+        <div class="titles"><div class="title">Aufgaben</div><div class="remaining">2 Aufgaben offen</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold"><span class="dot green"></span><span class="label">Erledigt</span><span class="count">3</span><span class="right">Anzeigen</span></div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">Zu erledigen</span><span class="count">2</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row doing"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">Quartalsbericht entwerfen</span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">보고서 쓰기</span></div>
+      </div>
+      <div class="notice">Diese Datei stammt aus einer neueren Version. Bitte aktualisieren.<span class="sep">·</span><span class="action">Aktualisieren</span></div>
+      <div class="adder"><span class="plus">+</span><span class="ph">Aufgabe hinzufügen</span></div>
+    </div></div></div>
+    <figcaption><b>8. 독일어, 가장 좁은 폭(280).</b> 가장 긴 언어에서도 넘치지 않는지 보는 모습이에요. 안내가 길면 두 줄까지 줄을 바꿔요. 한국어 제목도 깨지지 않아요.</figcaption>
+  </figure>
+
+  <!-- 9. 영어 -->
+  <figure>
+    <div class="desk"><div class="win"><div class="card en">
+      <div class="header">
+        <div class="titles"><div class="title">To-do</div><div class="remaining">1 task left</div></div>
+        <button class="iconbtn pin-on"><svg><use href="#i-pin"/></svg></button>
+        <button class="iconbtn"><svg><use href="#i-more"/></svg></button>
+      </div>
+      <div class="done-sec">
+        <div class="fold"><span class="dot green"></span><span class="label">Done</span><span class="count">2</span><span class="right">Show</span></div>
+      </div>
+      <div class="todo-sec">
+        <div class="sechead"><span class="dot orange"></span><span class="label">To do</span><span class="count">1</span><span class="right"><svg class="chev"><use href="#i-down"/></svg></span></div>
+        <div class="row"><span class="mark"><span class="ring"></span><span class="core"></span></span><span class="text">Book flights for the offsite</span></div>
+      </div>
+      <div class="adder"><span class="plus">+</span><span class="ph">Add a task</span></div>
+    </div></div></div>
+    <figcaption><b>9. 영어.</b> 영어·독일어는 시스템 글꼴(SF Pro)이에요.</figcaption>
+  </figure>
+
+</div>
+
+<h2 class="section-title">새로 그린 아이콘 (v1.4에는 없음)</h2>
+<p class="note">v1.4는 앱 아이콘이 없었어요(Windows 기본 아이콘). 이번에는 설치 파일, 응용 프로그램 폴더, Spotlight에 보일 앱 아이콘과 macOS 메뉴 막대 아이콘이 필요해요. 위젯의 상태 동그라미 세 개(할 일·하는 중·끝낸 일)를 그대로 썼어요. 메뉴 막대 아이콘은 macOS 관례대로 한 가지 색이고, 밝은 화면·어두운 화면에서 OS가 색을 바꿔요.</p>
+<div class="icons">
+  <div class="box">
+    <svg width="128" height="128" viewBox="0 0 128 128">
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBF8F3"/><stop offset="1" stop-color="#EFE9E0"/></linearGradient></defs>
+      <rect x="6" y="6" width="116" height="116" rx="27" fill="url(#bg)" stroke="#E2DCD2"/>
+      <rect x="22" y="30" width="84" height="20" rx="7" fill="#FDF1E8"/>
+      <circle cx="34" cy="40" r="6" fill="none" stroke="#E8935A" stroke-width="2.6"/><circle cx="34" cy="40" r="2.6" fill="#E8935A"/>
+      <rect x="46" y="37.5" width="48" height="5" rx="2.5" fill="#2B2A28" opacity=".75"/>
+      <circle cx="34" cy="64" r="6" fill="none" stroke="#A29D95" stroke-width="2.6"/>
+      <rect x="46" y="61.5" width="36" height="5" rx="2.5" fill="#2B2A28" opacity=".75"/>
+      <circle cx="34" cy="88" r="7.3" fill="#7FAE8A"/>
+      <rect x="46" y="85.5" width="42" height="5" rx="2.5" fill="#8C8983" opacity=".7"/>
+    </svg>
+    <div>앱 아이콘</div>
+  </div>
+  <div class="box">
+    <svg width="32" height="32" viewBox="0 0 128 128">
+      <rect x="6" y="6" width="116" height="116" rx="27" fill="url(#bg)" stroke="#E2DCD2"/>
+      <rect x="22" y="30" width="84" height="20" rx="7" fill="#FDF1E8"/>
+      <circle cx="34" cy="40" r="6" fill="none" stroke="#E8935A" stroke-width="2.6"/><circle cx="34" cy="40" r="2.6" fill="#E8935A"/>
+      <rect x="46" y="37.5" width="48" height="5" rx="2.5" fill="#2B2A28" opacity=".75"/>
+      <circle cx="34" cy="64" r="6" fill="none" stroke="#A29D95" stroke-width="2.6"/>
+      <rect x="46" y="61.5" width="36" height="5" rx="2.5" fill="#2B2A28" opacity=".75"/>
+      <circle cx="34" cy="88" r="7.3" fill="#7FAE8A"/>
+      <rect x="46" y="85.5" width="42" height="5" rx="2.5" fill="#8C8983" opacity=".7"/>
+    </svg>
+    <div>작게 (32)</div>
+  </div>
+  <div class="box">
+    <div class="menubar">
+      <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.6" fill="none" stroke="#111" stroke-width="1.6"/><circle cx="9" cy="9" r="2.8" fill="#111"/></svg>
+      <span>10월 6일 (월) 오후 3:12</span></div>
+    <div style="height:8px"></div>
+    <div class="menubar dark">
+      <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="6.6" fill="none" stroke="#eee" stroke-width="1.6"/><circle cx="9" cy="9" r="2.8" fill="#eee"/></svg>
+      <span>10월 6일 (월) 오후 3:12</span></div>
+    <div style="margin-top:6px">메뉴 막대 아이콘 (하는 중 동그라미)</div>
+  </div>
+</div>
+
+<script>
+  // 1번: 동그라미 누르면 할 일 → 하는 중 → 끝낸 일 → 할 일 (시안용, 줄 위치는 그대로)
+  document.querySelectorAll('#c1 [data-todolist] .mark').forEach(m => m.addEventListener('click', () => {
+    const row = m.closest('.row');
+    if (row.classList.contains('done')) row.classList.remove('done');
+    else if (row.classList.contains('doing')) { row.classList.remove('doing'); row.classList.add('done'); }
+    else row.classList.add('doing');
+    const left = document.querySelectorAll('#c1 [data-todolist] .row:not(.done)').length;
+    document.querySelector('#c1 [data-remaining]').textContent = left ? left + '개 남음' : '모두 끝냈어요';
+  }));
+  const fold = document.querySelector('#c1 [data-fold]');
+  fold.addEventListener('click', () => {
+    const list = document.querySelector('#c1 [data-donelist]');
+    list.hidden = !list.hidden;
+    document.querySelector('#c1 [data-foldtext]').textContent = list.hidden ? '펼치기' : '접기';
+  });
+  const head = document.querySelector('#c1 [data-sechead]');
+  head.addEventListener('click', () => {
+    const list = document.querySelector('#c1 [data-todolist]');
+    list.hidden = !list.hidden;
+    head.querySelector('use').setAttribute('href', list.hidden ? '#i-right' : '#i-down');
+  });
+
+  // 3번: 투명도 슬라이더 (0~40%, 1% 단위)
+  const slider = document.querySelector('[data-slider]');
+  const card3 = document.getElementById('c3');
+  function setPct(p) {
+    p = Math.max(0, Math.min(40, Math.round(p)));
+    const x = p / 40 * 100;
+    slider.querySelector('[data-fill]').style.width = x + '%';
+    slider.querySelector('[data-thumb]').style.left = x + '%';
+    document.querySelector('[data-pct]').textContent = p + '%';
+    card3.style.setProperty('--a', 1 - p / 100);
+  }
+  function fromEvent(e) { const r = slider.getBoundingClientRect(); setPct((e.clientX - r.left) / r.width * 40); }
+  slider.addEventListener('pointerdown', e => { slider.setPointerCapture(e.pointerId); fromEvent(e); });
+  slider.addEventListener('pointermove', e => { if (e.buttons) fromEvent(e); });
+  slider.addEventListener('wheel', e => { e.preventDefault(); const cur = parseInt(document.querySelector('[data-pct]').textContent); setPct(cur + (e.deltaY < 0 ? 2 : -2)); }, { passive: false });
+  setPct(15);
+  card3.closest('.desk').classList.add('busy');
+</script>
+</body>
+</html>
