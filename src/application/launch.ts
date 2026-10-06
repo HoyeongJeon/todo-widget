@@ -71,7 +71,8 @@ export async function launchApp(deps: LaunchDeps): Promise<LaunchResult> {
   });
 
   await placement.apply().catch(() => undefined);
-  deps.process.onQuitRequested(() => void lifecycle.quit());
+  // 끝내기에 실패하면 Rust 대비책(QUIT_FALLBACK_DELAY, 3초)이 끝낸다. 거부를 처리하지 않은 채 두지 않는다.
+  deps.process.onQuitRequested(() => void lifecycle.quit().catch(() => undefined));
   deps.watchWake(() => void updates.onWake());
   void updates.start();
 

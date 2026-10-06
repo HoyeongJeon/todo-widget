@@ -71,6 +71,22 @@ describe('시작', () => {
     expect(files.files.has(SETTINGS_FILE)).toBe(true);
   });
 
+  it('PERF-01 자동 실행 등록을 기다리지 않고 준비를 마친다', async () => {
+    autoStart.gate = new Promise(() => undefined);
+    const result = await start();
+    expect(result.kind).toBe('ready');
+    expect(autoStart.calls).toEqual(['enable']);
+    expect(JSON.parse(files.files.get(SETTINGS_FILE) ?? '')).toMatchObject({ pinned: true });
+  });
+
+  it('START-06 자동 실행이 끝나기를 기다리는 약속은 실패해도 거부되지 않는다', async () => {
+    autoStart.failEnable = true;
+    const result = await start();
+    if (result.kind !== 'ready')
+      throw new Error('준비되지 않았어요');
+    await expect(result.autoStartDone).resolves.toBeUndefined();
+  });
+
   it('STORE-10 tasks.json을 읽지 못하면 위젯을 띄우지 않고, 자동 실행과 첫 설정 파일도 건드리지 않는다', async () => {
     files.files.set(TASKS_FILE, '{"version":2,"tasks":[]}');
     files.unreadable.add(TASKS_FILE);

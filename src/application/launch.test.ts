@@ -113,4 +113,13 @@ describe('앱 시작', () => {
     await flush();
     expect(updater.fetches).toBe(2);
   });
+
+  it('START-08 OS 종료 요청으로 끝내다 실패해도 처리하지 않은 거부를 남기지 않는다', async () => {
+    const result = await launch();
+    expect(result.kind).toBe('running');
+    process.failExit = true;
+    process.requestQuit();
+    await flush();
+    expect(process.exits).toBe(1);
+  });
 });

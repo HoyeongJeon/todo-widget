@@ -17,8 +17,12 @@ export class AppLifecycle {
     this.#deps = deps;
   }
 
+  /** 한 번만 끝낸다. 끝내기에 실패하면 거부하고, 다음에 누르면 처음부터 다시 한다 (START-08). */
   quit(): Promise<void> {
-    this.#quitting ??= this.#quit();
+    this.#quitting ??= this.#quit().catch((error: unknown) => {
+      this.#quitting = null;
+      throw error;
+    });
     return this.#quitting;
   }
 

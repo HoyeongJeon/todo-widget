@@ -63,6 +63,15 @@ describe('앱 수명', () => {
     expect(process.exits).toBe(1);
   });
 
+  it('START-08 끝내기에 실패하면 다시 눌러 끝낼 수 있다', async () => {
+    const { lifecycle: app } = await lifecycle();
+    process.failExit = true;
+    await expect(app.quit()).rejects.toThrow('끝내지 못했어요');
+    process.failExit = false;
+    await app.quit();
+    expect(process.exits).toBe(2);
+  });
+
   it('UPD-04 다시 띄우기 전 준비는 종료처럼 저장하지만 프로세스를 끝내지 않는다', async () => {
     const { lifecycle: app } = await lifecycle();
     window.current = { left: 10, top: 20, width: 320, height: 520 };

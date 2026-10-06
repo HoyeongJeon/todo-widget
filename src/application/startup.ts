@@ -21,11 +21,12 @@ export interface StartupDeps {
 
 export type StartupResult =
   | { kind: 'cannotOpen'; path: string; detail: string }
-  | { kind: 'ready'; session: TodoSession; settings: SettingsService };
+  | { kind: 'ready'; session: TodoSession; settings: SettingsService; autoStartDone: Promise<void> };
 
 /**
  * 읽기에 실패하면 잠깐 다시 읽는다(STORE-20). 할 일을 먼저 읽는다. 읽지 못하면 자동 실행과 첫 설정 파일을 건드리지 않고 멈춘다(STORE-10).
- * 그다음 자동 실행(START-02, START-03, START-07)과 첫 설정 파일(START-02). 이 둘의 실패는 조용히 넘어간다(START-06).
+ * 그다음 첫 설정 파일(START-02)과 자동 실행(START-02, START-03, START-07). 둘의 실패는 조용히 넘어간다(START-06).
+ * 자동 실행 등록은 OS를 거쳐 시간이 걸릴 수 있어 기다리지 않는다(PERF-01). 끝나기를 기다려야 하면 autoStartDone을 쓴다.
  */
 export async function startApp(deps: StartupDeps): Promise<StartupResult> {
   const files = new RetryingFileStore(deps.files, deps.timer);
@@ -41,14 +42,14 @@ export async function startApp(deps: StartupDeps): Promise<StartupResult> {
     throw error;
   }
 
-  if (!deps.appInfo.isDevBuild)
-    await quietly(() => (firstRun ? deps.autoStart.enable() : deps.autoStart.refresh()));
-
   const settings = await SettingsService.open(settingsRepo);
   if (firstRun)
     await settings.save();
 
-  return { kind: 'ready', session, settings };
+  const autoStartDone = deps.appInfo.isDevBuild
+    ? Promise.resolve()
+    : quietly(() => (firstRun ? deps.autoStart.enable() : deps.autoStart.refresh()));
+  return { kind: 'ready', session, settings, autoStartDone };
 }
 
 async function quietly(task: () => Promise<void>): Promise<void> {
