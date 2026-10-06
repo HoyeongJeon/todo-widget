@@ -147,15 +147,19 @@
     margin-top: 12px;
   }
 
-  /* 바깥 음수 여백을 안쪽 여백으로 상쇄해, 줄 높이 24는 그대로 두고 hover 배경만 넓게 칠한다 (v1.4 T:127). */
+  /*
+   * 위 음수 여백을 안쪽 여백으로 상쇄해, 줄 높이 24는 그대로 두고 hover 배경만 위아래로 넓게 칠한다 (v1.4 T:127).
+   * 좌우는 v1.4와 달리 10 안으로 넣어, 점과 글자가 끝낸 일 줄(안쪽 여백 10)·할 일 동그라미(줄 안쪽 여백 10)와 맞는다.
+   * hover 배경은 할 일 줄 폭 그대로다 (PM 결정 2026-10-06).
+   */
   .sechead {
     all: unset;
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    width: calc(100% + 12px);
-    margin: -3px -6px 3px;
-    padding: 3px 6px;
+    width: 100%;
+    margin: -3px 0 3px;
+    padding: 3px 10px;
     border-radius: 8px;
     font-size: 13px;
     line-height: 18px;
