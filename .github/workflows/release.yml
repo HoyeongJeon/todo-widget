@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   verify:
-    name: 출시 전 검사 (REL-02, REL-05, REL-10)
+    name: 출시 전 검사 (REL-02, REL-05, REL-07, REL-10)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -24,13 +24,16 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # 아래 네 검사는 node 기본 모듈만 쓰므로 의존성 설치 전에 빨리 멈춘다.
       - name: 태그가 main 위에 있다
         run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - name: 시험용 업데이트 주소가 없다 (REL-10)
         run: test -z "${TODOWIDGET_UPDATE_ENDPOINT:-}"
       - name: 버전과 태그가 같다 (REL-05)
         run: node tools/release/cli.ts versions "$GITHUB_REF_NAME"
+      - name: 릴리스 안내 파일이 있다 (REL-07)
+        run: test -f "docs/release-notes/$GITHUB_REF_NAME.md"
+      - run: pnpm install --frozen-lockfile
       - name: strict 검사 (REL-02)
         run: pnpm spec:check:strict
       - name: 테스트
@@ -52,8 +55,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RUSTFLAGS: '-D warnings'
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -72,6 +73,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: 출시 빌드 (REL-03)
         shell: bash
+        # 서명 키는 이 단계에만 준다. 단 beforeBuildCommand(`pnpm build`, vite)도 이 단계 안에서 돌아서 같은 환경 변수를 본다.
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm tauri build --config src-tauri/tauri.release.conf.json ${{ matrix.args }}
       - uses: actions/upload-artifact@v7
         with:
