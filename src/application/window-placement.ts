@@ -48,14 +48,19 @@ export class WindowPlacement {
 
   /**
    * window.resize는 기다림 없이 바로 부른다. 그 전에 IPC를 기다리면 그 사이 놓은 pointer를 adapter가 놓쳐
-   * 크기 조절이 끝나지 않고 저장도 되지 않는다. 그래서 작업 영역 높이는 apply()에서 읽어 둔 값을 쓴다.
+   * 크기 조절이 끝나지 않고 저장도 되지 않는다. 그래서 끌기 범위는 마지막으로 읽어 둔 작업 영역 높이로 정한다.
+   * 예외: apply()가 아직 돌지 않아 읽어 둔 값이 없으면 screen()을 먼저 기다린다(보통 흐름은 아니다).
+   * 모니터 구성이 바뀌었을 수 있으므로 화면은 함께 다시 읽고, 놓은 뒤 그 높이로 맞춰 저장하고 기억한다(WND-05).
    */
   async resize(edge: ResizeEdge, start: PointerStart): Promise<void> {
     const { window, settings } = this.#deps;
-    const known = this.#workAreaHeight;
-    const workAreaHeight = known === null ? (await window.screen()).primaryWorkArea.height : known;
-    const rect = await window.resize(edge, start, resizeLimits(workAreaHeight));
+    const known = this.#workAreaHeight ?? (await window.screen()).primaryWorkArea.height;
+    // 거부를 바로 받아 두어, window.resize가 먼저 실패해도 처리하지 않은 거부로 남지 않게 한다.
+    const fresh = window.screen().then((screen) => screen.primaryWorkArea.height, () => known);
+    const rect = await window.resize(edge, start, resizeLimits(known));
     this.#cancelPending();
+    const workAreaHeight = await fresh;
+    this.#workAreaHeight = workAreaHeight;
     const size = resolveWidgetSize(rect.width, rect.height, workAreaHeight);
     await settings.update({ left: rect.left, top: rect.top, width: size.width, maxHeight: size.maxHeight });
   }

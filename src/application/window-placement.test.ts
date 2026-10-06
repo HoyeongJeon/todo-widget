@@ -98,26 +98,52 @@ describe('창 배치', () => {
   it('WND-03 크기 조절은 아무것도 기다리지 않고 바로 시작해, 그 사이 놓은 pointer를 놓치지 않는다', async () => {
     const { placement: p } = await placement();
     await p.apply();
-    let screenCalls = 0;
-    window.screen = () => {
-      screenCalls++;
-      return new Promise(() => {});
-    };
+    const layout = window.layout;
+    let release: () => void = () => {};
+    window.screen = () => new Promise((resolve) => (release = () => resolve(layout)));
     window.resizeResult = { left: 1400, top: 24, width: 496, height: 700 };
     const done = p.resize('West', { screenX: 1576, screenY: 300 });
     expect(window.resizeCalls).toHaveLength(1);
     expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
+    release();
     await done;
-    expect(screenCalls).toBe(0);
     expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 496, maxHeight: 700 });
   });
 
-  it('WND-03 apply 전에 크기를 조절하면 화면을 읽어 같은 범위를 쓴다', async () => {
+  it('WND-03 WND-05 크기 조절 중 작업 영역이 바뀌면 놓을 때 다시 읽은 높이로 맞춰 저장하고, 다음 조절에 쓴다', async () => {
     const { placement: p } = await placement();
+    await p.apply();
+    window.layout = { ...window.layout, primaryWorkArea: { ...window.layout.primaryWorkArea, height: 800 } };
+    window.resizeResult = { left: 1400, top: 24, width: 496, height: 1000 };
+    await p.resize('South', { screenX: 1700, screenY: 544 });
+    expect(savedSettings()).toMatchObject({ width: 496, maxHeight: 800 });
+    await p.resize('South', { screenX: 1700, screenY: 544 });
+    expect(window.resizeCalls[1]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 800 });
+  });
+
+  it('WND-03 크기 조절 중 화면을 읽지 못하면 기억한 높이로 맞춰 저장한다', async () => {
+    const { placement: p } = await placement();
+    await p.apply();
+    window.screen = () => Promise.reject(new Error('화면을 읽지 못했어요'));
+    window.resizeResult = { left: 1400, top: 24, width: 496, height: 3000 };
+    await p.resize('South', { screenX: 1700, screenY: 544 });
+    expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 496, maxHeight: 1040 });
+  });
+
+  it('WND-03 apply 전에 크기를 조절하면 화면을 읽어 그 높이로 범위를 정한다', async () => {
+    const { placement: p } = await placement();
+    window.layout = { ...window.layout, primaryWorkArea: { ...window.layout.primaryWorkArea, height: 800 } };
+    let screenCalls = 0;
+    const read = window.screen.bind(window);
+    window.screen = () => {
+      screenCalls++;
+      return read();
+    };
     window.resizeResult = { left: 1400, top: 24, width: 2000, height: 3000 };
     await p.resize('SouthWest', { screenX: 1576, screenY: 300 });
-    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 1040 });
-    expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 620, maxHeight: 1040 });
+    expect(screenCalls).toBeGreaterThan(0);
+    expect(window.resizeCalls[0]?.limits).toEqual({ minWidth: 280, maxWidth: 620, minHeight: 300, maxHeight: 800 });
+    expect(savedSettings()).toMatchObject({ left: 1400, top: 24, width: 620, maxHeight: 800 });
   });
 
   it('WND-14 종료할 때 지금 위치를 다른 설정과 함께 저장하고, 기다리던 이동 저장은 취소한다', async () => {
