@@ -1,15 +1,13 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createTestApp } from '../../testing/test-app.ts';
+import { koreanEscapeWhileComposing, koreanSpaceAfterComposing, replay } from '../../testing/webkit-korean-ime.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import AddInput from './AddInput.svelte';
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
+afterEach(() => cleanup());
 
 async function setup() {
   const test = await createTestApp();
@@ -81,15 +79,19 @@ describe('입력칸', () => {
     expect(input.value).toBe('보고서 쓰기');
   });
 
-  it('INPUT-04 IME 조합 중 Esc가 compositionend 바로 뒤에 keyCode 27로 와도(WebKit) 입력칸을 비우지 않고, 조합이 아닐 때 Esc는 비운다', async () => {
+  it('INPUT-04 macOS WKWebView 한글: "기"를 조합하는 중 누른 Esc(기록한 이벤트 순서 그대로)는 입력칸을 비우지 않고, 한 번 더 누른 Esc는 비운다', async () => {
     const { input } = await setup();
-    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
-    await fireEvent.compositionStart(input);
-    await fireEvent.input(input, { target: { value: '보고서 쓰기' } });
-    await fireEvent.compositionEnd(input);
-    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    await fireEvent.input(input, { target: { value: '보고서 ㅆ' }, inputType: 'insertText', data: 'ㅆ' });
+    await replay(input, koreanEscapeWhileComposing('보고서 '));
     expect(input.value).toBe('보고서 쓰기');
-    now.mockReturnValue(2000);
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('');
+  });
+
+  it('INPUT-04 macOS WKWebView 한글: Space로 조합을 끝낸 뒤 누른 Esc는 입력칸을 비운다', async () => {
+    const { input } = await setup();
+    await fireEvent.input(input, { target: { value: '보고서' }, inputType: 'insertText', data: '서' });
+    await replay(input, koreanSpaceAfterComposing('보고'));
     await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
     expect(input.value).toBe('');
   });

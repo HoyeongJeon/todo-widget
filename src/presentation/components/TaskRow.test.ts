@@ -1,16 +1,14 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { TASKS_FILE } from '../../application/storage/task-repository.ts';
 import { createTestApp } from '../../testing/test-app.ts';
+import { koreanEscapeWhileComposing, koreanSpaceAfterComposing, replay } from '../../testing/webkit-korean-ime.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import TaskRow from './TaskRow.svelte';
 
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
+afterEach(() => cleanup());
 
 async function setup(title = '초안') {
   const test = await createTestApp();
@@ -124,16 +122,21 @@ describe('할 일 줄', () => {
     expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
   });
 
-  it('INPUT-15 IME 조합 중 Esc가 compositionend 바로 뒤에 keyCode 27로 와도(WebKit) 취소하지 않고, 조합이 아닐 때 Esc는 취소한다', async () => {
+  it('INPUT-15 macOS WKWebView 한글: "기"를 조합하는 중 누른 Esc(기록한 이벤트 순서 그대로)는 취소하지 않고, 한 번 더 누른 Esc는 취소한다', async () => {
     const { startRename, field, vm, current } = await setup();
     const opened = await startRename();
-    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
-    await fireEvent.compositionStart(opened);
-    await fireEvent.input(opened, { target: { value: '보고서' } });
-    await fireEvent.compositionEnd(opened);
+    await fireEvent.input(opened, { target: { value: '보고서 ㅆ' }, inputType: 'insertText', data: 'ㅆ' });
+    await replay(opened, koreanEscapeWhileComposing('보고서 '));
+    expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서 쓰기', '보고서 쓰기']);
     await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
-    expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
-    now.mockReturnValue(2000);
+    expect([field(), vm.renaming, current()?.title]).toEqual([null, null, '초안']);
+  });
+
+  it('INPUT-15 macOS WKWebView 한글: Space로 조합을 끝낸 뒤 누른 Esc는 이름 바꾸기를 취소한다', async () => {
+    const { startRename, field, vm, current } = await setup();
+    const opened = await startRename();
+    await fireEvent.input(opened, { target: { value: '보고서' }, inputType: 'insertText', data: '서' });
+    await replay(opened, koreanSpaceAfterComposing('보고'));
     await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
     expect([field(), vm.renaming, current()?.title]).toEqual([null, null, '초안']);
   });

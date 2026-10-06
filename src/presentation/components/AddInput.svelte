@@ -10,12 +10,14 @@
   const composition = new CompositionTracker();
 
   function onKeydown(event: KeyboardEvent & { currentTarget: HTMLInputElement }): void {
+    // 모든 keydown이 지나간다. 조합을 끝내기만 하는 Esc인지 정하고 입력기 편집 표시를 지운다 (composition-escape.ts).
+    const imeEscape = composition.keydown(event);
     // 조합을 끝내는 키는 isComposing이 false여도 keyCode 229로 올 수 있다(WebKit). Esc로 쓰던 글을 잃지 않게 거른다 (INPUT-05, D3).
     if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
-      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WebKit은 그 Esc를 compositionend 바로 뒤에 keyCode 27로 보낸다 (INPUT-04).
-      if (!composition.isEscape(event))
+      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WKWebView 한글은 입력기가 글자를 확정한 뒤 그 Esc를 keyCode 27로 보낸다 (INPUT-04).
+      if (!imeEscape)
         text = ''; // INPUT-04
       return;
     }
@@ -49,7 +51,8 @@
     autocomplete="off"
     onkeydown={onKeydown}
     oncompositionstart={() => composition.start()}
-    oncompositionend={(event) => composition.end(event.timeStamp)}
+    oncompositionend={() => composition.end()}
+    onbeforeinput={(event) => composition.input(event.inputType)}
     onblur={() => composition.reset()}
     onpaste={onPaste}
   />
