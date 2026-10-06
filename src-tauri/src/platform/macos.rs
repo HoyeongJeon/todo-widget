@@ -5,7 +5,7 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    App, AppHandle, RunEvent, WebviewWindow,
+    App, AppHandle, Manager, RunEvent, WebviewWindow, Wry,
 };
 
 use objc2::MainThreadMarker;
@@ -23,13 +23,21 @@ fn hide_from_dock(app: &mut App) {
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 }
 
-/// 메뉴 막대 아이콘 (MAC-03, MAC-04). 문구는 계획 5에서 다국어 사전으로 바꾼다.
+/// 메뉴 막대 메뉴의 두 항목. 글은 JS가 화면 언어 사전으로 바꾼다(`set_tray_labels`, MAC-04, I18N-02).
+struct TrayLabels {
+    open: MenuItem<Wry>,
+    quit: MenuItem<Wry>,
+}
+
+/// 메뉴 막대 아이콘 (MAC-03, MAC-04). 아이콘은 하는 중 동그라미 template 이미지라 밝은·어두운 메뉴 막대에서 OS가 색을 바꾼다.
 fn install_tray(app: &App) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
+    // 화면이 사전 문구로 바꾸기 전 잠깐의 기본값이다. Rust에는 화면 언어 사전을 두지 않는다.
+    let open = MenuItem::with_id(app, "open", "Open", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
     TrayIconBuilder::with_id("main")
-        .icon(app.default_window_icon().expect("기본 아이콘이 없어요").clone())
+        // 36×36 한 장이다. tray-icon이 높이를 18pt로 맞추므로 @2x 해상도가 된다.
+        .icon(tauri::include_image!("icons/tray-template.png"))
         .icon_as_template(true)
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -49,7 +57,16 @@ fn install_tray(app: &App) -> tauri::Result<()> {
             }
         })
         .build(app)?;
+    app.manage(TrayLabels { open, quit });
     Ok(())
+}
+
+/// 메뉴 막대 메뉴 글을 화면 언어 문구로 바꾼다 (MAC-04).
+pub fn set_tray_labels(app: &AppHandle, open: &str, quit: &str) {
+    if let Some(labels) = app.try_state::<TrayLabels>() {
+        let _ = labels.open.set_text(open);
+        let _ = labels.quit.set_text(quit);
+    }
 }
 
 /// Dock 숨김과 메뉴 막대 아이콘 (MAC-02, MAC-03, MAC-04).

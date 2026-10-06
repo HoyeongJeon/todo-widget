@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const config = JSON.parse(readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
@@ -107,5 +107,20 @@ describe('Tauri 설정', () => {
       'version = "0.12"',
     ].join('\n');
     expect(dependencyNames(toml)).toEqual(['net', 'ureq', 'hyper', 'isahc', 'web', 'surf', 'reqwest', 'reqwest', 'reqwest']);
+  });
+
+  it('MAC-03 메뉴 막대 아이콘은 18pt @2x(36×36) PNG이고, 아이콘은 저장소의 SVG 원본에서 만든다', () => {
+    const png = readFileSync(new URL('../src-tauri/icons/tray-template.png', import.meta.url));
+    expect(png.subarray(1, 4).toString('latin1')).toBe('PNG');
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([36, 36]);
+    expect(existsSync(new URL('../src-tauri/icons/source/app-icon.svg', import.meta.url))).toBe(true);
+    expect(existsSync(new URL('../src-tauri/icons/source/tray-template.svg', import.meta.url))).toBe(true);
+  });
+
+  it('MAC-04 I18N-02 메뉴 막대 메뉴의 기본 문구를 Rust에 한국어로 두지 않는다', () => {
+    const macos = readFileSync(new URL('../src-tauri/src/platform/macos.rs', import.meta.url), 'utf8');
+    const items = [...macos.matchAll(/MenuItem::with_id\([^)]*\)/g)].map((m) => m[0]);
+    expect(items).toHaveLength(2);
+    expect(items.join('\n')).not.toMatch(/\p{Script=Hangul}/u);
   });
 });

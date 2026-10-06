@@ -66,6 +66,12 @@ pub fn set_pinned(app: AppHandle, pinned: bool) {
     }
 }
 
+/// 메뉴 막대 메뉴 글 (MAC-04). JS가 화면 언어 사전의 `tray.open`, `menu.quit`을 넘긴다(I18N-02).
+#[tauri::command]
+pub fn set_tray_labels(app: AppHandle, open: String, quit: String) {
+    crate::platform::set_tray_labels(&app, &open, &quit);
+}
+
 /// 창 위치와 크기를 한 번에 바꾼다. 값은 OS 좌표다(Windows 실제 픽셀, macOS 포인트). 변환은 JS `coordinates.ts`가 한다.
 #[tauri::command]
 pub fn set_frame(app: AppHandle, left: f64, top: f64, width: f64, height: f64) -> Result<(), String> {
