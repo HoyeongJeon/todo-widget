@@ -9,6 +9,7 @@
 - 2026-10-04: PM 결정 — "v1.4와 다른 점" 표에 읽지 못한 `settings.json`(STORE-15)과 켤 때 읽기 실패(STORE-20) 줄을 더했다
 - 2026-10-04: PM 결정 — "v1.4와 다른 점" 표에 배율이 다른 모니터의 창 크기(WND-04) 줄을 더했다
 - 2026-10-04: `pnpm spec:check`가 참조로 세는 곳에 `src-tauri/crates/*/src/**/*.rs`를 더했다 (계획 4 Task 2에서 core crate를 만들며 바꿈)
+- 2026-10-07: `pnpm spec:check`가 참조로 세는 곳에 `tools/release/**/*.test.ts`를 더했다 (계획 6 Task 4에서 출시 판단을 Vitest로 검사하며 바꿈. `tools/`의 다른 테스트는 spec-check 자체의 예시 ID가 있어 세지 않는다)
 
 ## 이 폴더가 기준이다
 
@@ -64,7 +65,7 @@ OS에 실제 효과가 있는 자동 테스트 항목은 port 호출까지만 �
   #[test]
   fn keeps_original_file_on_write_failure() { /* ... */ }
   ```
-- `pnpm spec:check`가 참조로 세는 곳은 `src/**/*.test.ts`, `src-tauri/src/**/*.rs`, `src-tauri/crates/*/src/**/*.rs`, `src-tauri/tests/**/*.rs`, `.github/workflows/*.yml`이다. `src-tauri/src/`와 `src-tauri/crates/*/src/`에서는 3줄 안에 `#[test]`가 오는 `//`·`///` 주석의 ID만 센다. TypeScript에서 `.skip(`이나 `.todo(`가 있는 줄의 ID는 세지 않는다. workflow는 출시·성능 검사 단계 이름에 ID를 적는다(예: REL-05, PERF-05).
+- `pnpm spec:check`가 참조로 세는 곳은 `src/**/*.test.ts`, `tools/release/**/*.test.ts`, `src-tauri/src/**/*.rs`, `src-tauri/crates/*/src/**/*.rs`, `src-tauri/tests/**/*.rs`, `.github/workflows/*.yml`이다. `src-tauri/src/`와 `src-tauri/crates/*/src/`에서는 3줄 안에 `#[test]`가 오는 `//`·`///` 주석의 ID만 센다. TypeScript에서 `.skip(`이나 `.todo(`가 있는 줄의 ID는 세지 않는다. workflow는 출시·성능 검사 단계 이름에 ID를 적는다(예: REL-05, PERF-05).
 
 ## v1.4와 다른 점
 
