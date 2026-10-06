@@ -22,7 +22,7 @@
 - 2026-10-04: 계획 4 반영 — port 위치와 구현, OS 분기 위치, Rust crate 구성, 기술 선택(5.2, 5.4, 5.5, 12장, 13장)
 - 2026-10-05: 계획 4 최종 리뷰 — `show_main`은 ShowGate 결정과 관계없이 창을 띄운다고 적고(5.4), 5.5의 Rust 테스트 명령(`--exclude todo-widget`)과 로컬 Windows 검사 명령을 실제와 맞췄다
 - 2026-10-06: PM 결정 — 화면은 v1.4 겉모양을 두 OS에 그대로 쓴다(6장 겉모양). 메뉴는 ⋯ 메뉴와 우클릭 메뉴 모두 v1.4 카드 모양으로 화면 안에 그리고, 앱 아이콘과 메뉴 막대 아이콘을 새로 만든다. 승인한 시안은 `docs/design/widget-mockup.html`, v1.4 값 기록은 `docs/design/v1.4-visual-reference.md`다
-- 2026-10-06: 계획 5 반영 — ViewModel은 runes를 쓰는 `.svelte.ts` class(5.1), 화면 언어를 고르는 `screenLanguage`와 창 높이 `setHeight`(5.2), `src/presentation/theme/`(5.4), presentation 테스트 도구(5.5), I18N-02 자동 검사 예외(7장), 계획 5 개발 결정(13.2)
+- 2026-10-06: 계획 5 반영 — ViewModel은 runes를 쓰는 `.svelte.ts` class(5.1), 화면 언어를 고르는 `screenLanguage`와 창 높이 `setHeight`(5.2), `src/presentation/theme/`(5.4), presentation 테스트 도구(5.5), I18N-02 자동 검사 예외(7장), 12장 `macOS 창` 줄의 그림자 결과, 계획 5 개발 결정과 실행하며 더한 결정 표(13.2)
 
 ## 1. 목적
 
@@ -141,7 +141,7 @@ spec/
 ### 5.1 층
 
 ```
-presentation   View(Svelte) + ViewModel(일반 TypeScript class)
+presentation   View(Svelte) + ViewModel(Svelte 5 runes를 쓰는 .svelte.ts class, svelte import 없음)
 application    사용 시나리오 + port interface
 domain         할 일 규칙. 순수 TypeScript
 adapters       Tauri와 OS에 닿는 유일한 곳. port를 구현한다
@@ -273,14 +273,16 @@ Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowid
   - 템플릿 글자 중 글자(문자)가 있는 것
   - `title`·`placeholder`·`aria-label`·`alt`·`label` 속성과, `type`이 `button`·`submit`·`reset`인 `<input>`의 `value`에 쓴 고정 글 중 글자가 있는 것
   - 그 밖의 `aria-*` 속성의 고정 글, 문자열 리터럴, template literal 중 문구처럼 보이는 것. template literal의 값 자리(`${…}`)는 `{n}`으로 읽고 고정 조각과 이어서 본다. 그래서 `` `${count} tasks left` ``는 `{n} tasks left`로 읽혀 문구로 걸린다
-- 위 셋째 항목에서 문구로 보지 않는 예외(계획 1이 미뤄 둔 목록, 계획 5 개발 결정 D8, PM 승인 2026-10-06):
+- 검사에서 늘 빼는 곳(계획 1이 미뤄 둔 목록, 계획 5 개발 결정 D8, PM 승인 2026-10-06):
+  - 주석(`//`, `/* */`, `<!-- -->`)과 `<style>`
+  - 사전 파일 `src/presentation/i18n/{ko,en,de,zh-hans}.ts`
   - 글자가 없는 기호·숫자(⋯ · % +)
+  - `console.*(…)`·`new Error(…)`의 첫 인자가 따옴표 문자열 리터럴일 때(개발자용 문장). 첫 인자가 template literal이면 그대로 검사한다
+- 문자열 리터럴·template literal과 그 밖의 `aria-*` 값을 볼 때만 쓰는 값 예외(템플릿 글자와 `title` 등 보이는 속성에는 쓰지 않는다):
   - 공백 없는 기술 낱말(이벤트 이름, 키 이름, 사전 키, 경로, CSS 값 하나, `{n}`)
   - 소문자 낱말을 공백으로 이은 CSS 클래스 목록. 낱말마다 영어 소문자가 하나는 있어야 한다. 숫자만 있는 낱말이 끼면 클래스 목록이 아니다(`'3 tasks left'`는 문구다)
-  - 주석, `<style>`, `console.*(…)`·`new Error(…)`의 첫 인자(개발자용 문장)
-  - 사전 파일 `src/presentation/i18n/{ko,en,de,zh-hans}.ts`
-  - ASCII 밖의 글자(한글·한자·움라우트)가 있으면 예외에 들지 않고 늘 문구로 본다.
-- 검사가 놓치는 것: 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`), 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기로 만든 문구(조각마다 따로 보므로). 이것들은 체크리스트 I18N-07에서 본다.
+  - ASCII 밖의 글자(한글·한자·움라우트)가 있으면 이 값 예외에 들지 않고 늘 문구로 본다.
+- 검사가 놓치는 것: 문자열 리터럴과 `aria-*` 값의 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`)와 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기로 만든 문구(조각마다 따로 보므로). 템플릿 글자와 `title` 등 보이는 속성은 글자가 있으면 걸리므로 여기에 들지 않는다. 놓치는 것은 체크리스트 I18N-07에서 본다.
 - 글꼴 이름은 `theme.css` 변수에 둔다. 다른 언어로 쓴 제목도 깨지지 않게 화면 언어 글꼴 뒤에 다른 언어 글꼴을 둔다(I18N-06).
 - 독일어 문구는 최소 폭 280에서 안내 줄이 두 줄 안에 들어가게 짧게 쓴다(계획 5 개발 결정 D18).
 
@@ -409,7 +411,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 
 | 항목 | 확인할 것 | 결과 |
 |---|---|---|
-| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 → 계획 5에서 v1.4 그림자 값으로 맞췄다(Task 15 확인 2번) ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| macOS 창 | 투명 배경 + 둥근 카드 + 그림자, 헤더로 이동 | 통과. 투명한 둥근 카드, 투명도 슬라이더, 헤더로 이동이 된다. 그림자는 잘 안 보여 계획 5 디자인에서 v1.4에 맞춘다 → 계획 5에서 PM 승인 시안의 그림자 값(0 3px 12px rgba(60,50,40,.16), 투명도에 따라 옅어짐)으로 맞췄다. 눈 확인은 Task 15 확인 2번 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5). 계획 4에서 두 OS 모두 직접 구현으로 바꿨다(13장 개발 결정) |
 | macOS 메뉴 막대·Spaces | Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces 따라다니기 | 통과. Dock·Cmd+Tab에 없고, 메뉴 막대 아이콘 클릭·메뉴·다시 열기가 되고, 모든 데스크톱에 보인다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 전체 화면 | 📌일 때 전체 화면 위 표시 (처음 계획) | PM 결정으로 바뀜. 📌를 켜도 전체 화면 앱 위에 뜨지 않았고, PM이 숨는 쪽을 골랐다. 이제 전체 화면에서는 📌와 관계없이 숨는다(MAC-07). 전체 화면 위 표시 코드는 지웠다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
@@ -510,7 +512,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 
 | 결정 | 이유 | 틀렸을 때 비용 |
 |---|---|---|
-| **D8 보완 (Task 13 리뷰): 자동 검사 범위를 넓히고 놓치는 것을 바로 적었다.** template literal의 값 자리는 `{n}`으로 읽고, 숫자만 있는 낱말은 CSS 클래스 이름으로 보지 않는다. `label`·`aria-*` 속성과 버튼 `<input>`의 `value`도 본다(7장) | 처음 규칙으로는 `` `${count} tasks left` ``(값 자리를 빼면 소문자 낱말만 남는다), `'3 tasks left'`(클래스 목록으로 읽혔다), `label`·`aria-*`·버튼 `value`에 쓴 문구가 빠져나갔다. D8의 "소문자 영어 한 낱말 문구만 놓친다"는 너무 좁았다. 실제로는 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`), 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기를 놓친다 | 놓친 문구가 화면에 나가면 다른 화면 언어에서도 영어로 보인다. 체크리스트 I18N-07에서 잡는다 |
+| **D8 보완 (Task 13 리뷰): 자동 검사 범위를 넓히고 놓치는 것을 바로 적었다.** template literal의 값 자리는 `{n}`으로 읽고, 숫자만 있는 낱말은 CSS 클래스 이름으로 보지 않는다. `label`·`aria-*` 속성과 버튼 `<input>`의 `value`도 본다(7장) | 처음 규칙으로는 `` `${count} tasks left` ``(값 자리를 빼면 소문자 낱말만 남는다), `'3 tasks left'`(클래스 목록으로 읽혔다), `label`·`aria-*`·버튼 `value`에 쓴 문구가 빠져나갔다. D8의 "소문자 영어 한 낱말 문구만 놓친다"는 너무 좁았다. 실제로는 문자열 리터럴과 `aria-*` 값에서 영어 한 낱말 문구(대소문자 무관, 예: `'Menu'`, `'Cancel'`), 소문자 영어 낱말만 이은 문구(예: `'add a task'`), 문자열 이어 붙이기를 놓친다 | 놓친 문구가 화면에 나가면 다른 화면 언어에서도 영어로 보인다. 체크리스트 I18N-07에서 잡는다 |
 | **(Task 4) `AutoStartControl`은 켤 때 자동 실행 등록 약속(`autoStartDone`)을 처음 줄(queue)로 받는다.** 켜자마자 ⋯ 메뉴에서 자동 실행을 바꾸면 켤 때의 갱신·켜기가 끝난 뒤에 처리한다 | 켤 때 등록을 기다리지 않으므로(D12) 그 사이 사용자가 끄면 뒤늦은 갱신이 다시 등록할 수 있다. START-03(사용자가 끈 자동 실행을 다시 켜지 않는다)이 계획 글("`launchApp`은 `autoStartDone`을 쓰지 않는다")보다 앞선다 | 켜자마자 메뉴에서 자동 실행을 바꾸면 OS 호출이 끝날 때까지 기다린다 |
 | **(Task 7) Windows 정밀 터치패드에서는 휠의 실제 방향을 되찾지 못한다.** WND-12의 알려진 한계로 두고 Windows PC에서 확인한다(계획 6) | WebView2(Chromium)에는 `webkitDirectionInvertedFromDevice`가 없다. 그래서 OS 스크롤 방향 설정이 반영된 `deltaY`만 받는다(D26) | 터치패드 스크롤 방향을 뒤집어 둔 Windows 사용자는 투명도가 반대로 바뀐다 |
 | **(Task 8) 크기 조절이 끝나면 `WindowViewModel`이 끄는 동안 마지막으로 받은 내용 높이로 창을 다시 맞춘다**(WND-03) | 끄는 동안 온 내용 높이를 버리면 `WindowPlacement`가 끌기 전 내용 높이를 기억한다. 그러면 메뉴로 늘렸다 되돌릴 때 창이 끌기 전 높이로 줄어 카드 아래가 잘린다. spec WND-03이 계획 코드보다 앞선다 | 크기 조절마다 맞추기 IPC가 한 번 더 간다 |
