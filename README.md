@@ -7,11 +7,13 @@ The widget follows your system language: Korean, English, German, or Simplified 
 ## Install
 
 ### Windows 10/11 (x64)
+Using v1.4? Quit it first — see [Upgrading from v1.4](#upgrading-from-v14-windows).
+
 1. Download `TodoWidget_<version>_x64-setup.exe` from the [latest release](https://github.com/HoyeongJeon/todo-widget/releases/latest).
 2. Run it. If Windows shows "Windows protected your PC" (SmartScreen), click **More info** → **Run anyway**. The installer is not code-signed.
 3. It installs for your user only. No administrator rights are needed.
 
-If the WebView2 runtime is missing (some Windows 10 PCs), the installer adds it for you.
+If the WebView2 runtime is missing (some Windows 10 PCs), the installer adds it for you (needs an internet connection).
 
 To uninstall, go to **Settings → Apps → Installed apps** (on Windows 10, **Settings → Apps → Apps & features**). This also removes the auto start entry. Your data folder is kept.
 
@@ -45,10 +47,11 @@ v1.4 cannot read the v2 file format. If you run v1.4 after v2.0, it treats the f
 
 To go back:
 1. Quit v2.0 (⋯ → **Quit**) and uninstall it. Otherwise it starts at your next login and converts the file again.
-2. In `%APPDATA%\TodoWidget\`, rename `tasks.v1-backup-….json` to `tasks.json`. Move or rename the current `tasks.json` out of the way first.
-3. Run v1.4.
+2. In `%APPDATA%\TodoWidget\`, move the current `tasks.json` out of the way (move it to another folder or rename it).
+3. Rename `tasks.v1-backup-….json` to `tasks.json`. If there are several, use the newest one.
+4. Run v1.4. If you deleted it, download `TodoWidget-win-x64.zip` again from the [v1.4.0 release](https://github.com/HoyeongJeon/todo-widget/releases/tag/v1.4.0).
 
-Changes you made in v2.0 are not included. v1.4 reads `settings.json` as it is. To have v1.4 start at login again, turn auto start back on from its ⋯ menu.
+Changes you made in v2.0 are not included. v1.4 reads `settings.json` as it is. To have v1.4 start at login again, turn auto start back on from its ⋯ menu: **컴퓨터 켤 때 자동 실행** ("Run automatically when the computer turns on").
 
 ## Features
 
@@ -77,7 +80,7 @@ If the check fails, for example when you are offline, nothing is shown and the w
 
 ## Privacy
 
-Your tasks and settings never leave your computer. The only network request is reading the public `latest.json` file of this repository's latest release, and downloading the update when you click **Update**.
+Your tasks and settings never leave your computer. The widget only connects to the internet to read the public `latest.json` file of this repository's latest release (to see whether there is a new version) and, when you click **Update**, to download it.
 
 ## Where your data lives
 
@@ -94,12 +97,12 @@ You need:
 - Rust. `rustup` picks the version in `rust-toolchain.toml`.
 - The [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
 
+Set `TODOWIDGET_DATA_DIR` to a test folder while developing, so your real tasks are not touched.
+
 ```sh
 pnpm install
 pnpm tauri dev
 pnpm test
 ```
-
-Set `TODOWIDGET_DATA_DIR` to a test folder while developing, so your real tasks are not touched.
 
 The behavior spec lives in `spec/` (in Korean). Start at `spec/README.md`. Design notes and plans are in `docs/superpowers/` (also in Korean).
