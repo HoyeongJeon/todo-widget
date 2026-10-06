@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { flush } from '../testing/fake-timer.ts';
 import { createTestApp } from '../testing/test-app.ts';
 import App from './App.svelte';
 import { createTranslator } from './i18n/translator.ts';
+import { MENU_SHADOW } from './menu/menu-placement.ts';
 import { WidgetViewModel } from './widget-view-model.svelte.ts';
 
 beforeAll(() => {
@@ -48,6 +51,46 @@ async function setup() {
   return { ...test, vm, view, $, all, input, menuItems, moreButton, edge };
 }
 
+/** 실제 앱처럼 theme.css와 App.svelte의 style을 문서에 넣는다. 테스트는 컴포넌트 CSS를 싣지 않는다. 돌려준 함수로 뺀다. */
+function loadStyles(): () => void {
+  const app = readFileSync(join(import.meta.dirname, 'App.svelte'), 'utf8');
+  const sheets = [readFileSync(join(import.meta.dirname, 'theme/theme.css'), 'utf8'), /<style>([\s\S]*?)<\/style>/.exec(app)?.[1] ?? ''];
+  const elements = sheets.map((text) => {
+    const style = document.createElement('style');
+    style.textContent = text;
+    document.head.append(style);
+    return style;
+  });
+  return () => elements.forEach((style) => style.remove());
+}
+
+/** happy-dom은 배치를 계산하지 않는다. 메뉴 판이 실제 크기를 가진 것처럼 잰다. 돌려준 함수로 되돌린다. */
+function sizeMenus(width: number, height: number): () => void {
+  const proto = HTMLElement.prototype;
+  const originals = (['offsetWidth', 'offsetHeight'] as const).map((name) => [name, Object.getOwnPropertyDescriptor(proto, name)] as const);
+  for (const [name, original] of originals) {
+    Object.defineProperty(proto, name, {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.classList.contains('menu'))
+          return name === 'offsetWidth' ? width : height;
+        return original?.get?.call(this) ?? 0;
+      },
+    });
+  }
+  return () => {
+    for (const [name, original] of originals) {
+      if (original)
+        Object.defineProperty(proto, name, original);
+    }
+  };
+}
+
+/** 넘친 부분을 잘라 내는 overflow 값인지. visible만 잘라 내지 않는다. */
+function clips(style: CSSStyleDeclaration): boolean {
+  return [style.overflow, style.overflowX, style.overflowY].some((value) => value !== '' && value !== 'visible');
+}
+
 describe('위젯 화면', () => {
   it('INPUT-02 LIST-06 입력칸 Enter로 추가하면 줄과 남은 개수가 바로 보인다', async () => {
     const { input, all, $ } = await setup();
@@ -81,6 +124,39 @@ describe('위젯 화면', () => {
     app.session.setStatus(app.session.items[0]?.id ?? '', 'done');
     await flush();
     expect(menuItems().map((item) => item.getAttribute('aria-checked')).slice(0, 3)).toEqual(['false', 'false', 'true']);
+  });
+
+  it('INPUT-12 WND-10 우클릭 메뉴가 창 아래로 나가면 판 전체가 들어가게 창을 늘리고, 화면의 어느 조상도 판을 창 원래 높이에서 잘라 내지 않는다', async () => {
+    const unload = loadStyles();
+    const unsize = sizeMenus(150, 180);
+    try {
+      const { app, vm, window, $ } = await setup();
+      app.session.add('보고서');
+      await flush();
+      const base = vm.window.baseHeight;
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+      await fireEvent.contextMenu($('.row'), { clientX: 50, clientY: base - 10 });
+      await flush();
+      const menu = $<HTMLElement>('.menu');
+      // 판에 포커스를 줄 때 문서를 스크롤하지 않는다. 늘린 창이 화면에 반영되기 전이면 카드가 위로 밀린다.
+      const menuFocus = focus.mock.calls.filter((_, index) => focus.mock.contexts[index] === menu);
+      focus.mockRestore();
+      expect(menuFocus).toEqual([[{ preventScroll: true }]]);
+      // 창 아래 화면 공간이 넉넉하므로 판 왼쪽 위가 커서 자리다(D6, v1.4 T:152-154).
+      expect(menu.style.top).toBe(`${base - 10}px`);
+      expect(window.current.height).toBeGreaterThanOrEqual(base - 10 + 180 + MENU_SHADOW.bottom);
+      // 창은 늘었어도 판을 담은 조상이 overflow로 넘친 부분을 자르면 판 아래가 창 원래 높이에서 잘린다.
+      // html의 overflow는 viewport(창)에 쓰이므로 뺀다. viewport는 늘린 창만큼 커진다.
+      const clippers: string[] = [];
+      for (let el = menu.parentElement; el && el !== document.documentElement; el = el.parentElement) {
+        if (clips(getComputedStyle(el)))
+          clippers.push(el.tagName.toLowerCase() + (el.className ? `.${el.className.split(' ')[0]}` : ''));
+      }
+      expect(clippers).toEqual([]);
+    } finally {
+      unsize();
+      unload();
+    }
   });
 
   it('WND-10 ⋯ 메뉴 바깥(backdrop)을 누르면 닫히고 늘린 창을 되돌린다', async () => {

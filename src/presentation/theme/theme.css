@@ -42,6 +42,13 @@ body {
   margin: 0;
   padding: 0;
   background: transparent;
+}
+
+/*
+ * 스크롤 막대를 없애는 overflow는 html에만 둔다. html의 값은 viewport(창)에 쓰이고, viewport는 메뉴용으로 늘린 창만큼 커진다.
+ * body에도 두면 body가 내용 높이(창 원래 높이)에서 넘친 부분을 잘라, 창을 늘려도 아래로 뜬 메뉴가 잘린다 (WND-10, PM 확인 2026-10-06).
+ */
+html {
   overflow: hidden;
 }
 

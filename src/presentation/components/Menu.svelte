@@ -53,7 +53,8 @@
       if (cancelled)
         return;
       position = next;
-      el.focus();
+      // 늘린 창이 아직 화면에 반영되지 않았으면 판이 viewport 밖이다. 그때 포커스가 문서를 스크롤해 카드를 밀지 않게 한다 (WND-10).
+      el.focus({ preventScroll: true });
     });
     return () => {
       cancelled = true;
