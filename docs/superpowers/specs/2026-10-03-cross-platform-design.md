@@ -25,6 +25,7 @@
 - 2026-10-06: 계획 5 반영 — ViewModel은 runes를 쓰는 `.svelte.ts` class(5.1), 화면 언어를 고르는 `screenLanguage`와 창 높이 `setHeight`(5.2), `src/presentation/theme/`(5.4), presentation 테스트 도구(5.5), I18N-02 자동 검사 예외(7장), 12장 `macOS 창` 줄의 그림자 결과, 계획 5 개발 결정과 실행하며 더한 결정 표(13.2)
 - 2026-10-06: 계획 5 최종 리뷰 — 13.2 "실행하며 더한 결정"에 확인 판 중 크기 조절, IME Esc(keyCode 229) 줄을 더하고, Task 4 줄에 메뉴 체크도 켤 때 등록을 기다린다고 적었다
 - 2026-10-06: PM 확인 반영 — 위로 연 메뉴에서 카드가 깜빡여, D11에 내용은 창을 올린 뒤에 밀고 되돌린 뒤에 올린다는 순서를 적었다
+- 2026-10-06: PM 확인 반영 — 13.2 IME Esc 줄에 compositionend 바로 뒤에 keyCode 27로 오는 WebKit Esc도 거른다고 적었다
 - 2026-10-06: PM 결정 — 할 일 섹션 제목 줄을 10px 안으로 넣어 끝낸 일 줄·할 일 동그라미와 맞춘다고 6장 겉모양에 적고, 시안(`docs/design/widget-mockup.html`)도 같이 고쳤다
 
 ## 1. 목적
@@ -522,7 +523,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | **(Task 8) 크기 조절이 끝나면 `WindowViewModel`이 끄는 동안 마지막으로 받은 내용 높이로 창을 다시 맞춘다**(WND-03) | 끄는 동안 온 내용 높이를 버리면 `WindowPlacement`가 끌기 전 내용 높이를 기억한다. 그러면 메뉴로 늘렸다 되돌릴 때 창이 끌기 전 높이로 줄어 카드 아래가 잘린다. spec WND-03이 계획 코드보다 앞선다 | 크기 조절마다 맞추기 IPC가 한 번 더 간다 |
 | **(Task 11) 투명도 슬라이더(`input`)에서 온 Enter·방향키·Space는 메뉴가 처리하지 않는다.** Esc만 메뉴를 닫는다 | 방향키와 Space는 슬라이더가 값을 바꾸는 데 쓴다(리뷰 M11). Enter를 메뉴가 받으면 전에 강조해 둔 항목(예: 종료)이 슬라이더에서 골라진다 | 슬라이더에 포커스가 있을 때 Enter는 아무 일도 하지 않는다 |
 | **(최종 리뷰 I1) 초기화 확인 판이 열린 채 가장자리를 누르면 판만 닫고(취소) 크기 조절은 시작하지 않는다.** `WidgetViewModel.startResize`가 막는다 | 판 때문에 늘린 창을 되돌리는 일(`clearPopup → restore`)은 App effect에서 늦게 돈다. 그래서 바로 크기 조절을 시작하면 끄는 도중에 창 높이 바꾸기가 끼어 창이 튀고, 저장되는 최대 높이·위치가 틀린다. 메뉴는 backdrop이 가장자리를 덮어 이 길이 없다. 원칙으로 고치려면 adapter가 시작 영역을 읽기 전에 남은 창 높이 바꾸기를 기다려야 하는데, port를 바꿔야 해서 이번에는 막기만 한다 | 확인 판이 열린 채 가장자리를 끌면 한 번 더 끌어야 크기가 바뀐다 |
-| **(최종 리뷰 I3) IME가 넘긴 Esc(`keyCode` 229)는 입력칸·이름 바꾸기 칸이 무시한다.** `isComposing`이 false여도 거른다 | WebKit에서 한글·병음 조합을 Esc로 끝내면 `isComposing:false, keyCode:229`인 keydown이 올 수 있다. D3이 Enter에서 막은 것과 같은 모양이다. 거르지 않으면 쓰던 글을 잃는다(INPUT-04·15) | 조합 중 Esc 한 번은 조합만 끝낸다. 글을 지우거나 이름 바꾸기를 취소하려면 Esc를 한 번 더 누른다 |
+| **(최종 리뷰 I3) IME가 넘긴 Esc(`keyCode` 229)는 입력칸·이름 바꾸기 칸이 무시한다.** `isComposing`이 false여도 거른다. PM 확인(2026-10-06)에서 macOS WebKit 한글 두벌식은 그 Esc를 `compositionend` 바로 뒤에 `keyCode` 27로 보내 글이 지워졌다. 그래서 칸이 `compositionstart`·`compositionend`로 조합 상태를 따로 추적하고, 조합 중이거나 `compositionend`에서 100ms 안에 온 Esc도 거른다(`isCompositionEscape`) | WebKit에서 한글·병음 조합을 Esc로 끝내면 `isComposing:false, keyCode:229`인 keydown이 올 수 있다. D3이 Enter에서 막은 것과 같은 모양이다. 거르지 않으면 쓰던 글을 잃는다(INPUT-04·15) | 조합 중 Esc 한 번은 조합만 끝낸다. 글을 지우거나 이름 바꾸기를 취소하려면 Esc를 한 번 더 누른다 |
 
 **쓴 라이브러리**
 
