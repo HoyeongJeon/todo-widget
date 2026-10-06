@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TASKS_FILE } from '../../application/storage/task-repository.ts';
 import { createTestApp } from '../../testing/test-app.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import TaskRow from './TaskRow.svelte';
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 async function setup(title = '초안') {
   const test = await createTestApp();
@@ -109,6 +112,30 @@ describe('할 일 줄', () => {
     await fireEvent.input(opened, { target: { value: '보고서' } });
     await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 229 });
     expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
+  });
+
+  it('INPUT-15 IME 조합 중 Esc가 compositionend 전에 isComposing false·keyCode 27로 와도 이름 바꾸기를 취소하지 않는다', async () => {
+    const { startRename, field, vm } = await setup();
+    const opened = await startRename();
+    await fireEvent.compositionStart(opened);
+    await fireEvent.input(opened, { target: { value: '보고서' } });
+    await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
+    await fireEvent.compositionEnd(opened);
+    expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
+  });
+
+  it('INPUT-15 IME 조합 중 Esc가 compositionend 바로 뒤에 keyCode 27로 와도(WebKit) 취소하지 않고, 조합이 아닐 때 Esc는 취소한다', async () => {
+    const { startRename, field, vm, current } = await setup();
+    const opened = await startRename();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    await fireEvent.compositionStart(opened);
+    await fireEvent.input(opened, { target: { value: '보고서' } });
+    await fireEvent.compositionEnd(opened);
+    await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
+    expect([field()?.value, vm.renaming?.draft]).toEqual(['보고서', '보고서']);
+    now.mockReturnValue(2000);
+    await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
+    expect([field(), vm.renaming, current()?.title]).toEqual([null, null, '초안']);
   });
 
   it('INPUT-16 여러 줄을 붙여 넣으면 한 줄로 합쳐 커서 자리에 넣고, 커서를 그 뒤에 두며, 바로 추가하지 않는다', async () => {

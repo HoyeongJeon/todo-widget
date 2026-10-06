@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTestApp } from '../../testing/test-app.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import AddInput from './AddInput.svelte';
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 async function setup() {
   const test = await createTestApp();
@@ -67,6 +70,28 @@ describe('입력칸', () => {
     await fireEvent.input(input, { target: { value: '보고서 쓰기' } });
     await fireEvent.keyDown(input, { key: 'Escape', keyCode: 229 });
     expect(input.value).toBe('보고서 쓰기');
+  });
+
+  it('INPUT-04 IME 조합 중 Esc가 compositionend 전에 isComposing false·keyCode 27로 와도 입력칸을 비우지 않는다', async () => {
+    const { input } = await setup();
+    await fireEvent.compositionStart(input);
+    await fireEvent.input(input, { target: { value: '보고서 쓰기' } });
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    await fireEvent.compositionEnd(input);
+    expect(input.value).toBe('보고서 쓰기');
+  });
+
+  it('INPUT-04 IME 조합 중 Esc가 compositionend 바로 뒤에 keyCode 27로 와도(WebKit) 입력칸을 비우지 않고, 조합이 아닐 때 Esc는 비운다', async () => {
+    const { input } = await setup();
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    await fireEvent.compositionStart(input);
+    await fireEvent.input(input, { target: { value: '보고서 쓰기' } });
+    await fireEvent.compositionEnd(input);
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('보고서 쓰기');
+    now.mockReturnValue(2000);
+    await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('');
   });
 
   it('INPUT-07 여러 줄을 붙여 넣으면 줄마다 바로 추가하고, 쓰던 글자는 그대로 남는다', async () => {

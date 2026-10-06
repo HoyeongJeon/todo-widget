@@ -1,6 +1,7 @@
 <script lang="ts">
   import { hasLineBreak } from '../../domain/paste.ts';
   import type { TodoItem } from '../../domain/todo-item.ts';
+  import { CompositionTracker } from '../input/composition-escape.ts';
   import { isCommitEnter } from '../input/enter-key.ts';
   import { insertText, joinLines } from '../input/rename-paste.ts';
   import type { WidgetViewModel } from '../widget-view-model.svelte.ts';
@@ -8,6 +9,7 @@
   let { vm, item }: { vm: WidgetViewModel; item: TodoItem } = $props();
 
   const editing = $derived(vm.renaming?.id === item.id);
+  const composition = new CompositionTracker();
 
   /** 칸 높이를 내용에 맞춘다. 긴 제목도 칸 안에서 줄을 바꿔 전부 보인다 (LIST-11, D17). */
   function fitHeight(node: HTMLTextAreaElement): void {
@@ -17,6 +19,7 @@
 
   /** 칸이 열리면 포커스를 받고 글자 전체를 고른다 (INPUT-13). */
   function startEditing(node: HTMLTextAreaElement): void {
+    composition.reset();
     fitHeight(node);
     node.focus();
     node.select();
@@ -27,6 +30,9 @@
     if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
+      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WebKit은 그 Esc를 compositionend 바로 뒤에 keyCode 27로 보낸다 (INPUT-15).
+      if (composition.isEscape(event))
+        return;
       event.preventDefault();
       vm.cancelRename(); // INPUT-15
       return;
@@ -93,6 +99,8 @@
       value={vm.renaming?.draft ?? item.title}
       use:startEditing
       onkeydown={onKeydown}
+      oncompositionstart={() => composition.start()}
+      oncompositionend={(event) => composition.end(event.timeStamp)}
       onbeforeinput={onBeforeInput}
       oninput={onInput}
       onpaste={onPaste}

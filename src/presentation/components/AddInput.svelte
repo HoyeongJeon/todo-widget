@@ -1,18 +1,22 @@
 <script lang="ts">
   import { hasLineBreak } from '../../domain/paste.ts';
+  import { CompositionTracker } from '../input/composition-escape.ts';
   import { isCommitEnter } from '../input/enter-key.ts';
   import type { WidgetViewModel } from '../widget-view-model.svelte.ts';
 
   let { vm }: { vm: WidgetViewModel } = $props();
 
   let text = $state('');
+  const composition = new CompositionTracker();
 
   function onKeydown(event: KeyboardEvent & { currentTarget: HTMLInputElement }): void {
     // 조합을 끝내는 키는 isComposing이 false여도 keyCode 229로 올 수 있다(WebKit). Esc로 쓰던 글을 잃지 않게 거른다 (INPUT-05, D3).
     if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
-      text = ''; // INPUT-04
+      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WebKit은 그 Esc를 compositionend 바로 뒤에 keyCode 27로 보낸다 (INPUT-04).
+      if (!composition.isEscape(event))
+        text = ''; // INPUT-04
       return;
     }
     if (!isCommitEnter(event))
@@ -44,6 +48,8 @@
     spellcheck="false"
     autocomplete="off"
     onkeydown={onKeydown}
+    oncompositionstart={() => composition.start()}
+    oncompositionend={(event) => composition.end(event.timeStamp)}
     onpaste={onPaste}
   />
 </div>
