@@ -1,10 +1,16 @@
 /** HTTP 요청을 보낼 수 있는 crate와, 그것을 써도 되는 crate (PRIV-01). */
 export const NETWORK_CRATES: Readonly<Record<string, readonly string[]>> = {
   reqwest: ['tauri-plugin-updater'],
+  // reqwest가 쓰는 HTTP 바탕. reqwest 경로(그리고 TLS 연결 hyper-rustls) 말고 다른 crate가 쓰면 안 된다.
+  hyper: ['hyper-rustls', 'hyper-util', 'reqwest'],
+  'hyper-util': ['hyper-rustls', 'reqwest'],
   ureq: [],
   isahc: [],
   curl: [],
   attohttpc: [],
+  minreq: [],
+  tungstenite: [],
+  'tokio-tungstenite': [],
 };
 
 /** `cargo tree -i <crate> -e normal --prefix depth` 출력에서 깊이 1(바로 위 의존자)의 crate 이름. */

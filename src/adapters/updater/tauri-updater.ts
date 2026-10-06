@@ -25,10 +25,16 @@ export function tauriUpdaterApi(): UpdaterApi {
  */
 export function createTauriUpdater(api: UpdaterApi, currentVersion: string): Updater {
   let pending: PendingUpdate | null = null;
+  /** 설치 중인 업데이트. 이 동안 확인이 와도 바꾸거나 닫지 않는다 (UPD-04, 계획 6 D6). */
+  let installing: PendingUpdate | null = null;
 
   return {
     async fetchLatest(): Promise<{ version: string }> {
       const found = await api.check();
+      if (installing) {
+        await found?.close().catch(() => undefined);
+        return { version: installing.version };
+      }
       const previous = pending;
       pending = found;
       await previous?.close().catch(() => undefined);
@@ -38,7 +44,12 @@ export function createTauriUpdater(api: UpdaterApi, currentVersion: string): Upd
     async downloadAndInstall(): Promise<void> {
       if (!pending)
         throw new Error('설치할 업데이트가 없어요');
-      await pending.downloadAndInstall();
+      installing = pending;
+      try {
+        await installing.downloadAndInstall();
+      } finally {
+        installing = null;
+      }
       await api.relaunch();
     },
   };

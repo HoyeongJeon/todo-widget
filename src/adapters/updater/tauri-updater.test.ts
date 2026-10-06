@@ -64,4 +64,36 @@ describe('Tauri updater adapter', () => {
     expect(await updater.fetchLatest()).toEqual({ version: '2.2.0' });
     expect(first.calls).toEqual(['close']);
   });
+
+  it('UPD-04 설치하는 동안 확인이 불려도 설치 중인 업데이트를 닫거나 바꾸지 않는다', async () => {
+    let finishInstall: () => void = () => undefined;
+    const closed: string[] = [];
+    const installed: string[] = [];
+    const make = (version: string): PendingUpdate => ({
+      version,
+      downloadAndInstall: () => {
+        installed.push(version);
+        return new Promise<void>((resolve) => {
+          finishInstall = resolve;
+        });
+      },
+      close: async () => {
+        closed.push(version);
+      },
+    });
+    const queue = [make('2.1.0'), make('2.2.0')];
+    const relaunches: number[] = [];
+    const updater = createTauriUpdater(
+      { check: async () => queue.shift() ?? null, relaunch: async () => void relaunches.push(1) },
+      '2.0.0',
+    );
+    await updater.fetchLatest();
+    const installing = updater.downloadAndInstall();
+    expect(await updater.fetchLatest()).toEqual({ version: '2.1.0' });
+    expect(closed).toEqual(['2.2.0']);
+    finishInstall();
+    await installing;
+    expect(installed).toEqual(['2.1.0']);
+    expect(relaunches).toHaveLength(1);
+  });
 });

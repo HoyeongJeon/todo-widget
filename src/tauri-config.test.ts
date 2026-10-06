@@ -5,6 +5,7 @@ import { WINDOW_LIMITS } from './domain/window-geometry.ts';
 const config = JSON.parse(readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
 const mainWindow = config.app.windows.find((w: { label: string }) => w.label === 'main');
 const cargoToml = readFileSync(new URL('../src-tauri/Cargo.toml', import.meta.url), 'utf8');
+const capabilities = JSON.parse(readFileSync(new URL('../src-tauri/capabilities/default.json', import.meta.url), 'utf8'));
 
 /** 업데이트 확인(tauri-plugin-updater) 말고는 Rust 쪽에서 네트워크를 쓰지 않는다 (PRIV-01) */
 const NETWORK_CRATES = [
@@ -57,6 +58,11 @@ function dependencyNames(toml: string): string[] {
 }
 
 describe('Tauri 설정', () => {
+  it('UPD-02 화면은 업데이트 확인과 받아서 설치하기만 부를 수 있다', () => {
+    const updaterPermissions = capabilities.permissions.filter((p: string) => p.startsWith('updater:'));
+    expect(updaterPermissions).toEqual(['updater:allow-check', 'updater:allow-download-and-install']);
+  });
+
   it('MAC-10 투명 창을 위해 macOSPrivateApi를 켠다', () => {
     expect(config.app.macOSPrivateApi).toBe(true);
     expect(mainWindow.transparent).toBe(true);

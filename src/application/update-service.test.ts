@@ -200,6 +200,31 @@ describe('설치', () => {
     await service.install();
     expect(updater.installs).toBe(0);
   });
+
+  it('UPD-04 설치하는 동안에는 예약된 확인과 잠자기 깨어남이 업데이트를 다시 확인하지 않고 1시간 뒤로 미룬다', async () => {
+    const service = await makeService();
+    await service.start();
+    expect(updater.fetches).toBe(1);
+    let release: () => void = () => undefined;
+    updater.installGate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const installing = service.install();
+    await flush();
+    expect(service.state).toBe('installing');
+
+    await timer.advance(24 * HOUR);
+    await service.onWake();
+    expect(updater.fetches).toBe(1);
+    expect(service.state).toBe('installing');
+
+    updater.failInstall = new Error('설치하지 못했어요');
+    release();
+    await installing;
+    expect(service.state).toBe('failed');
+    await timer.advance(HOUR);
+    expect(updater.fetches).toBe(2);
+  });
 });
 
 /** 확인을 멈춰 두고, 돌려준 함수를 부르면 풀어 준다. */

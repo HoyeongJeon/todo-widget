@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkNetworkCrates, directDependents } from './network-crates.ts';
+import { NETWORK_CRATES, checkNetworkCrates, directDependents } from './network-crates.ts';
 
 const reqwestTree = [
   '0reqwest v0.12.24',
@@ -29,5 +29,14 @@ describe('Rust 네트워크 crate 검사', () => {
     expect(checkNetworkCrates((crate) => (crate === 'reqwest' ? unreadable : null))).toEqual([
       'reqwest 의존 트리를 읽지 못했어요 (cargo tree 출력 형식이 바뀌었을 수 있어요) (PRIV-01)',
     ]);
+  });
+
+  it('PRIV-01 HTTP·WebSocket crate 목록에 hyper, hyper-util, minreq, tungstenite, tokio-tungstenite가 있고 hyper 계열은 reqwest 경로만 허용한다', () => {
+    expect(Object.keys(NETWORK_CRATES)).toEqual(
+      expect.arrayContaining(['hyper', 'hyper-util', 'minreq', 'tungstenite', 'tokio-tungstenite']),
+    );
+    expect(NETWORK_CRATES['hyper-util']).toEqual(['hyper-rustls', 'reqwest']);
+    expect(NETWORK_CRATES.hyper).toEqual(['hyper-rustls', 'hyper-util', 'reqwest']);
+    expect(NETWORK_CRATES.minreq).toEqual([]);
   });
 });

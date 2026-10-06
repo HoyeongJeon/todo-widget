@@ -64,6 +64,11 @@ export class UpdateService {
 
   async #runCheck(): Promise<void> {
     this.#cancel();
+    // 설치하는 동안 확인하면 adapter가 받아 둔 업데이트를 바꿀 수 있다. 1시간 뒤로 미룬다 (UPD-04, 계획 6 D6).
+    if (this.#state === 'installing') {
+      this.#schedule(RETRY_INTERVAL_MS);
+      return;
+    }
     let latest: { version: string };
     try {
       latest = await this.#deps.updater.fetchLatest();
@@ -75,7 +80,8 @@ export class UpdateService {
       return;
     try {
       await this.#deps.settings.update({ lastUpdateCheck: this.#deps.clock.now() });
-      if (this.#state !== 'installing')
+      // 맨 앞에서 거른 뒤에도 확인을 기다리는 동안 설치가 시작될 수 있다. getter로 읽어 TS의 좁히기를 피한다.
+      if (this.state !== 'installing')
         this.#setState(isNewerVersion(latest.version, this.#deps.appInfo.version) ? 'available' : 'none');
     } catch {
       // 설정 저장이 던지는 것 같은 예상 못 한 오류로 확인 일정이 끊기지 않게 1시간 뒤 다시 확인한다.
