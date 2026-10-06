@@ -62,6 +62,13 @@ describe('출시 workflow', () => {
     expect(workflow).not.toMatch(/--draft=false|gh release edit/);
   });
 
+  it('REL-06 초안을 만들기 전에 latest.json 단계에서 서명 키가 앱의 공개 키와 같은지 본다', () => {
+    const release = job('release');
+    expect(release).toContain('actions/checkout');
+    expect(release.indexOf('cli.ts latest-json')).toBeGreaterThan(-1);
+    expect(release.indexOf('cli.ts latest-json')).toBeLessThan(release.indexOf('gh release create'));
+  });
+
   it('REL-03 업데이트 파일 서명은 출시 설정에서만 켠다', () => {
     expect(releaseConf).toEqual({ bundle: { createUpdaterArtifacts: true } });
     expect(baseConf.bundle.createUpdaterArtifacts).toBeUndefined();

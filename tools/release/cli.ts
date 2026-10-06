@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { endpointOverride } from './endpoint-config.ts';
 import { makeLatestJson } from './latest-json.ts';
+import { checkSignatureKeys } from './signature-key.ts';
 import { checkInstallerSizes } from './sizes.ts';
 import { checkVersions, readVersions } from './versions.ts';
 
@@ -46,21 +47,34 @@ switch (command) {
     const version = tag.replace(/^v/, '');
     const mac = only(dir, '.app.tar.gz');
     const windows = only(dir, '-setup.exe');
+    const macSig = { name: `${mac}.sig`, content: readFileSync(join(dir, `${mac}.sig`), 'utf8') };
+    const windowsSig = { name: `${windows}.sig`, content: readFileSync(join(dir, `${windows}.sig`), 'utf8') };
+    // Tauri CLI는 키가 달라도 경고만 한다. 다른 키로 서명한 Release는 설치한 위젯이 모두 거부하므로 여기서 막는다.
+    const pubkey: string = JSON.parse(readFileSync(new URL('src-tauri/tauri.conf.json', root), 'utf8')).plugins.updater.pubkey;
+    const keyProblems = checkSignatureKeys(pubkey, [macSig, windowsSig]);
+    if (keyProblems.length > 0)
+      fail(keyProblems);
     const json = makeLatestJson({
       version,
       notes: `TodoWidget ${version}`,
       pubDate: new Date().toISOString(),
       repo,
       tag,
-      mac: { name: mac, signature: readFileSync(join(dir, `${mac}.sig`), 'utf8') },
-      windows: { name: windows, signature: readFileSync(join(dir, `${windows}.sig`), 'utf8') },
+      mac: { name: mac, signature: macSig.content },
+      windows: { name: windows, signature: windowsSig.content },
     });
     writeFileSync(join(dir, 'latest.json'), `${JSON.stringify(json, null, 2)}\n`);
     console.log(`latest.json: ${mac}, ${windows}`);
     break;
   }
   case 'endpoint-config': {
-    const config = endpointOverride(process.env.TODOWIDGET_UPDATE_ENDPOINT);
+    let config;
+    try {
+      config = endpointOverride(process.env.TODOWIDGET_UPDATE_ENDPOINT);
+    }
+    catch (error) {
+      fail([(error as Error).message]);
+    }
     if (!config)
       fail(['TODOWIDGET_UPDATE_ENDPOINT가 비어 있어요 (REL-10)']);
     console.log(JSON.stringify(config));
