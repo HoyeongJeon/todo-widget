@@ -106,6 +106,19 @@ function clips(style: CSSStyleDeclaration): boolean {
   return [style.overflow, style.overflowX, style.overflowY].some((value) => value !== '' && value !== 'visible');
 }
 
+/**
+ * 판을 담은 조상 중 overflow로 넘친 부분을 잘라 내는 것. 창을 늘려도 이런 조상이 있으면 판 아래가 창 원래 높이에서 잘린다.
+ * html의 overflow는 viewport(창)에 쓰이므로 뺀다. viewport는 늘린 창만큼 커진다.
+ */
+function clippingAncestors(element: HTMLElement): string[] {
+  const found: string[] = [];
+  for (let el = element.parentElement; el && el !== document.documentElement; el = el.parentElement) {
+    if (clips(getComputedStyle(el)))
+      found.push(el.tagName.toLowerCase() + (el.className ? `.${el.className.split(' ')[0]}` : ''));
+  }
+  return found;
+}
+
 describe('위젯 화면', () => {
   it('INPUT-02 LIST-06 입력칸 Enter로 추가하면 줄과 남은 개수가 바로 보인다', async () => {
     const { input, all, $ } = await setup();
@@ -160,14 +173,26 @@ describe('위젯 화면', () => {
       // 창 아래 화면 공간이 넉넉하므로 판 왼쪽 위가 커서 자리다(D6, v1.4 T:152-154).
       expect(menu.style.top).toBe(`${base - 10}px`);
       expect(window.current.height).toBeGreaterThanOrEqual(base - 10 + 180 + MENU_SHADOW.bottom);
-      // 창은 늘었어도 판을 담은 조상이 overflow로 넘친 부분을 자르면 판 아래가 창 원래 높이에서 잘린다.
-      // html의 overflow는 viewport(창)에 쓰이므로 뺀다. viewport는 늘린 창만큼 커진다.
-      const clippers: string[] = [];
-      for (let el = menu.parentElement; el && el !== document.documentElement; el = el.parentElement) {
-        if (clips(getComputedStyle(el)))
-          clippers.push(el.tagName.toLowerCase() + (el.className ? `.${el.className.split(' ')[0]}` : ''));
-      }
-      expect(clippers).toEqual([]);
+      expect(clippingAncestors(menu)).toEqual([]);
+    } finally {
+      unsize();
+      unload();
+    }
+  });
+
+  it('WND-10 위젯이 짧아 ⋯ 메뉴가 창 아래로 나가면 판 전체가 들어가게 창을 늘리고, 어느 조상도 판을 잘라 내지 않는다', async () => {
+    const unload = loadStyles();
+    const unsize = sizeMenus(170, 200);
+    try {
+      const { vm, window, $, moreButton } = await setup();
+      const base = vm.window.baseHeight;
+      await fireEvent.click(moreButton());
+      await flush();
+      const menu = $<HTMLElement>('.menu');
+      const top = Number.parseFloat(menu.style.top);
+      expect(top + 200 + MENU_SHADOW.bottom).toBeGreaterThan(base);
+      expect(window.current.height).toBeGreaterThanOrEqual(top + 200 + MENU_SHADOW.bottom);
+      expect(clippingAncestors(menu)).toEqual([]);
     } finally {
       unsize();
       unload();
