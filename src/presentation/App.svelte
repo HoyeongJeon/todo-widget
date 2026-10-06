@@ -142,17 +142,12 @@
   }
 
   /* 섹션을 flex로 쌓는다. margin이 겹치지 않아 v1.4 간격 그대로이고 높이를 정확히 잰다 (D16). */
-  /*
-   * 카드가 최대 높이에 닿으면 섹션 영역이 줄고 넘친 부분은 잘린다. 헤더·안내 줄·입력칸은 줄지 않아 늘 보인다(v1.4 DockPanel, 리뷰 I3).
-   * 좌우 -6 margin과 6 padding: 할 일 제목 줄 hover 배경(좌우 6 넓게 칠함)이 잘리지 않게 한다.
-   */
+  /* 카드가 최대 높이에 닿으면 섹션 영역이 줄고 넘친 부분은 잘린다. 헤더·안내 줄·입력칸은 줄지 않아 늘 보인다(v1.4 DockPanel, 리뷰 I3). */
   .body {
     display: flex;
     flex: 0 1 auto;
     flex-direction: column;
     min-height: 0;
-    margin: 0 -6px;
-    padding: 0 6px;
     overflow: hidden;
   }
 
