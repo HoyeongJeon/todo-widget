@@ -87,6 +87,33 @@ describe('창 화면 상태', () => {
     expect([window.current.top, window.current.height, vm.lift]).toEqual([24, 200, 0]);
   });
 
+  it('WND-10 D11 내용은 창을 올린 뒤에 밀고, 창을 되돌린 뒤에 올린다. 창보다 먼저 움직여 카드가 튀지 않게 한다', async () => {
+    const { vm, window } = await setup();
+    await vm.showFirst(200, 0);
+    const liftWhenWindowMoves: number[] = [];
+    const setHeight = window.setHeight.bind(window);
+    window.setHeight = async (height, raise) => {
+      liftWhenWindowMoves.push(vm.lift);
+      await setHeight(height, raise);
+    };
+    await vm.fitPopup(vm.popupToken, { top: -128, bottom: 22 }, MENU_SHADOW);
+    expect(vm.lift).toBe(134);
+    await vm.clearPopup();
+    expect(vm.lift).toBe(0);
+    expect(liftWhenWindowMoves).toEqual([0, 134]);
+  });
+
+  it('WND-10 D11 늘린 창을 되돌리지 못하면 창이 올라간 채라 내용도 민 채로 둔다', async () => {
+    const { vm, window, reports } = await setup();
+    await vm.showFirst(200, 0);
+    await vm.fitPopup(vm.popupToken, { top: -128, bottom: 22 }, MENU_SHADOW);
+    window.setHeight = async () => {
+      throw new Error('창을 바꾸지 못했어요');
+    };
+    await vm.clearPopup();
+    expect([window.current.top, vm.lift, reports]).toEqual([-110, 134, ['restore']]);
+  });
+
   it('WND-10 판이 창 안에 들어가면 늘리지 않고, 늘려 둔 창은 되돌린다', async () => {
     const { vm, window } = await setup();
     await vm.showFirst(300, 0);

@@ -121,12 +121,15 @@ export class WindowViewModel {
     const extent = popupExtent(popup, this.#baseHeight, allowance);
     if (!extent)
       return this.#restore();
-    this.lift = extent.raise;
-    await this.#placement.expand(extent.raise, extent.height).catch((error: unknown) => {
-      // 창을 올리지 못했는데 내용만 내려가 있으면 카드가 잘린다.
-      this.lift = 0;
+    try {
+      await this.#placement.expand(extent.raise, extent.height);
+    } catch (error) {
+      // 창이 그대로면 내용도 그대로 둔다. 창을 올리지 못했는데 내용만 내려가 있으면 카드가 잘린다.
       this.#report('expand', error);
-    });
+      return;
+    }
+    // 창을 올린 뒤에 내용을 민다. 먼저 밀면 창이 올라갈 때까지 카드가 아래로 튀어 보인다 (D11).
+    this.lift = extent.raise;
   }
 
   /** 메뉴·확인 판이 모두 닫혔다. 세대 번호를 올리고, 늘린 창을 되돌린다. 늘리지 않았으면 창은 그대로다. */
@@ -135,9 +138,14 @@ export class WindowViewModel {
     await this.#restore();
   }
 
+  /** 창을 되돌린 뒤에 내용을 올린다(D11). 되돌리지 못하면 창이 올라간 채이므로 내용도 민 채로 둔다. */
   async #restore(): Promise<void> {
-    this.lift = 0;
-    await this.#placement.restore().catch((error: unknown) => this.#report('restore', error));
+    try {
+      await this.#placement.restore();
+      this.lift = 0;
+    } catch (error) {
+      this.#report('restore', error);
+    }
     this.#baseHeight = this.#placement.height;
   }
 }
