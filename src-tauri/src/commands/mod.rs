@@ -49,13 +49,12 @@ pub fn show_main(app: AppHandle, gate: State<'_, ShowGate>, painted_at_ms: f64) 
 }
 
 /// 시작하지 못해 대화 상자만 띄우고 끝낼 때(STORE-10) 대비책·다시 실행·메뉴 막대 아이콘이 빈 창을 띄우지 않게 한다.
-/// 화면 준비 전에 다시 실행해 이미 창이 떠 있었다면 다시 숨긴다.
+/// 대비책이나 다시 실행이 이미 창을 띄웠어도 다시 숨긴다.
 #[tauri::command]
 pub fn keep_hidden(app: AppHandle, gate: State<'_, ShowGate>) {
-    if gate.claim(Decision::Hidden) {
-        if let Some(window) = app.get_webview_window("main") {
-            let _ = window.hide();
-        }
+    gate.hide();
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
     }
 }
 

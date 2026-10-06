@@ -25,8 +25,17 @@ fn message(error: windows_result::Error) -> String {
     error.message()
 }
 
-/// 읽고 쓸 수 있게 연다. 키가 없으면 `None`.
-fn open(path: &str) -> Result<Option<Key>, String> {
+/// 읽기만 한다. 키가 없으면 `None`.
+fn open_read(path: &str) -> Result<Option<Key>, String> {
+    match CURRENT_USER.open(path) {
+        Ok(key) => Ok(Some(key)),
+        Err(error) if is_missing(&error) => Ok(None),
+        Err(error) => Err(message(error)),
+    }
+}
+
+/// 값을 지울 수 있게 읽고 쓰기로 연다. 키가 없으면 `None`.
+fn open_write(path: &str) -> Result<Option<Key>, String> {
     match CURRENT_USER.options().read().write().open(path) {
         Ok(key) => Ok(Some(key)),
         Err(error) if is_missing(&error) => Ok(None),
@@ -35,7 +44,7 @@ fn open(path: &str) -> Result<Option<Key>, String> {
 }
 
 fn remove_value(path: &str, name: &str) -> Result<(), String> {
-    let Some(key) = open(path)? else { return Ok(()) };
+    let Some(key) = open_write(path)? else { return Ok(()) };
     match key.remove_value(name) {
         Ok(()) => Ok(()),
         Err(error) if is_missing(&error) => Ok(()),
@@ -45,7 +54,7 @@ fn remove_value(path: &str, name: &str) -> Result<(), String> {
 
 impl RunKey for HkcuRunKey {
     fn read(&self) -> Result<Option<String>, String> {
-        let Some(key) = open(RUN)? else { return Ok(None) };
+        let Some(key) = open_read(RUN)? else { return Ok(None) };
         match key.get_string(&self.name) {
             Ok(value) => Ok(Some(value)),
             Err(error) if is_missing(&error) => Ok(None),
@@ -65,7 +74,9 @@ impl RunKey for HkcuRunKey {
     }
 
     fn read_approved(&self) -> Result<Option<Vec<u8>>, String> {
-        let Some(key) = open(APPROVED)? else { return Ok(None) };
+        let Some(key) = open_read(APPROVED)? else {
+            return Ok(None);
+        };
         match key.get_value(&self.name) {
             Ok(value) => Ok(Some(value.to_vec())),
             Err(error) if is_missing(&error) => Ok(None),

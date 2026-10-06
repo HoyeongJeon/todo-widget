@@ -42,6 +42,12 @@ impl ShowGate {
             .is_ok()
     }
 
+    /// 이미 띄우기로 정했어도 숨긴 채 두기로 바꾼다. STORE-10 대화 상자를 띄운 뒤에는 앱이 곧 끝나므로 늘 숨김이 맞다.
+    /// 시작이 `SHOW_FALLBACK_DELAY`를 넘겨 대비책이 먼저 창을 띄운 경우에도 대화 상자 뒤에 빈 창이 남지 않게 한다.
+    pub fn hide(&self) {
+        self.state.store(HIDDEN, Ordering::SeqCst);
+    }
+
     /// 정한 결과. 아직 정하지 않았으면 `None`.
     pub fn decision(&self) -> Option<Decision> {
         match self.state.load(Ordering::SeqCst) {
@@ -108,6 +114,17 @@ mod tests {
         assert!(!gate.is_hidden());
         gate.claim(Decision::Shown);
         assert!(!gate.is_hidden());
+    }
+
+    /// STORE-10 대비책이 먼저 창을 띄웠어도 숨긴 채 두기가 이긴다
+    #[test]
+    fn hide_overrides_shown() {
+        let gate = ShowGate::default();
+        assert!(gate.claim(Decision::Shown));
+        gate.hide();
+        assert_eq!(gate.decision(), Some(Decision::Hidden));
+        assert!(gate.is_hidden());
+        assert!(!gate.claim(Decision::Shown));
     }
 
     #[test]
