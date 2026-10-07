@@ -42,6 +42,12 @@ describe('할 일 줄', () => {
     expect(current()?.status).toBe('doing');
   });
 
+  it('동그라미의 테두리와 가운데 점은 한 SVG 안에 같은 중심으로 그려, 화면 배율이 달라도 점이 치우치지 않는다', async () => {
+    const { view } = await setup();
+    const circles = [...view.container.querySelectorAll('.mark svg circle')];
+    expect(circles.map((circle) => [circle.getAttribute('cx'), circle.getAttribute('cy')])).toEqual([['8', '8'], ['8', '8']]);
+  });
+
   it('INPUT-11 이름을 바꾸던 중 동그라미를 누르면 이름을 먼저 저장한다', async () => {
     const { view, startRename, current } = await setup();
     const field = await startRename();

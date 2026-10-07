@@ -92,8 +92,11 @@
     onmousedown={(event) => event.preventDefault()}
     onclick={() => vm.cycle(item.id)}
   >
-    <span class="ring"></span>
-    <span class="core"></span>
+    <!-- 테두리와 점을 한 SVG에 그린다. 따로 그리면 Windows 배율(100%·125%)에서 반 픽셀이 다르게 반올림돼 점이 치우친다. -->
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <circle class="ring" cx="8" cy="8" r="7" />
+      <circle class="core" cx="8" cy="8" r="3.5" />
+    </svg>
   </button>
   {#if editing}
     <textarea
@@ -140,12 +143,14 @@
     cursor: pointer;
   }
 
+  .mark svg {
+    display: block;
+  }
+
   .ring {
-    grid-area: 1 / 1;
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--todo);
-    border-radius: 50%;
+    fill: none;
+    stroke: var(--todo);
+    stroke-width: 2;
   }
 
   .mark:hover .ring {
@@ -153,25 +158,21 @@
   }
 
   .core {
-    grid-area: 1 / 1;
     display: none;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
+    fill: var(--accent);
   }
 
   .row.doing .ring {
-    border-color: var(--accent);
+    stroke: var(--accent);
   }
 
   .row.doing .core {
-    display: block;
+    display: inline;
   }
 
   .row.done .ring {
-    border-color: var(--done);
-    background: var(--done);
+    stroke: var(--done);
+    fill: var(--done);
   }
 
   .text {
