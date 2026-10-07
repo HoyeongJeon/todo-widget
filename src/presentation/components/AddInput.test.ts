@@ -3,6 +3,12 @@ import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createTestApp } from '../../testing/test-app.ts';
 import { koreanEscapeWhileComposing, koreanSpaceAfterComposing, replay } from '../../testing/webkit-korean-ime.ts';
+import {
+  replayWebview2,
+  webview2KoreanEnterAfterComposing,
+  webview2KoreanEscapeWhileComposing,
+  webview2KoreanSpaceAfterComposing,
+} from '../../testing/webview2-korean-ime.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import AddInput from './AddInput.svelte';
@@ -94,6 +100,38 @@ describe('입력칸', () => {
     await replay(input, koreanSpaceAfterComposing('보고'));
     await fireEvent.keyDown(input, { key: 'Escape', keyCode: 27 });
     expect(input.value).toBe('');
+  });
+
+  it.each([
+    ['(A) Esc가 229로 한 번, compositionend 뒤 27로 또', true],
+    ['(B) compositionend 뒤 27로 한 번', false],
+  ])('INPUT-04 Windows WebView2 한글: "험"을 조합하는 중 누른 Esc(compositionend 뒤 keyCode 27)는 입력칸을 비우지 않고, 한 번 더 누른 Esc는 비운다 %s', async (_, leading229) => {
+    const { input } = await setup();
+    await fireEvent.input(input, { target: { value: '시' }, inputType: 'insertText', data: '시' });
+    await replayWebview2(input, webview2KoreanEscapeWhileComposing('시', leading229));
+    expect(input.value).toBe('시험');
+    await fireEvent.keyDown(input, { key: 'Escape', code: 'Escape', keyCode: 27 });
+    await fireEvent.keyUp(input, { key: 'Escape', code: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('');
+  });
+
+  it('INPUT-04 Windows WebView2 한글: Space로 조합을 끝낸 뒤 누른 Esc는 입력칸을 비운다', async () => {
+    const { input } = await setup();
+    await fireEvent.input(input, { target: { value: '시' }, inputType: 'insertText', data: '시' });
+    await replayWebview2(input, webview2KoreanSpaceAfterComposing('시'));
+    expect(input.value).toBe('시험 ');
+    await fireEvent.keyDown(input, { key: 'Escape', code: 'Escape', keyCode: 27 });
+    expect(input.value).toBe('');
+  });
+
+  it('INPUT-04 INPUT-05 Windows WebView2 한글: Enter로 확정해 추가한 뒤 누른 Esc는 다음 입력을 막지 않는다', async () => {
+    const { input, titles } = await setup();
+    await fireEvent.input(input, { target: { value: '시' }, inputType: 'insertText', data: '시' });
+    await replayWebview2(input, webview2KoreanEnterAfterComposing('시'));
+    expect([titles(), input.value]).toEqual([['시험'], '']);
+    await fireEvent.input(input, { target: { value: '다음' }, inputType: 'insertText', data: '음' });
+    await fireEvent.keyDown(input, { key: 'Escape', code: 'Escape', keyCode: 27 });
+    expect([titles(), input.value]).toEqual([['시험'], '']);
   });
 
   it('INPUT-04 조합 중 포커스를 잃어 compositionend가 오지 않았어도, 다시 돌아와 누른 Esc는 입력칸을 비운다', async () => {

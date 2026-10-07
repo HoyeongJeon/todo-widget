@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { TASKS_FILE } from '../../application/storage/task-repository.ts';
 import { createTestApp } from '../../testing/test-app.ts';
 import { koreanEscapeWhileComposing, koreanSpaceAfterComposing, replay } from '../../testing/webkit-korean-ime.ts';
+import { replayWebview2, webview2KoreanEscapeWhileComposing } from '../../testing/webview2-korean-ime.ts';
 import { createTranslator } from '../i18n/translator.ts';
 import { WidgetViewModel } from '../widget-view-model.svelte.ts';
 import TaskRow from './TaskRow.svelte';
@@ -138,6 +139,19 @@ describe('할 일 줄', () => {
     await fireEvent.input(opened, { target: { value: '보고서' }, inputType: 'insertText', data: '서' });
     await replay(opened, koreanSpaceAfterComposing('보고'));
     await fireEvent.keyDown(opened, { key: 'Escape', keyCode: 27 });
+    expect([field(), vm.renaming, current()?.title]).toEqual([null, null, '초안']);
+  });
+
+  it.each([
+    ['(A) Esc가 229로 한 번, compositionend 뒤 27로 또', true],
+    ['(B) compositionend 뒤 27로 한 번', false],
+  ])('INPUT-15 Windows WebView2 한글: 조합 중 누른 Esc는 이름 바꾸기를 취소하지 않고, 한 번 더 누른 Esc는 취소한다 %s', async (_, leading229) => {
+    const { startRename, field, vm, current } = await setup();
+    const opened = await startRename();
+    await fireEvent.input(opened, { target: { value: '시' }, inputType: 'insertText', data: '시' });
+    await replayWebview2(opened, webview2KoreanEscapeWhileComposing('시', leading229));
+    expect([field()?.value, vm.renaming?.draft]).toEqual(['시험', '시험']);
+    await fireEvent.keyDown(opened, { key: 'Escape', code: 'Escape', keyCode: 27 });
     expect([field(), vm.renaming, current()?.title]).toEqual([null, null, '초안']);
   });
 

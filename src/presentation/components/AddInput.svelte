@@ -16,7 +16,8 @@
     if (event.isComposing || event.keyCode === 229)
       return;
     if (event.key === 'Escape') {
-      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WKWebView 한글은 입력기가 글자를 확정한 뒤 그 Esc를 keyCode 27로 보낸다 (INPUT-04).
+      // 조합 중 Esc는 조합만 끝낸다(OS 관례). macOS WKWebView 한글은 입력기가 글자를 확정한 뒤, WebView2 한글은 compositionend 뒤에
+      // 그 Esc를 keyCode 27로 보낸다 (INPUT-04).
       if (!imeEscape)
         text = ''; // INPUT-04
       return;
@@ -50,6 +51,7 @@
     spellcheck="false"
     autocomplete="off"
     onkeydown={onKeydown}
+    onkeyup={() => composition.keyup()}
     oncompositionstart={() => composition.start()}
     oncompositionend={() => composition.end()}
     onbeforeinput={(event) => composition.input(event.inputType)}
