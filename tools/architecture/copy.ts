@@ -20,8 +20,13 @@ const BUTTON_INPUT_TYPES: ReadonlySet<string> = new Set(['button', 'submit', 're
 const LETTER = /\p{L}/u;
 /** ASCII 밖의 글자(한글, 한자, ä). 기술 문자열에는 쓰지 않으므로 늘 문구로 본다. */
 const NON_ASCII_LETTER = /(?![\u0000-\u007f])\p{L}/u;
-/** 공백 없는 기술 낱말: 이벤트·키 이름, 사전 키, 경로, CSS 값 하나, {n}, 속성 선택자(`[data-x]`, `input[type="text"]`). */
-const TECHNICAL_TOKEN = /^[A-Za-z0-9_.:/#@%+{}()|[\]="'-]*$/;
+/** 공백 없는 기술 낱말: 이벤트·키 이름, 사전 키, 경로, CSS 값 하나, {n}. */
+const TECHNICAL_TOKEN = /^[A-Za-z0-9_.:/#@%+{}()|-]*$/;
+/**
+ * CSS 속성 선택자: 소문자 요소·클래스 앞부분 뒤에 `[속성]`이나 `[속성=값]`이 하나 이상 붙는다(`[data-focus-home]`, `input[type="text"]`).
+ * 속성 이름은 소문자로 시작한다. 그래서 `[Beta]` 같은 대괄호 글이나 `x=y`, `Don't`는 선택자로 보지 않는다.
+ */
+const ATTRIBUTE_SELECTOR = /^[a-z0-9_.#:-]*(?:\[[a-z][a-z0-9-]*(?:=(?:"[^"]*"|'[^']*'|[a-z0-9_-]+))?\])+$/;
 /** 소문자 낱말을 공백으로 이은 CSS 클래스 목록. 낱말마다 글자가 있어야 한다('3 tasks left'는 문구다). */
 const CLASS_LIST = /^[a-z0-9_-]*[a-z][a-z0-9_-]*(?: [a-z0-9_-]*[a-z][a-z0-9_-]*)+$/;
 /** 화면에 보이지 않는 개발자용 문장: console.*(…)와 new Error(…)의 첫 인자. */
@@ -29,7 +34,7 @@ const DEVELOPER_MESSAGE_BEFORE = /(?:\bconsole\.(?:error|warn|info|log|debug)|\b
 
 /**
  * 문구로 보이는 문자열인지 (I18N-02, 설계 문서 7장의 예외 목록).
- * 예외: 글자가 없는 것, 공백 없는 기술 낱말, 소문자 CSS 클래스 목록. ASCII 밖의 글자가 있으면 늘 문구다.
+ * 예외: 글자가 없는 것, 공백 없는 기술 낱말, 소문자 CSS 클래스 목록, CSS 속성 선택자. ASCII 밖의 글자가 있으면 늘 문구다.
  */
 export function looksLikeCopy(value: string): boolean {
   if (!LETTER.test(value))
@@ -37,7 +42,7 @@ export function looksLikeCopy(value: string): boolean {
   if (NON_ASCII_LETTER.test(value))
     return true;
   const trimmed = value.trim();
-  return !TECHNICAL_TOKEN.test(trimmed) && !CLASS_LIST.test(trimmed);
+  return !TECHNICAL_TOKEN.test(trimmed) && !CLASS_LIST.test(trimmed) && !ATTRIBUTE_SELECTOR.test(trimmed);
 }
 
 /** presentation의 화면 문구가 사전 밖에 직접 쓰여 있는 곳 (I18N-02). */

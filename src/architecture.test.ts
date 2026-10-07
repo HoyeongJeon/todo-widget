@@ -276,7 +276,7 @@ describe('하드코딩 문구 검사', () => {
 
   it('I18N-02 속성 선택자는 기술 문자열이라 통과하고, 같은 파일의 문장은 여전히 찾는다', () => {
     expect(['[data-focus-home]', 'input[type="text"]', "button[aria-pressed='true']"].map(looksLikeCopy)).toEqual([false, false, false]);
-    expect(['[Add a task]', 'Save = done', '[할일]'].map(looksLikeCopy)).toEqual([true, true, true]);
+    expect(['[Add a task]', 'Save = done', '[할일]', "Don't", "Can't", '[Beta]', "'Done'", 'x=y'].map(looksLikeCopy)).toEqual(new Array(8).fill(true));
     const violations = checkCopy([
       file('src/presentation/g.ts', "const home = document.querySelector('[data-focus-home]');\nconst field = 'input[type=\"text\"]';\nconst hint = 'Add a task';"),
     ]);
