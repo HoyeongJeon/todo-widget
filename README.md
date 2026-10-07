@@ -39,7 +39,7 @@ If auto start was on in v1.4, it now starts v2.0 instead. If you had turned it o
 
 After that, you can delete the folder where you unzipped v1.4.
 
-If you forgot to quit v1.4 and both widgets are open, quit v1.4 with ⋯ → **종료**. Even if you leave it, only v2.0 starts at your next login.
+If you forgot to quit v1.4 and both widgets are open, quit v1.4 with ⋯ → **종료**. The two look the same; if you can't tell which is v1.4, quit both and start TodoWidget again from the Start menu (that is v2.0). Even if you leave v1.4 running, only v2.0 starts at your next login.
 
 ### Going back to v1.4
 
