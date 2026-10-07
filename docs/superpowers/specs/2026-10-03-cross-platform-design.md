@@ -36,6 +36,7 @@
 - 2026-10-07: Windows 확인 반영 — 13.2 IME Esc 줄에 WebView2 한글 순서(compositionend 뒤, keyup 전에 Esc keyCode 27)와 그 Esc도 거른다는 규칙을 적었다
 - 2026-10-07: 7장 I18N-02 자동 검사 예외에 CSS 속성 선택자를 따로 더했다(메뉴 포커스 돌려주기가 `[data-focus-home]`을 쓴다). 공백 없는 기술 낱말 규칙은 그대로라 `Don't`·`[Beta]`·`x=y`는 계속 문구로 본다. 화면 동작은 바뀌지 않는다
 - 2026-10-07: Windows 확인 반영 — 📌를 바꾼 뒤 WebView2에 키보드 포커스를 돌려주는 OS 분기를 `window-controller.ts`에 둔다고 5.4에 적었다(WND-09)
+- 2026-10-07: 보안 점검(/cso) 반영 — 13.3 계획 6 추가 결정에 workflow action SHA 고정을 더했다
 
 ## 1. 목적
 
@@ -567,3 +568,4 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 |---|---|---|
 | **(Task 4) `pnpm spec:check`가 `tools/release` 테스트를 요구사항 참조로 센다.** `tools/spec-check/config.ts`의 `TEST_GLOBS`에 `tools/release/**/*.test.ts`를 더했다(`spec/README.md`의 테스트 위치 목록도 같이). `tools/` 전체로 넓히지 않는다 | REL-03·05·10, PERF-05의 자동 테스트는 `tools/release/`에 있다(D1). 세지 않으면 이 항목들이 테스트 없는 자동 테스트 항목이 되어 `pnpm spec:check:strict`가 통과할 수 없다(REL-02). `tools/spec-check/` 테스트에는 검사기를 시험하는 예시 ID가 섞여 있어, `tools/` 전체를 세면 실제로 테스트하지 않는 요구사항까지 참조로 잡힌다 | 출시 도구 테스트를 `tools/release/` 밖에 두면 참조로 세지 않는다. 그때 `TEST_GLOBS`에 그 위치를 더한다. 되돌리려면 설정 한 줄과 문서 한 줄을 고친다 |
 | **(Task 2) ⋯ → 종료의 3초 상한(D7)을 spec START-08에 적었다(PM 결정, 2026-10-07).** 쓰는 중인 할 일 저장을 기다리되 3초를 넘기지 않는다 | 3초는 OS 쪽 종료 요청에 이미 있는 Rust 대비책(`QUIT_FALLBACK_DELAY`)과 같아, 저장이 멈춘 경우만 달라진다. 보통은 저장이 바로 끝나 사용자에게 보이는 차이가 없다. 다만 종료 동작의 규칙이므로 spec에 넣을지는 PM이 정한다 | spec만 보면 3초 상한을 알 수 없다. START-08의 "할 일은 따로 저장하지 않는다"와 달리 종료는 진행 중인 할 일 저장도 기다린다. 저장이 3초를 넘기면 그 저장이 끝나기 전에 앱이 끝날 수 있다. PM이 spec에 적기로 하면 START-08 한 줄을 고친다 |
+| **workflow의 action은 모두 커밋 SHA로 고정하고 버전을 주석으로 단다(PM 결정, 2026-10-07).** `ci.yml`·`release.yml`의 `uses:` 전부. 처음엔 다음 버전으로 미뤘으나 보안 점검에서 출시 전으로 당겼다 | 출시 build job은 서명 키를 받는다. 태그로 부르는 바깥 action(`pnpm/action-setup`, `Swatinem/rust-cache`)은 그 태그가 바뀌면 같은 runner에서 키를 훔치거나 악성 빌드에 정상 서명을 붙일 수 있다 | 고정한 버전의 보안 수정을 자동으로 받지 못한다. 올릴 때는 새 태그의 SHA를 확인해 직접 바꾼다 |
