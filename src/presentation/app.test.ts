@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cleanup, fireEvent, render } from '@testing-library/svelte';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { chromiumClick } from '../testing/chromium-pointer.ts';
 import { flush } from '../testing/fake-timer.ts';
 import { createTestApp } from '../testing/test-app.ts';
 import App from './App.svelte';
@@ -279,6 +280,64 @@ describe('위젯 화면', () => {
     expect(document.activeElement).toBe($('.menu'));
     await fireEvent.keyDown($('.menu'), { key: 'Escape' });
     await flush();
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('WND-10 WebView2: ⋯ 버튼을 눌러도 버튼이 포커스를 가져가지 않아, 메뉴를 Esc로 닫으면 입력칸에 바로 쓸 수 있다', async () => {
+    const { input, $, moreButton } = await setup();
+    input.focus();
+    await chromiumClick(moreButton());
+    await flush();
+    expect(document.activeElement).toBe($('.menu'));
+    await fireEvent.keyDown($('.menu'), { key: 'Escape' });
+    await flush();
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('WND-10 WebView2: 메뉴 바깥(backdrop)을 눌러 닫아도 포커스가 입력칸으로 돌아간다', async () => {
+    const { vm, input, $, moreButton } = await setup();
+    input.focus();
+    await chromiumClick(moreButton());
+    await flush();
+    await chromiumClick($('.backdrop'));
+    await flush();
+    expect(vm.menu.open).toBe(false);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('WND-10 메뉴를 열기 전 포커스가 입력칸이 아니었어도(우클릭 뒤 body), 메뉴를 닫으면 입력칸에 쓸 수 있다', async () => {
+    const { app, input, $ } = await setup();
+    app.session.add('보고서');
+    await flush();
+    input.focus();
+    // 포커스할 수 없는 줄을 누르면 Chromium은 포커스를 푼다. 메뉴가 기억하는 "열기 전 포커스"는 body다.
+    await chromiumClick($('.row'), { button: 2, clientX: 50, clientY: 80 });
+    await flush();
+    expect(document.activeElement).toBe($('.menu'));
+    await fireEvent.keyDown($('.menu'), { key: 'Escape' });
+    await flush();
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('WND-10 INPUT-13 WebView2: 우클릭 메뉴에서 이름 바꾸기를 고르면 포커스는 이름 바꾸기 칸에 남는다', async () => {
+    const { app, input, $, menuItems } = await setup();
+    app.session.add('보고서');
+    await flush();
+    input.focus();
+    await chromiumClick($('.row'), { button: 2, clientX: 50, clientY: 80 });
+    await flush();
+    await chromiumClick(menuItems()[3] as HTMLElement);
+    await flush();
+    expect(document.activeElement).toBe($('textarea'));
+  });
+
+  it('WND-09 WebView2: 📌 버튼을 눌러도 입력칸 포커스가 남는다', async () => {
+    const { vm, input, all } = await setup();
+    input.focus();
+    const pinned = vm.pinned;
+    await chromiumClick(all('.iconbtn')[0] as HTMLElement);
+    await flush();
+    expect(vm.pinned).toBe(!pinned);
     expect(document.activeElement).toBe(input);
   });
 

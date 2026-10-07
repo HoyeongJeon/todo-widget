@@ -45,6 +45,7 @@
   <input
     class="field"
     type="text"
+    data-focus-home
     bind:value={text}
     placeholder={vm.t('input.placeholder')}
     aria-label={vm.t('input.placeholder')}

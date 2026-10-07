@@ -17,6 +17,11 @@
   function stop(event: PointerEvent): void {
     event.stopPropagation();
   }
+
+  /** 버튼은 포커스를 가져가지 않는다. Chromium(WebView2)은 누를 때 버튼에 포커스를 줘, 입력칸에 쓰던 키가 버튼으로 간다 (WND-09, WND-10). */
+  function keepFocus(event: MouseEvent): void {
+    event.preventDefault();
+  }
 </script>
 
 <header class="header" role="presentation" onpointerdown={onPointerDown}>
@@ -33,6 +38,7 @@
     aria-label={vm.pinTooltip}
     aria-pressed={vm.pinned}
     onpointerdown={stop}
+    onmousedown={keepFocus}
     onclick={() => void vm.togglePin()}
   >
     <Icon name={vm.pinned ? 'pin' : 'unpin'} size={15} />
@@ -45,6 +51,7 @@
     aria-label={vm.t('menu.more')}
     aria-haspopup="menu"
     onpointerdown={stop}
+    onmousedown={keepFocus}
     onclick={(event) => onmore(event.currentTarget)}
   >
     <Icon name="more" size={15} />
