@@ -439,4 +439,18 @@ describe('위젯 화면', () => {
     await flush();
     expect(document.activeElement).toBe($('.pill:not(.danger)'));
   });
+
+  it('WND-10 INPUT-18 WebView2: ⋯ 메뉴에서 초기화를 누르면 메뉴가 포커스를 한 번 더 확인한 뒤에도 포커스는 확인 판의 취소 버튼에 있다', async () => {
+    const { app, vm, input, $, menuItems, moreButton } = await setup();
+    app.session.add('보고서');
+    await flush();
+    input.focus();
+    await chromiumClick(moreButton());
+    await flush();
+    await chromiumClick(menuItems()[1] as HTMLElement);
+    // flush는 setTimeout(0)을 여러 번 돌린다. 메뉴의 두 번째 포커스 확인(다음 task)도 이 안에서 끝난다.
+    await flush();
+    expect([vm.menu.open, vm.confirmingReset]).toEqual([false, true]);
+    expect(document.activeElement).toBe($('.pill:not(.danger)'));
+  });
 });

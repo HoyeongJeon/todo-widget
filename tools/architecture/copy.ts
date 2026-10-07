@@ -20,8 +20,8 @@ const BUTTON_INPUT_TYPES: ReadonlySet<string> = new Set(['button', 'submit', 're
 const LETTER = /\p{L}/u;
 /** ASCII 밖의 글자(한글, 한자, ä). 기술 문자열에는 쓰지 않으므로 늘 문구로 본다. */
 const NON_ASCII_LETTER = /(?![\u0000-\u007f])\p{L}/u;
-/** 공백 없는 기술 낱말: 이벤트·키 이름, 사전 키, 경로, CSS 값 하나, {n}. */
-const TECHNICAL_TOKEN = /^[A-Za-z0-9_.:/#@%+{}()|-]*$/;
+/** 공백 없는 기술 낱말: 이벤트·키 이름, 사전 키, 경로, CSS 값 하나, {n}, 속성 선택자(`[data-x]`, `input[type="text"]`). */
+const TECHNICAL_TOKEN = /^[A-Za-z0-9_.:/#@%+{}()|[\]="'-]*$/;
 /** 소문자 낱말을 공백으로 이은 CSS 클래스 목록. 낱말마다 글자가 있어야 한다('3 tasks left'는 문구다). */
 const CLASS_LIST = /^[a-z0-9_-]*[a-z][a-z0-9_-]*(?: [a-z0-9_-]*[a-z][a-z0-9_-]*)+$/;
 /** 화면에 보이지 않는 개발자용 문장: console.*(…)와 new Error(…)의 첫 인자. */

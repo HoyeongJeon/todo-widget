@@ -1,7 +1,5 @@
-/** 메뉴를 닫으면 키보드 포커스가 갈 기본 자리(입력칸)의 표시. `AddInput.svelte`의 `<input>`에 단다 (WND-10). */
-const FOCUS_HOME_ATTRIBUTE = 'data-focus-home';
-// 괄호를 따로 붙인다. 문구 검사(I18N-02)는 '[data-focus-home]' 같은 선택자를 기술 낱말로 보지 않는다.
-const FOCUS_HOME = '[' + FOCUS_HOME_ATTRIBUTE + ']';
+/** 메뉴를 닫으면 키보드 포커스가 갈 기본 자리(입력칸). `AddInput.svelte`의 `<input>`에 `data-focus-home`을 단다 (WND-10). */
+const FOCUS_HOME = '[data-focus-home]';
 
 /** 포커스가 팝업 안에 있었거나 갈 곳을 잃었다(body). 닫으면서 다른 칸(이름 바꾸기 칸, 확인 판)이 가져갔으면 아니다. */
 function focusLost(popup: Element | null): boolean {

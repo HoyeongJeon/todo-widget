@@ -274,6 +274,15 @@ describe('하드코딩 문구 검사', () => {
     ).toEqual([]);
   });
 
+  it('I18N-02 속성 선택자는 기술 문자열이라 통과하고, 같은 파일의 문장은 여전히 찾는다', () => {
+    expect(['[data-focus-home]', 'input[type="text"]', "button[aria-pressed='true']"].map(looksLikeCopy)).toEqual([false, false, false]);
+    expect(['[Add a task]', 'Save = done', '[할일]'].map(looksLikeCopy)).toEqual([true, true, true]);
+    const violations = checkCopy([
+      file('src/presentation/g.ts', "const home = document.querySelector('[data-focus-home]');\nconst field = 'input[type=\"text\"]';\nconst hint = 'Add a task';"),
+    ]);
+    expect(violations.map((v) => `${v.line} ${v.message}`)).toEqual(['3 화면 문구는 사전에서 꺼내요 (I18N-02): Add a task']);
+  });
+
   it('I18N-02 실제 화면 코드에는 사전 밖의 화면 문구가 없다', () => {
     const root = fileURLToPath(new URL('..', import.meta.url));
     expect(checkCopy(collectSources(root))).toEqual([]);
