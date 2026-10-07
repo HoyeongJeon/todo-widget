@@ -14,6 +14,7 @@ function setup(os: 'windows' | 'macos', scale: number, overrides: Partial<TauriW
     outerSize: async () => ({ width: 320 * scale, height: 520 * scale }),
     scaleFactor: async () => scale,
     startDragging: vi.fn(async () => undefined),
+    focusWebview: vi.fn(async () => undefined),
     onMoved: async (handler) => {
       movedHandler = handler;
       return unlisten;
@@ -73,6 +74,32 @@ describe('Tauri 창 제어 adapter', () => {
       ['keep_hidden'],
     ]);
     expect(api.startDragging).toHaveBeenCalledOnce();
+  });
+
+  it('WND-09 Windows에서는 맨 위 고정을 바꾼 뒤 WebView에 키보드 포커스를 돌려준다 (WebView2는 맨 위 고정을 바꾸면 키 입력을 잃는다)', async () => {
+    const calls: string[] = [];
+    const { invoke, controller } = setup('windows', 1.5, { focusWebview: vi.fn(async () => void calls.push('focusWebview')) });
+    invoke.mockImplementation(async (command: string) => void calls.push(command));
+    await controller.setPinned(true);
+    await controller.setPinned(false);
+    expect(calls).toEqual(['set_pinned', 'focusWebview', 'set_pinned', 'focusWebview']);
+  });
+
+  it('WND-09 macOS에서는 맨 위 고정을 바꿔도 WebView 포커스를 건드리지 않는다', async () => {
+    const { api, invoke, controller } = setup('macos', 2);
+    await controller.setPinned(true);
+    expect(invoke).toHaveBeenCalledWith('set_pinned', { pinned: true });
+    expect(api.focusWebview).not.toHaveBeenCalled();
+  });
+
+  it('WND-09 Windows에서 WebView 포커스 돌려주기가 실패해도 맨 위 고정은 성공으로 끝난다', async () => {
+    const failure = new Error('권한 없음');
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { invoke, controller } = setup('windows', 1, { focusWebview: vi.fn(async () => Promise.reject(failure)) });
+    await expect(controller.setPinned(true)).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledWith('set_pinned', { pinned: true });
+    expect(logged).toHaveBeenCalledWith(expect.any(String), failure);
+    logged.mockRestore();
   });
 
   it('WND-03 크기 조절은 native 단위로 따라가고, 놓으면 spec 좌표로 돌려준다 (Windows 배율 2)', async () => {

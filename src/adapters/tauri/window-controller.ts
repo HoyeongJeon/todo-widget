@@ -1,3 +1,4 @@
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { availableMonitors, getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window';
 import type { PointerStart, ScreenLayout, WindowController } from '../../application/ports/window-controller.ts';
 import type { ResizeEdge, SizeLimits } from '../../domain/resize.ts';
@@ -24,12 +25,14 @@ export interface TauriMonitor {
   workArea: { position: Point; size: Size };
 }
 
-/** `@tauri-apps/api/window`에서 쓰는 것. composition root가 실제 API로 채운다. */
+/** `@tauri-apps/api/window`·`webview`에서 쓰는 것. composition root가 실제 API로 채운다. */
 export interface TauriWindowApi {
   outerPosition(): Promise<Point>;
   outerSize(): Promise<Size>;
   scaleFactor(): Promise<number>;
   startDragging(): Promise<void>;
+  /** WebView에 키보드 포커스를 준다. Windows에서는 wry가 WebView2 `MoveFocus`를 부른다(DOM 포커스는 그대로). */
+  focusWebview(): Promise<void>;
   onMoved(handler: () => void): Promise<() => void>;
   primaryMonitor(): Promise<TauriMonitor | null>;
   availableMonitors(): Promise<TauriMonitor[]>;
@@ -43,6 +46,7 @@ export function tauriWindowApi(): TauriWindowApi {
     outerSize: () => current.outerSize(),
     scaleFactor: () => current.scaleFactor(),
     startDragging: () => current.startDragging(),
+    focusWebview: () => getCurrentWebview().setFocus(),
     onMoved: (handler) => current.onMoved(() => handler()),
     primaryMonitor,
     availableMonitors,
@@ -110,8 +114,18 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
       await setFrame({ left: native.left, top: native.top - raise * perCss, width: native.width, height: height * perCss });
     },
 
+    /**
+     * Windows WebView2는 맨 위 고정을 바꾸면(tao가 `SetWindowPos`·창 style을 다시 적용한다) DOM 포커스는 입력칸에 남아도
+     * 키 입력이 WebView에 오지 않는다. 그래서 바꾼 뒤 WebView에 키보드 포커스를 돌려준다 (WND-09).
+     * 돌려주기는 보조 동작이다. 실패해도 맨 위 고정은 이미 바뀌었으므로 실패로 돌려주지 않는다(돌려주면 화면이 📌 표시를 되돌린다).
+     */
     async setPinned(pinned: boolean): Promise<void> {
       await invoke('set_pinned', { pinned });
+      if (os === 'windows') {
+        await api.focusWebview().catch((error: unknown) => {
+          console.error('맨 위 고정을 바꾼 뒤 WebView 포커스를 돌려주지 못했어요', error);
+        });
+      }
     },
 
     async show(paintedAtMs: number): Promise<void> {

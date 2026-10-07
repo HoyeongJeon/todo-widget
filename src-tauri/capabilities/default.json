@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "주 창 권한",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-start-dragging", "updater:allow-check", "updater:allow-download-and-install", "process:allow-restart"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "core:webview:allow-set-webview-focus", "updater:allow-check", "updater:allow-download-and-install", "process:allow-restart"]
 }

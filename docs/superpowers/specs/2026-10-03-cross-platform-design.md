@@ -35,6 +35,7 @@
 - 2026-10-07: PM 결정 — 13.3 D7 줄: 3초 상한을 spec START-08에 적었다. v1.4로 되돌리기와 두 위젯 안내를 spec(storage.md, windows.md)과 README에 맞췄다
 - 2026-10-07: Windows 확인 반영 — 13.2 IME Esc 줄에 WebView2 한글 순서(compositionend 뒤, keyup 전에 Esc keyCode 27)와 그 Esc도 거른다는 규칙을 적었다
 - 2026-10-07: 7장 I18N-02 자동 검사 예외에 CSS 속성 선택자를 따로 더했다(메뉴 포커스 돌려주기가 `[data-focus-home]`을 쓴다). 공백 없는 기술 낱말 규칙은 그대로라 `Don't`·`[Beta]`·`x=y`는 계속 문구로 본다. 화면 동작은 바뀌지 않는다
+- 2026-10-07: Windows 확인 반영 — 📌를 바꾼 뒤 WebView2에 키보드 포커스를 돌려주는 OS 분기를 `window-controller.ts`에 둔다고 5.4에 적었다(WND-09)
 
 ## 1. 목적
 
@@ -209,6 +210,7 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | 위치 | 내용 |
 |---|---|
 | `src/adapters/` 중 OS별 파일 | (없음 — 데이터 폴더는 Rust가 정한다. 자동 실행 adapter도 Rust 명령만 부르므로 OS 분기가 없다) |
+| `src/adapters/tauri/window-controller.ts` | Windows에서만 📌(맨 위 고정)를 바꾼 뒤 WebView에 키보드 포커스를 돌려준다(`setFocus`, WND-09). WebView2는 tao가 맨 위 고정을 다시 적용하면 DOM 포커스는 남아도 키 입력을 잃는다 |
 | `src/adapters/tauri/coordinates.ts` | 좌표 단위. Windows는 실제 픽셀을 위치는 주 모니터 배율로, 크기는 창이 있는 모니터 배율로 나눈다. macOS는 포인트 그대로다(window.md 용어 "크기와 좌표") |
 | `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, Reopen 받기, 로그인 항목(SMAppService) 등록·해제·상태 읽기, 창 영역 한 번에 바꾸기(`NSWindow`), OS 이름(`OS_NAME`). 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
 | `src-tauri/src/platform/windows.rs` | `todowidget_windows`를 앱에 잇는다(자동 실행, 창 영역), OS 이름(`OS_NAME`). 작업 표시줄 숨김은 Tauri 설정 `skipTaskbar`로 한다 |
@@ -472,7 +474,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | **로컬 Windows 대상 검사는 `todowidget-core`와 `todowidget-windows`만 한다.** 앱 crate의 Windows 빌드는 CI에서 확인한다 | updater가 ring을 끌어오고, ring의 C 빌드에는 MSVC 헤더가 필요하다. Mac에서는 llvm이 있어도 앱 crate를 Windows 대상으로 검사할 수 없다. 그래서 앱 crate의 Windows 코드(`platform/windows.rs`)는 얇게 두고, 로직은 두 crate에 둔다 |
 | **STORE-10 대화 상자는 Rust 명령 `show_error_dialog`가 창 없이(parent 없이) 띄운다.** JS 패키지 `@tauri-apps/plugin-dialog`는 지웠다 | STORE-10에서는 위젯 창이 숨어 있다. 창에 붙인 macOS sheet는 보이지 않고 닫히지도 않는다 |
 | **창을 띄울지는 `ShowGate`가 한 번만 정한다(정하지 않음·띄움·숨긴 채 둠).** 다시 실행·메뉴 막대 "열기"·Reopen은 `reveal()`을 거치고, 숨긴 채 두기로 정했으면 아무것도 하지 않는다 | STORE-10 대화 상자 중에 다시 실행해도 빈 창이 뜨지 않게 한다 |
-| **OS 이름은 Rust `platform::OS_NAME`이 준다** (`app_info` 명령) | OS 분기를 `platform/` 안에 둔다(5.4). JS는 받은 이름으로 좌표 단위만 고른다(`coordinates.ts`) |
+| **OS 이름은 Rust `platform::OS_NAME`이 준다** (`app_info` 명령) | OS 분기를 `platform/` 안에 둔다(5.4). JS는 받은 이름으로 좌표 단위(`coordinates.ts`)와 📌 뒤 WebView 포커스 돌려주기(`window-controller.ts`, Windows만)를 고른다 |
 | **크기 조절 pointer 추적은 듣기를 바로(동기로) 건다.** `pointerup` 말고도 `buttons === 0`이나 `lostpointercapture`가 오면 끝낸다 | 시작 값을 읽는 동안 놓은 pointer를 놓치면 창이 마우스를 계속 따라간다 |
 
 **쓴 plugin과 crate**

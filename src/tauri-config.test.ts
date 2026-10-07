@@ -63,6 +63,10 @@ describe('Tauri 설정', () => {
     expect(updaterPermissions).toEqual(['updater:allow-check', 'updater:allow-download-and-install']);
   });
 
+  it('WND-09 화면은 맨 위 고정을 바꾼 뒤 WebView에 키보드 포커스를 돌려줄 수 있다 (Windows WebView2)', () => {
+    expect(capabilities.permissions).toContain('core:webview:allow-set-webview-focus');
+  });
+
   it('MAC-10 투명 창을 위해 macOSPrivateApi를 켠다', () => {
     expect(config.app.macOSPrivateApi).toBe(true);
     expect(mainWindow.transparent).toBe(true);
