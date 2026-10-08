@@ -4,6 +4,12 @@ A small, always-on to-do widget for Windows and macOS. It floats on your desktop
 
 The widget follows your system language: Korean, English, German, or Simplified Chinese.
 
+<p align="center">
+  <img src="docs/images/widget.png" width="320" alt="The widget with one in-progress task highlighted in orange, three tasks to do, and two finished tasks in the open 끝낸 일 section">
+</p>
+
+The screenshots show v1.4 with the Korean UI. v2.0 looks almost the same.
+
 ## Install
 
 ### Windows 10/11 (x64)
@@ -71,6 +77,10 @@ Changes you made in v2.0 are not included. v1.4 reads `settings.json` as it is. 
 - **Single instance.** Opening it again brings the existing widget to the front.
 - **Out of the way.** On Windows there is no taskbar button and no tray icon. On macOS there is no Dock icon. A menu bar icon brings the widget to the front, and right-clicking it shows **Open** and **Quit**.
 - **Follows you on macOS.** The widget shows on every desktop (Space). It hides while another app is in full screen.
+
+| Right-click a task | ⋯ menu | Clear all |
+|:---:|:---:|:---:|
+| <img src="docs/images/right-click-menu.png" width="250" alt="Right-click menu on a task with 할 일, 하는 중, 끝낸 일, 이름 바꾸기, and 삭제"> | <img src="docs/images/more-menu.png" width="250" alt="The ⋯ menu with auto start, the transparency slider at 15%, 초기화, and 종료"> | <img src="docs/images/clear-all.png" width="250" alt="Confirmation panel asking whether to delete all 6 tasks, with 취소 and 모두 지우기 buttons"> |
 
 ## Updates
 
