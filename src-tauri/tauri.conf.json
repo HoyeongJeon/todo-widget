@@ -39,7 +39,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERGOThBRTI2NkE3NTFFM0IKUldRN0huVnFKcTZZMzI2R1RiY3ltS0EwUC9ySUJsQTduWkJVeXVBMThqdGMrV2lrYmQxNlhPenoK",
-      "endpoints": ["https://github.com/HoyeongJeon/windows-todo-widget/releases/latest/download/latest.json"],
+      "endpoints": ["https://github.com/HoyeongJeon/todo-widget/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
   },

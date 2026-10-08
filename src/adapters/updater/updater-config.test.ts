@@ -11,6 +11,10 @@ describe('업데이트 설정', () => {
     expect(updater.endpoints[0]).not.toContain('{{');
   });
 
+  it('REL-08 업데이트 주소는 새 저장소 이름 todo-widget의 latest.json이다', () => {
+    expect(updater.endpoints[0]).toBe('https://github.com/HoyeongJeon/todo-widget/releases/latest/download/latest.json');
+  });
+
   it('UPD-02 요청에 따로 붙이는 header가 없다', () => {
     expect(updater.headers).toBeUndefined();
   });
