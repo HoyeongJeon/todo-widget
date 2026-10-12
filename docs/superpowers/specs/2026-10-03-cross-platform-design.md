@@ -38,6 +38,7 @@
 - 2026-10-07: Windows 확인 반영 — 📌를 바꾼 뒤 WebView2에 키보드 포커스를 돌려주는 OS 분기를 `window-controller.ts`에 둔다고 5.4에 적었다(WND-09)
 - 2026-10-07: 보안 점검(/cso) 반영 — 13.3 계획 6 추가 결정에 workflow action SHA 고정을 더했다
 - 2026-10-12: PM 결정 — 3장 다음 버전 후보에 "켤 때 입력칸에 키보드 커서"를 더했다(v2.0.0 Windows 확인에서 나옴, v1.4와 같은 동작이라 출시를 막지 않음)
+- 2026-10-12: v2.0.0 출시 — 12장 Windows 줄(IME, 시작 시간, 메모리, 설치 파일 크기, 자동 실행, WebView2)을 계획 6 Windows 확인 결과로 채웠다
 
 ## 1. 목적
 
@@ -426,7 +427,7 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 
 개발 초기에 실제로 띄워서 확인하고, 기대와 다르면 바로 PM에게 보고한다.
 
-결과는 계획 2 위험 확인(Mac, 2026-10-03)의 결과다. 자세한 숫자와 방법은 [보고서](../reports/2026-10-03-plan2-risk-check.md)에 있다. Windows 항목은 아직 확인하지 않았다.
+결과는 계획 2 위험 확인(Mac, 2026-10-03)의 결과다. 자세한 숫자와 방법은 [보고서](../reports/2026-10-03-plan2-risk-check.md)에 있다. Windows 항목은 계획 6에서 PM이 회사 PC(실제 v1.4 데이터)로 확인했다(시험 설치 파일 2026-10-07, v2.0.0 초안 2026-10-12. 계획 6 실행 기록).
 
 | 항목 | 확인할 것 | 결과 |
 |---|---|---|
@@ -434,15 +435,15 @@ Windows에서는 WebView2 때문에 v1.4보다 메모리를 더 쓸 수 있다. 
 | macOS 창 크기 조절 | 가장자리와 모서리를 끌어 크기 바꾸기 (WND-03) | 실패 → 계획 4. tao 0.37.1이 macOS에서 `drag_resize_window`를 지원하지 않는다(`NotSupported`). macOS는 가장자리를 누른 채 움직이는 포인터를 따라 창 크기를 직접 바꾼다(`setSize`). Windows는 OS 기본 크기 조절을 그대로 쓴다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5). 계획 4에서 두 OS 모두 직접 구현으로 바꿨다(13장 개발 결정) |
 | macOS 메뉴 막대·Spaces | Dock 숨김, 메뉴 막대 아이콘, 모든 Spaces 따라다니기 | 통과. Dock·Cmd+Tab에 없고, 메뉴 막대 아이콘 클릭·메뉴·다시 열기가 되고, 모든 데스크톱에 보인다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
 | macOS 전체 화면 | 📌일 때 전체 화면 위 표시 (처음 계획) | PM 결정으로 바뀜. 📌를 켜도 전체 화면 앱 위에 뜨지 않았고, PM이 숨는 쪽을 골랐다. 이제 전체 화면에서는 📌와 관계없이 숨는다(MAC-07). 전체 화면 위 표시 코드는 지웠다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
-| IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 | 통과 (Mac). 한글, 중국어 병음 모두 하나만 추가되고 이어서 입력된다. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
-| 시작 시간 | 11장 기준 측정 (PERF-01) | 통과 (Mac). 중앙값 428ms, 기준 500ms와의 여유는 70ms쯤이다. 설치·업데이트 뒤 첫 실행은 2.3초였다(PERF-01 조건 밖, 참고). probe 기준(실행 파일 로딩과 화면 합성 제외)이라 실제보다 짧다. 계획 5 Task 15에서 실제 화면으로 다시 재어 중앙값 470ms(통과, 여유 30ms쯤). Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 2) |
-| 메모리 | 11장 기준 측정 (PERF-04) | 통과 (Mac). 관련 프로세스 4개 합 53.5~57.5MB, 기준 120MB. 계획 5 실제 화면에서 약 61MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
+| IME | 한글·중국어(병음) 조합 중 Enter로 정확히 하나 추가, 이어서 입력 | 통과 (Mac). 한글, 중국어 병음 모두 하나만 추가되고 이어서 입력된다. Windows(계획 6): 한글 두벌식 조합 중 Enter 통과(병음은 따로 기록 없음). 조합 중 Esc는 WebView2가 compositionend 뒤 Esc를 다시 보내 처음에 글을 지웠고, 고친 뒤 통과(13.2) ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 5) |
+| 시작 시간 | 11장 기준 측정 (PERF-01) | 통과 (Mac). 중앙값 428ms, 기준 500ms와의 여유는 70ms쯤이다. 설치·업데이트 뒤 첫 실행은 2.3초였다(PERF-01 조건 밖, 참고). probe 기준(실행 파일 로딩과 화면 합성 제외)이라 실제보다 짧다. 계획 5 Task 15에서 실제 화면으로 다시 재어 중앙값 470ms(통과, 여유 30ms쯤). Windows(계획 6): PM이 눈으로 볼 때 흰 화면 없이 곧바로 떴다(통과). probe 숫자는 받지 않았다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 2) |
+| 메모리 | 11장 기준 측정 (PERF-04) | 통과 (Mac). 관련 프로세스 4개 합 53.5~57.5MB, 기준 120MB. 계획 5 실제 화면에서 약 61MB. Windows(계획 6): PM 확인 통과(120MB 이하). 숫자는 기록하지 않았다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
 | 가만히 있을 때 CPU | 11장 기준 측정 (PERF-03) | 통과 (Mac, 계획 5에서 다시 잼). 계획 2 빈 화면에서는 1분 평균이 6구간 중 5구간은 1% 미만, 1구간은 1.2%였다(주의). 계획 5 실제 화면에서는 켠 뒤 가만히 둔 2분 동안 앱 0%, WebKit 약 0.1%였다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 3) |
-| 설치 파일 크기 | 11장 기준 측정 (PERF-05) | 통과 (Mac). dmg 1.55MB, 기준 15MB. Windows는 확인 전 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 1) |
-| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) | 계획 4에서 구현했다(`todowidget_windows::run_key`). 실제 레지스트리 읽기·쓰기는 Windows CI의 Rust 테스트로 보고, 작업 관리자 표시는 Windows PC에서 확인한다 |
+| 설치 파일 크기 | 11장 기준 측정 (PERF-05) | 통과 (Mac). dmg 1.55MB, 기준 15MB. v2.0.0 출시 파일은 universal dmg 4.95MB, Windows 설치 파일 1.90MB(계획 6) ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 1) |
+| Windows 자동 실행 | plugin을 쓰지 않고 직접 구현한다. `Run`의 값 이름 `TodoWidget`(v1.4와 같음)과 작업 관리자의 끈 표시(`StartupApproved\Run`)를 실제 Windows에서 읽고 쓰는지 (WIN-03, WIN-04) | 계획 4에서 구현했다(`todowidget_windows::run_key`). 실제 레지스트리 읽기·쓰기는 Windows CI의 Rust 테스트로 보고, 작업 관리자 표시는 Windows PC에서 확인한다 → 계획 6 회사 PC 확인 통과. v1.4의 Run 값을 이어받아 로그인 때 v2.0만 떴고(WIN-09), ⋯ 메뉴로 끄고 켜면 Run 값이 사라지고 생겼다(START-04) |
 | macOS 자동 실행 | 로그인 항목(SMAppService)을 직접 구현한다. 켜기·끄기·상태 읽기와 켤 때마다 다시 등록하기가 실제 macOS에서 되는지 (MAC-08) | 통과. 등록·해제·상태 읽기가 된다. 로그아웃 뒤 다시 로그인했을 때 실제로 켜지는지는 PERF-06 확인 때 본다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
 | macOS 자동 실행과 ad-hoc 서명 | ad-hoc 서명은 빌드마다 바뀐다. 그래서 업데이트할 때마다 로그인 항목이 "승인 필요"가 되거나 사라질 수 있고, 그러면 MAC-08이 자동 실행을 꺼짐으로 읽는다. 계획 2 초기 확인에서 두 빌드로 업데이트해 보고, 그렇다면 PM과 대응을 정한다 | 통과. 2.0.0으로 등록하고 2.0.1로 덮어써 서명(CDHash)이 바뀐 뒤에도 켜짐으로 남았다. MAC-08 방식을 그대로 간다 ([보고서](../reports/2026-10-03-plan2-risk-check.md) Step 6) |
-| Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 | Windows 확인 전 |
+| Windows WebView2 | Windows 10에서 WebView2가 없으면 설치 파일이 함께 설치하는지 | 확인하지 못했다. WebView2가 없는 Windows 10 PC가 없다. 확인한 회사 PC에서는 설치 파일이 그대로 동작했다. README에 이때 인터넷이 필요하다고 적었다 |
 | macOS 업데이트 | 새 macOS가 나오면 투명 창(`macOSPrivateApi`)이 계속 동작하는지 | 지금은 해당 없음. 새 macOS가 나오면 MAC-12로 본다 |
 
 ## 13. 기술 선택 기록
