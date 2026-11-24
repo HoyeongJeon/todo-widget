@@ -39,6 +39,7 @@
 - 2026-10-07: 보안 점검(/cso) 반영 — 13.3 계획 6 추가 결정에 workflow action SHA 고정을 더했다
 - 2026-10-12: PM 결정 — 3장 다음 버전 후보에 "켤 때 입력칸에 키보드 커서"를 더했다(v2.0.0 Windows 확인에서 나옴, v1.4와 같은 동작이라 출시를 막지 않음)
 - 2026-10-12: v2.0.0 출시 — 12장 Windows 줄(IME, 시작 시간, 메모리, 설치 파일 크기, 자동 실행, WebView2)을 계획 6 Windows 확인 결과로 채웠다
+- 2026-11-24: PM 결정 — Windows 작업 표시줄에 버튼을 더했다(5.4, 6장). 가려진 위젯을 눌러 꺼내고 다시 눌러 뒤로 보낸다. 달력 위젯과 같은 방식이되, 할 일 위젯은 📌를 끄면 일반 창이라 다른 창을 눌렀을 때 맨 뒤로 내리지는 않는다. 자세한 규칙은 `spec/platform/windows.md` WIN-10~12.
 
 ## 1. 목적
 
@@ -217,8 +218,8 @@ main.ts        composition root. 실행할 때 adapter를 만들어 주입한다
 | `src/adapters/tauri/window-controller.ts` | Windows에서만 📌(맨 위 고정)를 바꾼 뒤 WebView에 키보드 포커스를 돌려준다(`setFocus`, WND-09). WebView2는 tao가 맨 위 고정을 다시 적용하면 DOM 포커스는 남아도 키 입력을 잃는다 |
 | `src/adapters/tauri/coordinates.ts` | 좌표 단위. Windows는 실제 픽셀을 위치는 주 모니터 배율로, 크기는 창이 있는 모니터 배율로 나눈다. macOS는 포인트 그대로다(window.md 용어 "크기와 좌표") |
 | `src-tauri/src/platform/macos.rs` | 메뉴 막대 아이콘, Dock 숨김, Reopen 받기, 로그인 항목(SMAppService) 등록·해제·상태 읽기, 창 영역 한 번에 바꾸기(`NSWindow`), OS 이름(`OS_NAME`). 모든 Spaces 따라다니기는 Tauri 설정 `visibleOnAllWorkspaces`로 한다 |
-| `src-tauri/src/platform/windows.rs` | `todowidget_windows`를 앱에 잇는다(자동 실행, 창 영역), OS 이름(`OS_NAME`). 작업 표시줄 숨김은 Tauri 설정 `skipTaskbar`로 한다 |
-| `src-tauri/crates/windows/` | 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기(`run_key.rs`), 창 위치·크기 한 번에 바꾸기(`frame.rs`, `SetWindowPos`) |
+| `src-tauri/src/platform/windows.rs` | `todowidget_windows`를 앱에 잇는다(자동 실행, 창 영역), OS 이름(`OS_NAME`). 작업 표시줄 버튼(WIN-10)은 Tauri 설정 `skipTaskbar: false`로 켜고, 버튼 누름(WIN-11, 12)은 `todowidget_windows::taskbar`에 잇는다 |
+| `src-tauri/crates/windows/` | 레지스트리 `Run`·`StartupApproved\Run` 읽기·쓰기(`run_key.rs`), 창 위치·크기 한 번에 바꾸기(`frame.rs`, `SetWindowPos`), 작업 표시줄 버튼을 다시 눌렀을 때의 최소화 요청 처리(`taskbar.rs`, 창 메시지 subclass) |
 | `src/presentation/theme/` | 겉모양 CSS 변수(`theme.css`, 시안 값)와 OS·언어별 글꼴. 글꼴 이름은 `theme.css`의 `--font-{macos,windows}-{ko,en,zh}` 변수에 있고, `fonts.ts`가 OS와 화면 언어로 변수를 고른다 |
 
 **Rust crate 구성**
@@ -249,9 +250,9 @@ Mac에서 Windows 대상으로 검사하는 것은 `todowidget-core`와 `todowid
 
 | 항목 | Windows | macOS |
 |---|---|---|
-| 앱이 보이는 곳 | 위젯만. 작업 표시줄, 트레이 없음 (v1.4와 같음) | 위젯 + 메뉴 막대 아이콘. Dock, Cmd+Tab 없음 |
-| 가려졌을 때 | 바로가기·시작 메뉴로 다시 실행하면 기존 위젯이 앞으로 | 메뉴 막대 아이콘 클릭. Spotlight로 다시 실행해도 같음 |
-| 종료 | ⋯ → 종료 | ⋯ → 종료, 메뉴 막대 아이콘 우클릭 → 종료 |
+| 앱이 보이는 곳 | 위젯과 작업 표시줄 버튼. 트레이 없음 (2026-11-24 PM 결정. 그 전에는 v1.4처럼 버튼도 없었다) | 위젯 + 메뉴 막대 아이콘. Dock, Cmd+Tab 없음 |
+| 가려졌을 때 | 작업 표시줄 버튼. 바로가기·시작 메뉴로 다시 실행해도 같음 | 메뉴 막대 아이콘 클릭. Spotlight로 다시 실행해도 같음 |
+| 종료 | ⋯ → 종료, 작업 표시줄 버튼 우클릭 → 창 닫기 | ⋯ → 종료, 메뉴 막대 아이콘 우클릭 → 종료 |
 | 데스크톱 전환 | 해당 없음 | 모든 Spaces에 따라다님. 전체 화면 앱에서는 📌와 관계없이 보이지 않음. 📌는 일반 데스크톱에서 맨 위 고정만 정함 |
 | 자동 실행 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, 값 이름 `TodoWidget` (v1.4와 같음) | 로그인 항목(SMAppService) |
 | 처음 실행 | `settings.json`이 없으면 처음 실행 → 자동 실행 켬 | 같음 |

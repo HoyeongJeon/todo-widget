@@ -24,7 +24,7 @@
         "decorations": false,
         "visible": false,
         "alwaysOnTop": true,
-        "skipTaskbar": true,
+        "skipTaskbar": false,
         "visibleOnAllWorkspaces": true,
         "shadow": false,
         "resizable": false,

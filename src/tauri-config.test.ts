@@ -76,11 +76,11 @@ describe('Tauri 설정', () => {
     expect(config.bundle.macOS.signingIdentity).toBe('-');
   });
 
-  it('WIN-02 창은 테두리 없이 숨긴 채 시작하고 작업 표시줄에 나오지 않는다', () => {
+  it('WIN-02 WIN-10 창은 테두리 없이 숨긴 채 시작하고 작업 표시줄에 버튼이 있다', () => {
     expect(mainWindow).toMatchObject({
       decorations: false,
       visible: false,
-      skipTaskbar: true,
+      skipTaskbar: false,
       alwaysOnTop: true,
       visibleOnAllWorkspaces: true,
       shadow: false,

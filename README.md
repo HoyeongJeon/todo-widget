@@ -75,7 +75,7 @@ Changes you made in v2.0 are not included. v1.4 reads `settings.json` as it is. 
 - **Remembers its place.** Position, size, transparency, pin state, and fold state are restored on the next launch.
 - **Starts at login.** Auto start is turned on at the first run. Turn it off or on with ⋯ → **Open at login**. Windows uses the Run key in the registry. macOS uses a login item.
 - **Single instance.** Opening it again brings the existing widget to the front.
-- **Out of the way.** On Windows there is no taskbar button and no tray icon. On macOS there is no Dock icon. A menu bar icon brings the widget to the front, and right-clicking it shows **Open** and **Quit**.
+- **Out of the way.** On Windows there is a taskbar button and no tray icon. Click the button to bring the widget to the front, and click it again to send it behind your other windows. On macOS there is no Dock icon. A menu bar icon brings the widget to the front, and right-clicking it shows **Open** and **Quit**.
 - **Follows you on macOS.** The widget shows on every desktop (Space). It hides while another app is in full screen.
 
 | Right-click a task | ⋯ menu | Clear all |
