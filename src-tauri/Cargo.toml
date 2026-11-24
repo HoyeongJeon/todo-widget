@@ -1,6 +1,6 @@
 [package]
 name = "todo-widget"
-version = "2.0.0"
+version = "2.1.0"
 description = "늘 떠 있는 작은 할 일 위젯"
 edition = "2021"
 
