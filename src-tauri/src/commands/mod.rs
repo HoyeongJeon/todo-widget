@@ -17,9 +17,13 @@ const QUIT_FALLBACK_DELAY: Duration = Duration::from_secs(3);
 const QUIT_EVENT: &str = "quit-requested";
 
 /// 창을 앞으로 가져온다. 처음 띄울 때와 `reveal`이 같이 쓴다.
+/// 최소화된 창은 tao의 포커스 주기가 무시하므로 먼저 푼다 (WIN-07, WIN-14).
 pub fn bring_to_front(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
+        if window.is_minimized().unwrap_or(false) {
+            let _ = window.unminimize();
+        }
         let _ = window.set_focus();
     }
 }

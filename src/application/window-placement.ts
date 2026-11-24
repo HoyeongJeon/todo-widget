@@ -18,6 +18,7 @@ export interface PlacementDeps {
  * 창 위치·크기·맨 위 고정을 설정과 맞춘다. 켤 때 적용하고(WND-04~09), 옮기거나(WND-02) 크기를 바꾸면(WND-03) 저장하며,
  * 종료할 때 위치를 저장한다(WND-14). 창 높이는 내용에 맞추고(WND-03), 메뉴가 창보다 크면 열린 동안 늘린다(WND-10, 저장하지 않음).
  * 창 높이 바꾸기(맞추기·늘리기·되돌리기)는 하나씩 차례로 한다.
+ * 최소화된 동안에는 창을 바꾸지도 위치를 저장하지도 않고, 미룬 일은 최소화를 풀 때 한다(WIN-13).
  */
 export class WindowPlacement {
   readonly #deps: PlacementDeps;
@@ -34,6 +35,9 @@ export class WindowPlacement {
   #resizing = false;
   /** 늘린 동안 이동 저장을 건너뛰었다. 되돌린 뒤 다시 저장한다 (WND-02). */
   #saveAfterRestore = false;
+  /** 최소화된 동안 미룬 창 높이 맞추기와 되돌리기가 있다 (WIN-13). */
+  #fitDeferred = false;
+  #restoreDeferred = false;
   /** 창 높이 바꾸기 줄의 끝. 실패해도 다음 것을 막지 않는다. */
   #frames: Promise<void> = Promise.resolve();
 
@@ -62,7 +66,7 @@ export class WindowPlacement {
     await window.setBounds({ ...position, width: size.width, height: size.maxHeight });
     this.#height = size.maxHeight;
     await window.setPinned(saved.pinned);
-    this.#stopMoved ??= window.onMoved(() => this.#scheduleSave());
+    this.#stopMoved ??= window.onMoved(() => this.#moved());
   }
 
   async setPinned(pinned: boolean): Promise<void> {
@@ -98,6 +102,7 @@ export class WindowPlacement {
   /** 메뉴·확인 판이 들어가게 창 위쪽을 raise만큼 올리고 높이를 height로 늘린다. 저장하지 않는다 (WND-10). */
   expand(raise: number, height: number): Promise<void> {
     return this.#frame(async () => {
+      this.#restoreDeferred = false;
       const previous = this.#raised ?? 0;
       await this.#deps.window.setHeight(height, raise - previous);
       this.#raised = raise;
@@ -113,6 +118,9 @@ export class WindowPlacement {
     return this.#frame(async () => {
       const raised = this.#raised;
       if (raised === null)
+        return;
+      this.#restoreDeferred = await this.#minimized();
+      if (this.#restoreDeferred)
         return;
       const target = this.#target() ?? this.#height;
       await this.#deps.window.setHeight(target, -raised);
@@ -163,7 +171,11 @@ export class WindowPlacement {
   async captureForQuit(): Promise<void> {
     this.#cancelPending();
     await this.restore().catch(() => undefined);
-    await this.#savePosition();
+    // 최소화되어 있으면 위치는 그대로 두고, 다른 설정만 저장한다 (WIN-13).
+    if (await this.#minimized())
+      await this.#deps.settings.save().catch(() => undefined);
+    else
+      await this.#savePosition();
   }
 
   dispose(): void {
@@ -180,6 +192,9 @@ export class WindowPlacement {
     const target = this.#target();
     if (target === null || target === this.#height)
       return;
+    this.#fitDeferred = await this.#minimized();
+    if (this.#fitDeferred)
+      return;
     await this.#deps.window.setHeight(target, 0);
     this.#height = target;
   }
@@ -188,6 +203,20 @@ export class WindowPlacement {
     const run = this.#frames.then(task);
     this.#frames = run.catch(() => undefined);
     return run;
+  }
+
+  /** 최소화와 풀기도 이동 신호로 온다. 미룬 일이 있을 때만 창을 다시 읽으므로, 보통 끌기에는 IPC가 늘지 않는다. */
+  #moved(): void {
+    this.#scheduleSave();
+    if (this.#restoreDeferred)
+      void this.restore().catch(() => undefined);
+    if (this.#fitDeferred && this.#contentHeight !== null)
+      void this.fitToContent(this.#contentHeight).catch(() => undefined);
+  }
+
+  /** 읽지 못하면 최소화되지 않은 것으로 본다. 최소화는 드물고, 그 밖의 때에 창 높이가 멈추면 안 되기 때문이다. */
+  #minimized(): Promise<boolean> {
+    return this.#deps.window.minimized().catch(() => false);
   }
 
   #scheduleSave(): void {
@@ -206,6 +235,7 @@ export class WindowPlacement {
   /**
    * 메뉴로 창을 늘린 동안은 사용자가 옮긴 위치가 아니므로 저장하지 않는다. 대신 되돌린 뒤 다시 저장하게 표시한다.
    * 위로 늘렸다면 되돌릴 때 이동 신호도 오지만, 아래로만 늘렸으면(raise 0) 오지 않는다.
+   * 최소화 여부는 위치를 읽은 뒤에 본다. 먼저 보면 그 사이 최소화되어 화면 밖 위치를 저장할 수 있다 (WIN-13).
    */
   async #savePosition(): Promise<void> {
     if (this.#raised !== null) {
@@ -214,6 +244,8 @@ export class WindowPlacement {
     }
     try {
       const bounds = await this.#deps.window.bounds();
+      if (await this.#minimized())
+        return;
       await this.#deps.settings.update({ left: bounds.left, top: bounds.top });
     } catch {
       // 위치를 읽지 못하면 이번 저장은 건너뛴다. 설정 저장 실패는 SettingsService가 조용히 넘긴다(STORE-17).

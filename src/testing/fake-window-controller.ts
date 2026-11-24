@@ -23,6 +23,7 @@ export class FakeWindowController implements WindowController {
   /** 주면 resize가 이 약속이 끝날 때까지 놓지 않은 채 멈춰 있다. */
   resizeGate: Promise<void> | null = null;
   heightCalls: Array<{ height: number; raise: number }> = [];
+  #beforeMinimize: Rect | null = null;
   readonly #moved = new Set<() => void>();
 
   async screen(): Promise<ScreenLayout> {
@@ -33,6 +34,10 @@ export class FakeWindowController implements WindowController {
     if (this.failBounds)
       throw new Error('창 위치를 읽지 못했어요');
     return { ...this.current };
+  }
+
+  async minimized(): Promise<boolean> {
+    return this.#beforeMinimize !== null;
   }
 
   async setBounds(rect: Rect): Promise<void> {
@@ -83,6 +88,25 @@ export class FakeWindowController implements WindowController {
   /** 사용자가 창을 끌어 옮긴 것처럼 한다. */
   moveTo(left: number, top: number): void {
     this.current = { ...this.current, left, top };
+    this.#emitMoved();
+  }
+
+  /** Windows가 창을 최소화한 것처럼 한다. 위치는 화면 밖으로 알려 주고 이동 신호가 온다 (WIN-13). */
+  minimize(): void {
+    this.#beforeMinimize = this.current;
+    this.current = { left: -16000, top: -16000, width: 157, height: 25 };
+    this.#emitMoved();
+  }
+
+  /** 최소화를 푼 것처럼 한다. 최소화 전 위치로 돌아오고 이동 신호가 온다. */
+  unminimize(): void {
+    if (this.#beforeMinimize)
+      this.current = this.#beforeMinimize;
+    this.#beforeMinimize = null;
+    this.#emitMoved();
+  }
+
+  #emitMoved(): void {
     for (const listener of this.#moved)
       listener();
   }

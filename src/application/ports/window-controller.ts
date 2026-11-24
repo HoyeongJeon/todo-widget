@@ -22,6 +22,8 @@ export interface PointerStart {
 export interface WindowController {
   screen(): Promise<ScreenLayout>;
   bounds(): Promise<Rect>;
+  /** 최소화되어 있는지. 그동안 bounds는 화면 밖 위치를 준다(Windows, WIN-13). */
+  minimized(): Promise<boolean>;
   /** 위치와 크기를 한 번에 바꾼다. */
   setBounds(rect: Rect): Promise<void>;
   /**

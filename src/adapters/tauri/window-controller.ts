@@ -30,6 +30,7 @@ export interface TauriWindowApi {
   outerPosition(): Promise<Point>;
   outerSize(): Promise<Size>;
   scaleFactor(): Promise<number>;
+  isMinimized(): Promise<boolean>;
   startDragging(): Promise<void>;
   /** WebView에 키보드 포커스를 준다. Windows에서는 wry가 WebView2 `MoveFocus`를 부른다(DOM 포커스는 그대로). */
   focusWebview(): Promise<void>;
@@ -45,6 +46,7 @@ export function tauriWindowApi(): TauriWindowApi {
     outerPosition: () => current.outerPosition(),
     outerSize: () => current.outerSize(),
     scaleFactor: () => current.scaleFactor(),
+    isMinimized: () => current.isMinimized(),
     startDragging: () => current.startDragging(),
     focusWebview: () => getCurrentWebview().setFocus(),
     onMoved: (handler) => current.onMoved(() => handler()),
@@ -101,6 +103,8 @@ export function createWindowController(deps: WindowControllerDeps): WindowContro
       const { coords, scale } = await context();
       return coords.nativeToSpec(await nativeBounds(coords, scale), scale);
     },
+
+    minimized: () => api.isMinimized(),
 
     async setBounds(rect: Rect): Promise<void> {
       const { coords, scale } = await context();

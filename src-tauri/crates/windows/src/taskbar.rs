@@ -1,7 +1,8 @@
 //! 작업 표시줄 버튼을 다시 눌렀을 때의 최소화 요청을 받는다 (WIN-11, WIN-12).
 //!
 //! 버튼을 누르면 위젯이 앞으로 오는 것은 Windows가 한다. 위젯이 활성 창일 때 누르면 Windows는 최소화를 요청한다.
-//! 최소화하면 화면 밖 위치가 저장될 수 있어, 그 요청을 "뒤로 보내기"로 바꾼다. Tauri는 이 요청을 막는 방법을 주지 않아 창 메시지를 직접 본다.
+//! 그 요청을 "뒤로 보내기"로 바꾼다. Tauri는 이 요청을 막는 방법을 주지 않아 창 메시지를 직접 본다.
+//! 모두 최소화(`Win+M`)는 이 요청 없이 창을 바로 최소화하기도 한다. 그때는 그대로 최소화된다 (WIN-14).
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
 use windows_sys::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
@@ -23,8 +24,6 @@ pub enum Action {
     SendBehind,
     /// 위젯은 그대로 두고, 그 전에 쓰던 창을 활성 창으로 만든다.
     ActivatePrevious,
-    /// 아무것도 하지 않고 메시지만 삼킨다.
-    Swallow,
 }
 
 /// 창 메시지를 보고 할 일을 정한다 (WIN-12). `pinned`는 📌 맨 위 고정(WND-09)이 켜져 있는지다.
@@ -36,7 +35,7 @@ pub fn decide(msg: u32, wparam: usize, active: bool, pinned: bool) -> Action {
     match (active, pinned) {
         (true, false) => Action::SendBehind,
         (true, true) => Action::ActivatePrevious,
-        (false, _) => Action::Swallow,
+        (false, _) => Action::Pass,
     }
 }
 
@@ -73,7 +72,6 @@ unsafe extern "system" fn subclass_proc(
                 activate_previous(hwnd);
             }
             Action::ActivatePrevious => activate_previous(hwnd),
-            Action::Swallow => {}
         }
     }
     0
@@ -141,11 +139,11 @@ mod tests {
         assert_eq!(decide(WM_SYSCOMMAND, MINIMIZE, true, true), Action::ActivatePrevious);
     }
 
-    /// WIN-12 활성 창이 아닐 때 온 최소화 요청은 삼킨다 (`Win+M`)
+    /// WIN-12 활성 창이 아닐 때 온 최소화 요청은 그대로 최소화한다
     #[test]
-    fn minimize_on_inactive_widget_is_swallowed() {
-        assert_eq!(decide(WM_SYSCOMMAND, MINIMIZE, false, false), Action::Swallow);
-        assert_eq!(decide(WM_SYSCOMMAND, MINIMIZE, false, true), Action::Swallow);
+    fn minimize_on_inactive_widget_passes_through() {
+        assert_eq!(decide(WM_SYSCOMMAND, MINIMIZE, false, false), Action::Pass);
+        assert_eq!(decide(WM_SYSCOMMAND, MINIMIZE, false, true), Action::Pass);
     }
 
     /// WIN-12 아래 4비트는 Windows가 쓰는 값이라 보지 않는다

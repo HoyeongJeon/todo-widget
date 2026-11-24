@@ -340,3 +340,90 @@ describe('창 높이', () => {
     expect(window.drags).toBe(1);
   });
 });
+
+describe('최소화 (Windows)', () => {
+  const SAVED = { left: 300, top: 200, width: 320, maxHeight: 500 };
+
+  it('WIN-13 최소화하면 화면 밖 위치를 저장하지 않는다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    window.minimize();
+    timer.runAll();
+    await flush();
+    expect(savedSettings()).toMatchObject({ left: 300, top: 200 });
+  });
+
+  it('WIN-13 WND-14 최소화된 채 종료해도 저장된 위치는 그대로다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    window.minimize();
+    await p.captureForQuit();
+    expect(savedSettings()).toMatchObject({ left: 300, top: 200 });
+  });
+
+  it('WIN-13 WND-02 최소화를 푼 뒤 옮기면 다시 저장한다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    window.minimize();
+    window.unminimize();
+    window.moveTo(400, 250);
+    timer.runAll();
+    await flush();
+    expect(savedSettings()).toMatchObject({ left: 400, top: 250 });
+  });
+
+  it('WIN-13 WND-03 최소화된 동안 바뀐 내용 높이는 최소화를 풀 때 맞춘다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    await p.fitToContent(400);
+    window.heightCalls = [];
+    window.minimize();
+    await p.fitToContent(450);
+    expect(window.heightCalls).toEqual([]);
+    window.unminimize();
+    await flush();
+    expect(window.heightCalls).toEqual([{ height: 450, raise: 0 }]);
+    expect(window.current).toEqual({ left: 300, top: 200, width: 320, height: 450 });
+  });
+
+  it('WIN-13 WND-10 최소화된 동안 닫힌 메뉴는 최소화를 풀 때 되돌리고, 올린 위치를 저장하지 않는다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    await p.fitToContent(320);
+    await p.expand(60, 420);
+    window.heightCalls = [];
+    window.minimize();
+    await p.restore();
+    expect(window.heightCalls).toEqual([]);
+    window.unminimize();
+    await flush();
+    expect(window.current).toEqual({ left: 300, top: 200, width: 320, height: 320 });
+    timer.runAll();
+    await flush();
+    expect(savedSettings()).toMatchObject({ left: 300, top: 200 });
+  });
+
+  it('WIN-13 WND-10 메뉴가 열린 채 최소화했다 풀면 늘린 창을 그대로 둔다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    await p.fitToContent(320);
+    await p.expand(60, 420);
+    window.heightCalls = [];
+    window.minimize();
+    window.unminimize();
+    await flush();
+    expect(window.heightCalls).toEqual([]);
+  });
+
+  it('WIN-13 WND-14 메뉴로 늘린 채 최소화하고 종료하면 창을 바꾸지도 위치를 저장하지도 않는다', async () => {
+    const { placement: p } = await placement(SAVED);
+    await p.apply();
+    await p.fitToContent(320);
+    await p.expand(60, 420);
+    window.heightCalls = [];
+    window.minimize();
+    await p.captureForQuit();
+    expect(window.heightCalls).toEqual([]);
+    expect(savedSettings()).toMatchObject({ left: 300, top: 200 });
+  });
+});

@@ -13,6 +13,7 @@ function setup(os: 'windows' | 'macos', scale: number, overrides: Partial<TauriW
     outerPosition: async () => ({ x: 1576 * scale, y: 24 * scale }),
     outerSize: async () => ({ width: 320 * scale, height: 520 * scale }),
     scaleFactor: async () => scale,
+    isMinimized: async () => false,
     startDragging: vi.fn(async () => undefined),
     focusWebview: vi.fn(async () => undefined),
     onMoved: async (handler) => {
@@ -60,6 +61,11 @@ describe('Tauri 창 제어 adapter', () => {
     const mac = setup('macos', 2);
     await mac.controller.setHeight(300, 0);
     expect(mac.invoke).toHaveBeenCalledWith('set_frame', { left: 1576, top: 24, width: 320, height: 300 });
+  });
+
+  it('WIN-13 최소화 여부를 창에서 읽는다', async () => {
+    expect(await setup('windows', 1).controller.minimized()).toBe(false);
+    expect(await setup('windows', 1, { isMinimized: async () => true }).controller.minimized()).toBe(true);
   });
 
   it('WND-09 맨 위 고정, 창 보이기, 숨긴 채 두기, 끌기를 넘긴다', async () => {
